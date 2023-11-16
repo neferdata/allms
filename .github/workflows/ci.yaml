@@ -1,0 +1,23 @@
+# Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
+
+on: 
+  pull_request:
+    paths:
+      - 'src/**'
+
+name: check
+
+env:
+  ACTIX_PORT: 8080
+  
+jobs:
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@1.73
+        with:
+          components: clippy, rustfmt
+      - run: cargo clippy -- --deny warnings
+      - run: cargo fmt --check
