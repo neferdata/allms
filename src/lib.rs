@@ -855,7 +855,7 @@ impl OpenAIAssistant {
         self.add_message(&schema_message, &Vec::new()).await?;
 
         //Step 2: Add user message and files to thread
-        self.add_message(message, file_ids).await?;
+        self.add_message(&message, &file_ids).await?;
 
         //Step 3: Kick off processing (aka Run)
         self.start_run().await?;
@@ -888,31 +888,24 @@ impl OpenAIAssistant {
                 }
             }
         })
-        .await;
+        .await?;
 
         //Step 5: Get all messages posted on the thread. This should now include response from the Assistant
         let messages = self.get_message_thread().await?;
 
-        let assistant_response = messages
+        messages
             .into_iter()
             .filter(|message| message.role == OpenAIAssistantRole::Assistant)
             .find_map(|message| {
                 message.content.into_iter().find_map(|content| {
-                    if let Some(text) = content.text {
-                        //OpenAI API has a tendency to add 'json\n' at the beginning of the response value
+                    content.text.map(|text| {
                         let sanitized_text = sanitize_json_response(&text.value);
                         serde_json::from_str::<T>(&sanitized_text).ok()
-                    } else {
-                        None
-                    }
+                    })
+                    .flatten()
                 })
-            });
-
-        if let Some(valid_response) = assistant_response {
-            Ok(valid_response)
-        } else {
-            Err(anyhow!("No valid response form OpenAI Assistant found."))
-        }
+            })
+            .ok_or(anyhow!("No valid response form OpenAI Assistant found."))
     }
 
     /*
