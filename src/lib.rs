@@ -11,7 +11,6 @@ use std::time::Duration;
 use tiktoken_rs::{cl100k_base, get_bpe_from_model, CoreBPE};
 use tokio::time::{self, timeout};
 
-/// Read OPEN_AI_API_KEY from environment variable
 lazy_static! {
     pub static ref OPENAI_API_URL: String = std::env::var("OPENAI_API_URL").unwrap();
 }
@@ -856,7 +855,7 @@ impl OpenAIAssistant {
         self.add_message(&schema_message, &Vec::new()).await?;
 
         //Step 2: Add user message and files to thread
-        self.add_message(&message, &file_ids).await?;
+        self.add_message(message, file_ids).await?;
 
         //Step 3: Kick off processing (aka Run)
         self.start_run().await?;
