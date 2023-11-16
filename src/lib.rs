@@ -1277,12 +1277,12 @@ impl OpenAIFile {
 
 #[cfg(test)]
 mod tests {
-    use crate::openai::get_tokenizer;
-    use crate::openai::OpenAIModels;
+    use crate::get_tokenizer;
+    use crate::OpenAIModels;
 
     #[test]
     fn it_computes_gpt3_5_tokenization() {
-        let bpe = get_tokenizer(&crate::openai::OpenAIModels::Gpt4_32k).unwrap();
+        let bpe = get_tokenizer(&crate::OpenAIModels::Gpt4_32k).unwrap();
         let tokenized: Result<Vec<_>, _> = bpe
             .split_by_token_iter("This is a test         with a lot of spaces", true)
             .collect();

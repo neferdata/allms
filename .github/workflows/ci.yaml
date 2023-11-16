@@ -21,3 +21,4 @@ jobs:
           components: clippy, rustfmt
       - run: cargo clippy -- --deny warnings
       - run: cargo fmt --check
+      - run: cargo test
