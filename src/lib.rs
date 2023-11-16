@@ -11,6 +11,7 @@ use std::time::Duration;
 use tiktoken_rs::{cl100k_base, get_bpe_from_model, CoreBPE};
 use tokio::time::{self, timeout};
 
+/// Read OPEN_AI_API_KEY from environment variable
 lazy_static! {
     pub static ref OPENAI_API_URL: String = std::env::var("OPENAI_API_URL").unwrap();
 }
