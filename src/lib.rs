@@ -888,31 +888,24 @@ impl OpenAIAssistant {
                 }
             }
         })
-        .await;
+        .await?;
 
         //Step 5: Get all messages posted on the thread. This should now include response from the Assistant
         let messages = self.get_message_thread().await?;
 
-        let assistant_response = messages
+        messages
             .into_iter()
             .filter(|message| message.role == OpenAIAssistantRole::Assistant)
             .find_map(|message| {
                 message.content.into_iter().find_map(|content| {
-                    if let Some(text) = content.text {
-                        //OpenAI API has a tendency to add 'json\n' at the beginning of the response value
+                    content.text.map(|text| {
                         let sanitized_text = sanitize_json_response(&text.value);
                         serde_json::from_str::<T>(&sanitized_text).ok()
-                    } else {
-                        None
-                    }
+                    })
+                    .flatten()
                 })
-            });
-
-        if let Some(valid_response) = assistant_response {
-            Ok(valid_response)
-        } else {
-            Err(anyhow!("No valid response form OpenAI Assistant found."))
-        }
+            })
+            .ok_or(anyhow!("No valid response form OpenAI Assistant found."))
     }
 
     /*
@@ -1277,12 +1270,12 @@ impl OpenAIFile {
 
 #[cfg(test)]
 mod tests {
-    use crate::openai::get_tokenizer;
-    use crate::openai::OpenAIModels;
+    use crate::get_tokenizer;
+    use crate::OpenAIModels;
 
     #[test]
     fn it_computes_gpt3_5_tokenization() {
-        let bpe = get_tokenizer(&crate::openai::OpenAIModels::Gpt4_32k).unwrap();
+        let bpe = get_tokenizer(&crate::OpenAIModels::Gpt4_32k).unwrap();
         let tokenized: Result<Vec<_>, _> = bpe
             .split_by_token_iter("This is a test         with a lot of spaces", true)
             .collect();
