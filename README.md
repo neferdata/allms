@@ -1,7 +1,9 @@
-# OpenAI Typesafe
+# OpenAI Typesafe Rust Library
 
-[![crates.io](https://img.shields.io/crates/v/yew-webtransport.svg)](https://crates.io/crates/yew-webtransport)
-[![docs.rs](https://docs.rs/yew-webtransport/badge.svg)](https://docs.rs/yew-webtransport)
+[![Build Status](
+
+[![crates.io](https://img.shields.io/crates/v/openai-typesafe-rs.svg)](https://crates.io/crates/openai-typesafe-rs)
+[![docs.rs](https://docs.rs/openai-typesafe-rs/badge.svg)](https://docs.rs/openai-typesafe-rs)
 
 This Rust library is specialized in providing type-safe interactions with the OpenAI API. It's designed to simplify the process of sending requests to OpenAI and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. This guarantees that the data conforms to predefined structures, reducing runtime errors and increasing the reliability of applications using OpenAI's powerful AI models like GPT-3.5 and GPT-4.
 
