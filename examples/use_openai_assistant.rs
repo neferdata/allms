@@ -1,8 +1,8 @@
 use std::path::Path;
 
-use openai_rs::OpenAIAssistant;
-use openai_rs::OpenAIFile;
-use openai_rs::OpenAIModels;
+use openai_safe::OpenAIAssistant;
+use openai_safe::OpenAIFile;
+use openai_safe::OpenAIModels;
 
 use anyhow::Result;
 use schemars::JsonSchema;

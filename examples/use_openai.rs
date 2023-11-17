@@ -1,5 +1,5 @@
-use openai_rs::OpenAI;
-use openai_rs::OpenAIModels;
+use openai_safe::OpenAI;
+use openai_safe::OpenAIModels;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
