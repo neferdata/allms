@@ -3,6 +3,7 @@
 on: 
   push:
     paths:
+      - 'examples/**'
       - 'src/**'
 
 name: check

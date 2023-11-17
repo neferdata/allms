@@ -1,7 +1,7 @@
 Cargo.lock
 /gh-pages
 __pycache__
-
+.DS_Store
 *.so
 *.out
 *.pyc
