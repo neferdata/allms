@@ -28,7 +28,7 @@ RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_openai_assistant
 
 This program will send this invoice pdf to OpenAI Assistant API and get the invoice data back.
 
-[Image](/examples/bill-image.png)
+<img width="800" src="/examples/bill-image.png">
 
 
 Output:
