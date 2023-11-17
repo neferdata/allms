@@ -1,31 +1,42 @@
-## OpenAI-rs
+# OpenAI Typesafe
 
-Hand picked Rust bindings for OpenAI's API.
+[![crates.io](https://img.shields.io/crates/v/yew-webtransport.svg)](https://crates.io/crates/yew-webtransport)
+[![docs.rs](https://docs.rs/yew-webtransport/badge.svg)](https://docs.rs/yew-webtransport)
 
-## Usage
+This Rust library is specialized in providing type-safe interactions with the OpenAI API. It's designed to simplify the process of sending requests to OpenAI and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. This guarantees that the data conforms to predefined structures, reducing runtime errors and increasing the reliability of applications using OpenAI's powerful AI models like GPT-3.5 and GPT-4.
 
-```rust
-// Upload file to OpenAI
-let openai_file = OpenAIFile::new(bytes, &CLIENT_OPENAI_API_KEY, true)
-    .await
-    .map_err(|e| {
-        log::error!("Request to OpenAI failed: {:?}", e);
-        actix_web::error::ErrorInternalServerError("Internal server error")
-    })?;
+## Features
 
-// Extract invoice detail using Assistant API
-OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &CLIENT_OPENAI_API_KEY, true)
-    .await
-    .map_err(error::ErrorInternalServerError)?
-    .get_answer::<Invoice>(
-        "Extract the following information from the attached invoice: invoice number, vendor name, payment amount, payment date.",
-        &[openai_file.id],
-    )
-    .await
-    .map(Json)
-    .map_err(error::ErrorInternalServerError)
+- Support for various OpenAI models including GPT-3.5, GPT-4, etc.
+- Easy-to-use functions for completions, chat responses, and other OpenAI features.
+- Structured response handling.
+- Rate limit handling.
+- Asynchronous support using Tokio.
+
+### Prerequisites
+- An OpenAI API key.
+
+### Examples
+Explore the `examples` directory to see more use cases and how to handle different types of responses from the
+OpenAI API.
+
+This is the output of calling the assistant api with sample-bill.pdf
+
+```
+RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_openai_assistant
 ```
 
+This program will send this invoice pdf to OpenAI Assistant API and get the invoice data back.
+
+[Image](/examples/bill-image.png)
 
 
+Output:
+```
+Running `target/debug/examples/use_openai_assistant`
 
+Invoice: Invoice { invoice_number: "12345678190", vendor_name: "Peoples Gas", payment_amount: 147.82, payment_date: "2021-03-04" }
+```
+
+## License
+This project is licensed under dual MIT/Apache-2.0 license. See the [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE) files for details.
