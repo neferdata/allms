@@ -4,7 +4,6 @@ use openai_rs::OpenAIAssistant;
 use openai_rs::OpenAIFile;
 use openai_rs::OpenAIModels;
 
-
 use anyhow::Result;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -26,12 +25,10 @@ async fn main() -> Result<()> {
     let path = Path::new("examples/sample-bill.pdf");
     let bytes = std::fs::read(path)?;
 
-    let openai_file = OpenAIFile::new(bytes, &api_key, true)
-        .await?;
+    let openai_file = OpenAIFile::new(bytes, &api_key, true).await?;
 
     // Extract invoice detail using Assistant API
-    let invoice = 
-        OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true)
+    let invoice = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true)
         .await?
         .get_answer::<Invoice>(
             "Extract the following information from the attached invoice: invoice number, vendor name, payment amount, payment date.",

@@ -17,13 +17,12 @@ use serde_json::{json, Value};
 use tokio::time;
 use tokio::time::timeout;
 
-
 /// [OpenAI Docs](https://platform.openai.com/docs/assistants/overview)
-/// 
-/// The Assistants API allows you to build AI assistants within your own applications. 
-/// An Assistant has instructions and can leverage models, tools, and knowledge to respond to user queries. 
-/// The Assistants API currently supports three types of tools: Code Interpreter, Retrieval, and Function calling. 
-/// In the future, we plan to release more OpenAI-built tools, and allow you to provide 
+///
+/// The Assistants API allows you to build AI assistants within your own applications.
+/// An Assistant has instructions and can leverage models, tools, and knowledge to respond to user queries.
+/// The Assistants API currently supports three types of tools: Code Interpreter, Retrieval, and Function calling.
+/// In the future, we plan to release more OpenAI-built tools, and allow you to provide
 /// your own tools on our platform.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIAssistant {

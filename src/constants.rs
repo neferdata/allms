@@ -1,7 +1,8 @@
 use lazy_static::lazy_static;
 
 lazy_static! {
-    pub(crate) static ref OPENAI_API_URL: String = std::env::var("OPENAI_API_URL").unwrap_or("https://api.openai.com".to_string());
+    pub(crate) static ref OPENAI_API_URL: String =
+        std::env::var("OPENAI_API_URL").unwrap_or("https://api.openai.com".to_string());
 }
 
 //Generic OpenAI instructions

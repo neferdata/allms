@@ -9,7 +9,7 @@ struct TranslationResponse {
     pub spanish: String,
     pub french: String,
     pub german: String,
-    pub polish: String
+    pub polish: String,
 }
 
 #[tokio::main]
