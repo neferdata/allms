@@ -1,7 +1,4 @@
 # OpenAI Typesafe Rust Library
-
-[![Build Status](
-
 [![crates.io](https://img.shields.io/crates/v/openai-typesafe-rs.svg)](https://crates.io/crates/openai-typesafe-rs)
 [![docs.rs](https://docs.rs/openai-typesafe-rs/badge.svg)](https://docs.rs/openai-typesafe-rs)
 
