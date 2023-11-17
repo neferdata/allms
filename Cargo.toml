@@ -9,7 +9,7 @@ authors = [
 keywords = ["openai", "api", "wrapper", "rust", "typesafe"]
 description = "OpenAI Framework for Rust"
 license = "MIT or Apache-2.0"
-
+repository = "https://github.com/neferdata/openai-typesafe-rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
