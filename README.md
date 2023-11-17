@@ -19,22 +19,32 @@ This Rust library is specialized in providing type-safe interactions with the Op
 Explore the `examples` directory to see more use cases and how to handle different types of responses from the
 OpenAI API.
 
-This is the output of calling the assistant api with sample-bill.pdf
+This is the output of calling the assistant api with metallica.pdf
 
 ```
 RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_openai_assistant
 ```
 
-This program will send this invoice pdf to OpenAI Assistant API and get the invoice data back.
+This program will send this press release to OpenAI Assistant API and get the data requested in the response type back:
 
-<img width="800" src="/examples/bill-image.png">
+```
+pub struct ConcertInfo {
+    dates: Vec<String>,
+    band: String,
+    venue: String,
+    city: String,
+    country: String,
+    ticket_price: String,
+}
+```
 
+<img width="600" src="/examples/metallica.png">
 
 Output:
 ```
 Running `target/debug/examples/use_openai_assistant`
 
-Invoice: Invoice { invoice_number: "12345678190", vendor_name: "Peoples Gas", payment_amount: 147.82, payment_date: "2021-03-04" }
+ConcertInfo { dates: ["Friday September 6, 2019"], band: "Metallica and the San Francisco Symphony", venue: "Chase Center", city: "San Francisco", country: "USA", ticket_price: "Information not available" }
 ```
 
 ## License
