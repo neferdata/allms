@@ -185,6 +185,23 @@ impl OpenAIAssistant {
     }
 
     /*
+     * This method can be used to provide data that will be used as context for the prompt.
+     * Using this function you can provide multiple sets of context data by calling it multiple times. New values will be as messages to the thread
+     * It accepts any struct that implements the Serialize trait.
+     */
+    pub async fn set_context<T: Serialize>(mut self, description: &str, data: &T) -> Result<Self> {
+        let serialized_data = if let Ok(json) = serde_json::to_string(&data) {
+            json
+        } else {
+            return Err(anyhow!("Unable serialize provided input data."));
+        };
+        let message = format!("{description}: {serialized_data}");
+        let file_ids = Vec::new();
+        self.add_message(&message, &file_ids).await?;
+        Ok(self)
+    }
+
+    /*
      * This function creates a Thread and updates the thread_id of the OpenAIAssistant struct
      */
     async fn add_message(&mut self, message: &str, file_ids: &[String]) -> Result<()> {
