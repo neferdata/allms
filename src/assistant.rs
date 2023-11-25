@@ -26,7 +26,7 @@ use tokio::time::timeout;
 /// your own tools on our platform.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIAssistant {
-    id: String,
+    id: Option<String>,
     thread_id: Option<String>,
     run_id: Option<String>,
     model: OpenAIModels,
@@ -39,7 +39,7 @@ impl OpenAIAssistant {
     //Constructor
     pub async fn new(model: OpenAIModels, open_ai_key: &str, debug: bool) -> Result<Self> {
         let mut new_assistant = OpenAIAssistant {
-            id: "this_will_change".to_string(),
+            id: None,
             thread_id: None,
             run_id: None,
             model,
@@ -47,8 +47,14 @@ impl OpenAIAssistant {
             debug,
             api_key: open_ai_key.to_string(),
         };
+
         //Call OpenAI API to get an ID for the assistant
         new_assistant.create_assistant().await?;
+
+        //Add first message thus initializing the thread
+        new_assistant
+            .add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
+            .await?;
 
         Ok(new_assistant)
     }
@@ -102,7 +108,7 @@ impl OpenAIAssistant {
             })?;
 
         //Add correct ID to self
-        self.id = response_deser.id;
+        self.id = Some(response_deser.id);
 
         Ok(())
     }
@@ -374,17 +380,22 @@ impl OpenAIAssistant {
      * This function starts an assistant run
      */
     async fn start_run(&mut self) -> Result<()> {
-        if self.thread_id.is_none() {
-            return Err(anyhow!("No active thread detected."));
-        }
+        let assistant_id = if let Some(id) = self.id.clone() {
+            id
+        } else {
+            return Err(anyhow!("No active assistant detected."));
+        };
 
-        let run_url = format!(
-            "https://api.openai.com/v1/threads/{}/runs",
-            self.thread_id.clone().unwrap_or_default()
-        );
+        let thread_id = if let Some(id) = self.thread_id.clone() {
+            id
+        } else {
+            return Err(anyhow!("No active thread detected."));
+        };
+
+        let run_url = format!("https://api.openai.com/v1/threads/{}/runs", thread_id);
 
         let body = json!({
-            "assistant_id": self.id.clone(),
+            "assistant_id": assistant_id,
         });
 
         //Make the API call
@@ -429,19 +440,19 @@ impl OpenAIAssistant {
      * This function checks the status of an assistant run
      */
     async fn get_run_status(&self) -> Result<OpenAIRunResp> {
-        if self.thread_id.is_none() {
+        let thread_id = if let Some(id) = self.thread_id.clone() {
+            id
+        } else {
             return Err(anyhow!("No active thread detected."));
-        }
+        };
 
-        if self.run_id.is_none() {
+        let run_id = if let Some(id) = self.run_id.clone() {
+            id
+        } else {
             return Err(anyhow!("No active run detected."));
-        }
+        };
 
-        let run_url = format!(
-            "https://api.openai.com/v1/threads/{thread_id}/runs/{run_id}",
-            thread_id = self.thread_id.clone().unwrap_or_default(),
-            run_id = self.run_id.clone().unwrap_or_default(),
-        );
+        let run_url = format!("https://api.openai.com/v1/threads/{thread_id}/runs/{run_id}");
 
         //Make the API call
         let client = Client::new();
