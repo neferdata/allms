@@ -53,7 +53,7 @@ impl OpenAIAssistant {
 
         //Add first message thus initializing the thread
         new_assistant
-            .add_message("OPENAI_ASSISTANT_INSTRUCTIONS", &Vec::new())
+            .add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
             .await?;
 
         Ok(new_assistant)
