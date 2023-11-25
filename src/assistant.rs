@@ -47,8 +47,14 @@ impl OpenAIAssistant {
             debug,
             api_key: open_ai_key.to_string(),
         };
+
         //Call OpenAI API to get an ID for the assistant
         new_assistant.create_assistant().await?;
+
+        //Add first message thus initializing the thread
+        new_assistant
+            .add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
+            .await?;
 
         Ok(new_assistant)
     }
