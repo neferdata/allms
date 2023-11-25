@@ -29,15 +29,30 @@ async fn main() -> Result<()> {
 
     let openai_file = OpenAIFile::new(bytes, &api_key, true).await?;
 
-    // Extract invoice detail using Assistant API
-    let invoice = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true)
+    let exciting_bands = vec![
+        "Metallica Inc.",
+        "Guns N' Roses",
+        "Slayer",
+        "Iron Maiden",
+        "Black Sabbath",
+    ];
+
+    // Extract concert information using Assistant API
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true)
+        .await?
+        .set_context(
+            "exciting_bands",
+            &exciting_bands
+        )
         .await?
         .get_answer::<ConcertInfo>(
-            "Extract the information requested in the response type from the attached concert information.",
+            "Extract the information requested in the response type from the attached concert information.
+            Before returning a response try to match the band name you discovered to the names provided in the 'exciting_bands' list.
+            Change the name of the band to the one in 'exciting_bands' if the names are similar.",
             &[openai_file.id],
         )
         .await?;
 
-    println!("Concert Info: {:?}", invoice);
+    println!("Concert Info: {:?}", concert_info);
     Ok(())
 }

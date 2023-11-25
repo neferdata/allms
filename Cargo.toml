@@ -1,12 +1,12 @@
 [package]
 name = "openai-safe"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
     "Dario Lencina <dario@neferdata.com>",
 ]
-keywords = ["openai", "api", "wrapper", "rust", "typesafe"]
+keywords = ["openai", "api", "assistant", "rust", "typesafe"]
 description = "OpenAI Framework for Rust"
 license = "MIT"
 repository = "https://github.com/neferdata/openai-typesafe-rs"
