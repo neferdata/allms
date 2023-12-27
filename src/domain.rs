@@ -212,3 +212,14 @@ impl OpenAIFile {
         Ok(())
     }
 }
+
+//Anthropic API response type format for Text Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnthropicAPICompletionsResponse {
+    pub id: String,
+    #[serde(rename(deserialize = "type", serialize = "type"))]
+    pub request_type: String,
+    pub completion: String,
+    pub stop_reason: String,
+    pub model: String,
+}

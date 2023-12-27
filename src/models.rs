@@ -1,10 +1,15 @@
 use anyhow::{anyhow, Result};
+use log::info;
+use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
-    domain::{OpenAIRateLimit, OpenAPIChatResponse, OpenAPICompletionsResponse},
+    domain::{
+        AnthropicAPICompletionsResponse, OpenAIRateLimit, OpenAPIChatResponse,
+        OpenAPICompletionsResponse,
+    },
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -16,6 +21,7 @@ pub enum OpenAIModels {
     Gpt4_32k,
     TextDavinci003,
     Gpt4Turbo,
+    AnthropicClaude2,
 }
 
 impl OpenAIModels {
@@ -30,6 +36,7 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => "gpt-4-32k",
             OpenAIModels::TextDavinci003 => "text-davinci-003",
             OpenAIModels::Gpt4Turbo => "gpt-4-1106-preview",
+            OpenAIModels::AnthropicClaude2 => "claude-2.1",
         }
     }
 
@@ -44,6 +51,7 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => 32768,
             OpenAIModels::TextDavinci003 => 4097,
             OpenAIModels::Gpt4Turbo => 128_000,
+            OpenAIModels::AnthropicClaude2 => 4_096,
         }
     }
 
@@ -65,6 +73,8 @@ impl OpenAIModels {
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
+            //TODO: Move to env var
+            OpenAIModels::AnthropicClaude2 => "https://api.anthropic.com/v1/complete".to_string(),
         }
     }
 
@@ -86,6 +96,7 @@ impl OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo => true,
+            OpenAIModels::AnthropicClaude2 => false,
         }
     }
 
@@ -186,7 +197,71 @@ impl OpenAIModels {
                     }
                 }
             }
+            OpenAIModels::AnthropicClaude2 => {
+                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
+                let base_instructions = self.get_base_instructions(Some(function_call));
+                json!({
+                    "model": self.as_str(),
+                    "max_tokens_to_sample": max_tokens,
+                    "temperature": temperature,
+                    "prompt": format!(
+                        "\n\nHuman:
+                        {base_instructions}\n\n
+                        Output Json schema:\n
+                        {schema_string}\n\n
+                        {instructions}
+                        \n\nAssistant:",
+                    ),
+                })
+            }
         }
+    }
+    /*
+     * This function leverages OpenAI API to perform any query as per the provided body.
+     *
+     * It returns a String the Response object that needs to be parsed based on the self.model.
+     */
+    pub async fn call_api(
+        &self,
+        api_key: &str,
+        body: &serde_json::Value,
+        debug: bool,
+    ) -> Result<String> {
+        //Get the API url
+        let model_url = self.get_endpoint();
+
+        //Make the API call
+        let client = Client::new();
+
+        //Build request for different API providers
+        let request_builder = match self {
+            OpenAIModels::AnthropicClaude2 => client
+                .post(model_url)
+                .header(header::CONTENT_TYPE, "application/json")
+                .header("x-api-key", api_key)
+                .header("anthropic-version", "2023-06-01")
+                .json(&body),
+            _ => client
+                .post(model_url)
+                .header(header::CONTENT_TYPE, "application/json")
+                .bearer_auth(api_key)
+                .json(&body),
+        };
+
+        //Send request
+        let response = request_builder.send().await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if debug {
+            info!(
+                "[debug] OpenAI API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        Ok(response_text)
     }
 
     //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
@@ -234,6 +309,14 @@ impl OpenAIModels {
                     None => Err(anyhow!("Unable to retrieve response from OpenAI Chat API")),
                 }
             }
+            OpenAIModels::AnthropicClaude2 => {
+                //Convert API response to struct representing expected response format
+                let completions_response: AnthropicAPICompletionsResponse =
+                    serde_json::from_str(response_text)?;
+
+                //Return completions text
+                Ok(completions_response.completion)
+            }
         }
     }
 
@@ -269,6 +352,11 @@ impl OpenAIModels {
             OpenAIModels::TextDavinci003 => OpenAIRateLimit {
                 tpm: 250_000,
                 rpm: 3_000,
+            },
+            //TODO: More info on Anthropic rate limits: https://support.anthropic.com/en/articles/8243635-our-approach-to-api-rate-limits
+            OpenAIModels::AnthropicClaude2 => OpenAIRateLimit {
+                tpm: 10_000,
+                rpm: 200,
             },
         }
     }

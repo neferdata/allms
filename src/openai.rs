@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use log::{error, info, warn};
-use reqwest::{header, Client};
 use schemars::{schema_for, JsonSchema};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
@@ -128,39 +127,6 @@ impl OpenAI {
     }
 
     /*
-     * This function leverages OpenAI API to perform any query as per the provided body.
-     *
-     * It returns a String the Response object that needs to be parsed based on the self.model.
-     */
-    async fn call_openai_api(&self, body: &serde_json::Value) -> Result<String> {
-        //Get the API url
-        let model_url = self.model.get_endpoint();
-
-        //Make the API call
-        let client = Client::new();
-
-        let response = client
-            .post(model_url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .bearer_auth(&self.api_key)
-            .json(&body)
-            .send()
-            .await?;
-
-        let response_status = response.status();
-        let response_text = response.text().await?;
-
-        if self.debug {
-            info!(
-                "[debug] OpenAI API response: [{}] {:#?}",
-                &response_status, &response_text
-            );
-        }
-
-        Ok(response_text)
-    }
-
-    /*
      * This method is used to submit a prompt to OpenAI and process the response.
      * When calling the function you need to specify the type parameter as the response will match the schema of that type.
      * The prompt in this function is written in a way to instruct OpenAI to behave like a computer function that calculates an output based on provided input and its language model.
@@ -227,7 +193,10 @@ impl OpenAI {
             );
         }
 
-        let response_text = self.call_openai_api(&model_body).await?;
+        let response_text = self
+            .model
+            .call_api(&self.api_key, &model_body, self.debug)
+            .await?;
 
         //Extract data from the returned response text based on the used model
         let response_string = self.model.get_data(&response_text, self.function_call)?;
