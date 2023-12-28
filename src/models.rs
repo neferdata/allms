@@ -382,11 +382,11 @@ impl OpenAIModels {
 #[cfg(test)]
 mod tests {
     use crate::models::OpenAIModels;
-    use crate::utils::get_tokenizer;
+    use crate::utils::get_tokenizer_old;
 
     #[test]
     fn it_computes_gpt3_5_tokenization() {
-        let bpe = get_tokenizer(&OpenAIModels::Gpt4_32k).unwrap();
+        let bpe = get_tokenizer_old(&OpenAIModels::Gpt4_32k).unwrap();
         let tokenized: Result<Vec<_>, _> = bpe
             .split_by_token_iter("This is a test         with a lot of spaces", true)
             .collect();

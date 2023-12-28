@@ -319,7 +319,8 @@ impl LLMModel for OpenAIModels {
 
 #[cfg(test)]
 mod tests {
-    use crate::models::OpenAIModels;
+    use crate::llm_models::llm_model::LLMModel;
+    use crate::llm_models::OpenAIModels;
     use crate::utils::get_tokenizer;
 
     #[test]
