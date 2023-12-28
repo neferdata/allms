@@ -223,3 +223,37 @@ pub struct AnthropicAPICompletionsResponse {
     pub stop_reason: String,
     pub model: String,
 }
+
+//Mistral API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPICompletionsResponse {
+    pub id: Option<String>,
+    pub object: Option<String>,
+    pub created: Option<usize>,
+    pub model: Option<String>,
+    pub choices: Vec<MistralAPICompletionsChoices>,
+    pub usage: Option<MistralAPICompletionsUsage>,
+}
+
+//Mistral API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPICompletionsChoices {
+    pub index: usize,
+    pub message: Option<MistralAPICompletionsMessage>,
+    pub finish_reason: String,
+}
+
+//Mistral API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPICompletionsMessage {
+    pub role: Option<String>,
+    pub content: Option<String>,
+}
+
+//Mistral API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPICompletionsUsage {
+    pub prompt_tokens: usize,
+    pub completion_tokens: usize,
+    pub total_tokens: usize,
+}

@@ -201,19 +201,19 @@ impl<T: LLMModel> Completions<T> {
         let response_string = self.model.get_data(&response_text, self.function_call)?;
 
         if self.debug {
-            info!("[debug] OpenAI response data: {}", response_string);
+            info!("[debug] Completions response data: {}", response_string);
         }
         //Deserialize the string response into the expected output type
         let response_deser: anyhow::Result<U, anyhow::Error> =
             serde_json::from_str(&response_string).map_err(|error| {
-                error!("[OpenAI] Response serialization error: {}", &error);
+                error!("[Completions] Response serialization error: {}", &error);
                 anyhow!("Error: {}", error)
             });
         // Sometimes openai responds with a json object that has a data property. If that's the case, we need to extract the data property and deserialize that.
         if let Err(_e) = response_deser {
             let response_deser: OpenAIDataResponse<U> = serde_json::from_str(&response_text)
                 .map_err(|error| {
-                    error!("[OpenAI] Response serialization error: {}", &error);
+                    error!("[Completions] Response serialization error: {}", &error);
                     anyhow!("Error: {}", error)
                 })?;
             Ok(response_deser.data)

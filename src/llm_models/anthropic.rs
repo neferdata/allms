@@ -64,7 +64,7 @@ impl LLMModel for AnthropicModels {
         }
     }
     /*
-     * This function leverages OpenAI API to perform any query as per the provided body.
+     * This function leverages Anthropic API to perform any query as per the provided body.
      *
      * It returns a String the Response object that needs to be parsed based on the self.model.
      */
@@ -97,7 +97,7 @@ impl LLMModel for AnthropicModels {
 
         if debug {
             info!(
-                "[debug] OpenAI API response: [{}] {:#?}",
+                "[debug] Anthropic API response: [{}] {:#?}",
                 &response_status, &response_text
             );
         }
