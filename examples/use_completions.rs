@@ -40,7 +40,7 @@ async fn main() {
     // Get answer using Anthropic
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::Claude2; // Choose the model
+    let model = AnthropicModels::ClaudeInstant1_2; // Choose the model
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
 
@@ -60,6 +60,7 @@ async fn main() {
     let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
 
     match mistral_completion
+        .debug()
         .get_answer::<TranslationResponse>(instructions)
         .await
     {

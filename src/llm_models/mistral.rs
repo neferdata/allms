@@ -5,6 +5,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::constants::MISTRAL_API_URL;
 use crate::{
     domain::{MistralAPICompletionsResponse, RateLimit},
     llm_models::LLMModel,
@@ -34,8 +35,7 @@ impl LLMModel for MistralModels {
     }
 
     fn get_endpoint(&self) -> String {
-        //TODO: Move to env var
-        "https://api.mistral.ai/v1/chat/completions".to_string()
+        MISTRAL_API_URL.to_string()
     }
 
     //This method prepares the body of the API call for different models
