@@ -64,7 +64,7 @@ pub struct OpenAPIUsage {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct OpenAIRateLimit {
+pub struct RateLimit {
     pub tpm: usize, // tokens-per-minute
     pub rpm: usize, // requests-per-minute
 }

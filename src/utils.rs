@@ -1,9 +1,21 @@
 use tiktoken_rs::{cl100k_base, get_bpe_from_model, CoreBPE};
 
+use crate::llm_models::LLMModel;
 use crate::models::OpenAIModels;
 
 // Get the tokenizer given a model
-pub(crate) fn get_tokenizer(model: &OpenAIModels) -> anyhow::Result<CoreBPE> {
+pub(crate) fn get_tokenizer_old(model: &OpenAIModels) -> anyhow::Result<CoreBPE> {
+    let tokenizer = get_bpe_from_model(model.as_str());
+    if let Err(_error) = tokenizer {
+        // Fallback to the default chat model
+        cl100k_base()
+    } else {
+        tokenizer
+    }
+}
+
+// Get the tokenizer given a model
+pub(crate) fn get_tokenizer<T: LLMModel>(model: &T) -> anyhow::Result<CoreBPE> {
     let tokenizer = get_bpe_from_model(model.as_str());
     if let Err(_error) = tokenizer {
         // Fallback to the default chat model

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
@@ -6,9 +7,8 @@ use serde_json::{json, Value};
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
-    domain::{
-        AnthropicAPICompletionsResponse, OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit,
-    },
+    domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
+    llm_models::LLMModel,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -20,11 +20,11 @@ pub enum OpenAIModels {
     Gpt4_32k,
     TextDavinci003,
     Gpt4Turbo,
-    AnthropicClaude2,
 }
 
-impl OpenAIModels {
-    pub fn as_str(&self) -> &'static str {
+#[async_trait(?Send)]
+impl LLMModel for OpenAIModels {
+    fn as_str(&self) -> &'static str {
         match self {
             //In an API call, you can describe functions to gpt-3.5-turbo-0613 and gpt-4-0613
             //On June 27, 2023 the stable gpt-3.5-turbo will be automatically upgraded to gpt-3.5-turbo-0613
@@ -35,11 +35,10 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => "gpt-4-32k",
             OpenAIModels::TextDavinci003 => "text-davinci-003",
             OpenAIModels::Gpt4Turbo => "gpt-4-1106-preview",
-            OpenAIModels::AnthropicClaude2 => "claude-2.1",
         }
     }
 
-    pub fn default_max_tokens(&self) -> usize {
+    fn default_max_tokens(&self) -> usize {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
@@ -50,11 +49,10 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => 32768,
             OpenAIModels::TextDavinci003 => 4097,
             OpenAIModels::Gpt4Turbo => 128_000,
-            OpenAIModels::AnthropicClaude2 => 4_096,
         }
     }
 
-    pub(crate) fn get_endpoint(&self) -> String {
+    fn get_endpoint(&self) -> String {
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match self {
             OpenAIModels::Gpt3_5Turbo
@@ -72,12 +70,10 @@ impl OpenAIModels {
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
-            //TODO: Move to env var
-            OpenAIModels::AnthropicClaude2 => "https://api.anthropic.com/v1/complete".to_string(),
         }
     }
 
-    pub(crate) fn get_base_instructions(&self, function_call: Option<bool>) -> String {
+    fn get_base_instructions(&self, function_call: Option<bool>) -> String {
         let function_call = function_call.unwrap_or_else(|| self.function_call_default());
         match function_call {
             true => OPENAI_FUNCTION_INSTRUCTIONS.to_string(),
@@ -85,7 +81,7 @@ impl OpenAIModels {
         }
     }
 
-    pub(crate) fn function_call_default(&self) -> bool {
+    fn function_call_default(&self) -> bool {
         //OpenAI documentation: https://platform.openai.com/docs/guides/gpt/function-calling
         match self {
             OpenAIModels::TextDavinci003 | OpenAIModels::Gpt3_5Turbo | OpenAIModels::Gpt4_32k => {
@@ -95,12 +91,11 @@ impl OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo => true,
-            OpenAIModels::AnthropicClaude2 => false,
         }
     }
 
     //This method prepares the body of the API call for different models
-    pub(crate) fn get_body(
+    fn get_body(
         &self,
         instructions: &str,
         json_schema: &Value,
@@ -196,23 +191,6 @@ impl OpenAIModels {
                     }
                 }
             }
-            OpenAIModels::AnthropicClaude2 => {
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-                let base_instructions = self.get_base_instructions(Some(function_call));
-                json!({
-                    "model": self.as_str(),
-                    "max_tokens_to_sample": max_tokens,
-                    "temperature": temperature,
-                    "prompt": format!(
-                        "\n\nHuman:
-                        {base_instructions}\n\n
-                        Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}
-                        \n\nAssistant:",
-                    ),
-                })
-            }
         }
     }
     /*
@@ -220,7 +198,7 @@ impl OpenAIModels {
      *
      * It returns a String the Response object that needs to be parsed based on the self.model.
      */
-    pub async fn call_api(
+    async fn call_api(
         &self,
         api_key: &str,
         body: &serde_json::Value,
@@ -232,23 +210,14 @@ impl OpenAIModels {
         //Make the API call
         let client = Client::new();
 
-        //Build request for different API providers
-        let request_builder = match self {
-            OpenAIModels::AnthropicClaude2 => client
-                .post(model_url)
-                .header(header::CONTENT_TYPE, "application/json")
-                .header("x-api-key", api_key)
-                .header("anthropic-version", "2023-06-01")
-                .json(&body),
-            _ => client
-                .post(model_url)
-                .header(header::CONTENT_TYPE, "application/json")
-                .bearer_auth(api_key)
-                .json(&body),
-        };
-
         //Send request
-        let response = request_builder.send().await?;
+        let response = client
+            .post(model_url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .bearer_auth(api_key)
+            .json(&body)
+            .send()
+            .await?;
 
         let response_status = response.status();
         let response_text = response.text().await?;
@@ -264,7 +233,7 @@ impl OpenAIModels {
     }
 
     //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
-    pub(crate) fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {
+    fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {
         match self {
             //https://platform.openai.com/docs/api-reference/completions/create
             OpenAIModels::TextDavinci003 => {
@@ -308,14 +277,6 @@ impl OpenAIModels {
                     None => Err(anyhow!("Unable to retrieve response from OpenAI Chat API")),
                 }
             }
-            OpenAIModels::AnthropicClaude2 => {
-                //Convert API response to struct representing expected response format
-                let completions_response: AnthropicAPICompletionsResponse =
-                    serde_json::from_str(response_text)?;
-
-                //Return completions text
-                Ok(completions_response.completion)
-            }
         }
     }
 
@@ -352,30 +313,7 @@ impl OpenAIModels {
                 tpm: 250_000,
                 rpm: 3_000,
             },
-            //TODO: More info on Anthropic rate limits: https://support.anthropic.com/en/articles/8243635-our-approach-to-api-rate-limits
-            OpenAIModels::AnthropicClaude2 => RateLimit {
-                tpm: 10_000,
-                rpm: 200,
-            },
         }
-    }
-
-    //This function checks how many requests can be sent to an OpenAI model within a minute
-    pub fn get_max_requests(&self) -> usize {
-        let rate_limit = self.get_rate_limit();
-
-        //Check max requests based on rpm
-        let max_requests_from_rpm = rate_limit.rpm;
-
-        //Double check max number of requests based on tpm
-        //Assume we will use ~50% of allowed tokens per request (for prompt + response)
-        let max_tokens_per_minute = rate_limit.tpm;
-        let tpm_per_request = (self.default_max_tokens() as f64 * 0.5).ceil() as usize;
-        //Then check how many requests we can process
-        let max_requests_from_tpm = max_tokens_per_minute / tpm_per_request;
-
-        //To be safe we go with smaller of the numbers
-        std::cmp::min(max_requests_from_rpm, max_requests_from_tpm)
     }
 }
 
