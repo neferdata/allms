@@ -21,7 +21,8 @@ async fn main() {
     let open_ai = OpenAI::new(&api_key, model, None, None);
 
     // Example context and instructions
-    let instructions = "Translate this English text to all the languages in the response type";
+    let instructions =
+        "Translate this exact English sentence to all the languages in the response type";
 
     match open_ai
         .get_answer::<TranslationResponse>(instructions)

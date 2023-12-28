@@ -6,9 +6,7 @@ use serde_json::{json, Value};
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
-    domain::{
-        AnthropicAPICompletionsResponse, OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit,
-    },
+    domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -20,7 +18,6 @@ pub enum OpenAIModels {
     Gpt4_32k,
     TextDavinci003,
     Gpt4Turbo,
-    AnthropicClaude2,
 }
 
 impl OpenAIModels {
@@ -35,7 +32,6 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => "gpt-4-32k",
             OpenAIModels::TextDavinci003 => "text-davinci-003",
             OpenAIModels::Gpt4Turbo => "gpt-4-1106-preview",
-            OpenAIModels::AnthropicClaude2 => "claude-2.1",
         }
     }
 
@@ -50,7 +46,6 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => 32768,
             OpenAIModels::TextDavinci003 => 4097,
             OpenAIModels::Gpt4Turbo => 128_000,
-            OpenAIModels::AnthropicClaude2 => 4_096,
         }
     }
 
@@ -72,8 +67,6 @@ impl OpenAIModels {
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
-            //TODO: Move to env var
-            OpenAIModels::AnthropicClaude2 => "https://api.anthropic.com/v1/complete".to_string(),
         }
     }
 
@@ -95,7 +88,6 @@ impl OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo => true,
-            OpenAIModels::AnthropicClaude2 => false,
         }
     }
 
@@ -196,23 +188,6 @@ impl OpenAIModels {
                     }
                 }
             }
-            OpenAIModels::AnthropicClaude2 => {
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-                let base_instructions = self.get_base_instructions(Some(function_call));
-                json!({
-                    "model": self.as_str(),
-                    "max_tokens_to_sample": max_tokens,
-                    "temperature": temperature,
-                    "prompt": format!(
-                        "\n\nHuman:
-                        {base_instructions}\n\n
-                        Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}
-                        \n\nAssistant:",
-                    ),
-                })
-            }
         }
     }
     /*
@@ -232,23 +207,14 @@ impl OpenAIModels {
         //Make the API call
         let client = Client::new();
 
-        //Build request for different API providers
-        let request_builder = match self {
-            OpenAIModels::AnthropicClaude2 => client
-                .post(model_url)
-                .header(header::CONTENT_TYPE, "application/json")
-                .header("x-api-key", api_key)
-                .header("anthropic-version", "2023-06-01")
-                .json(&body),
-            _ => client
-                .post(model_url)
-                .header(header::CONTENT_TYPE, "application/json")
-                .bearer_auth(api_key)
-                .json(&body),
-        };
-
         //Send request
-        let response = request_builder.send().await?;
+        let response = client
+            .post(model_url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .bearer_auth(api_key)
+            .json(&body)
+            .send()
+            .await?;
 
         let response_status = response.status();
         let response_text = response.text().await?;
@@ -308,14 +274,6 @@ impl OpenAIModels {
                     None => Err(anyhow!("Unable to retrieve response from OpenAI Chat API")),
                 }
             }
-            OpenAIModels::AnthropicClaude2 => {
-                //Convert API response to struct representing expected response format
-                let completions_response: AnthropicAPICompletionsResponse =
-                    serde_json::from_str(response_text)?;
-
-                //Return completions text
-                Ok(completions_response.completion)
-            }
         }
     }
 
@@ -351,11 +309,6 @@ impl OpenAIModels {
             OpenAIModels::TextDavinci003 => RateLimit {
                 tpm: 250_000,
                 rpm: 3_000,
-            },
-            //TODO: More info on Anthropic rate limits: https://support.anthropic.com/en/articles/8243635-our-approach-to-api-rate-limits
-            OpenAIModels::AnthropicClaude2 => RateLimit {
-                tpm: 10_000,
-                rpm: 200,
             },
         }
     }

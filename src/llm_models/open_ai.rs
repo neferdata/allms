@@ -321,20 +321,6 @@ impl LLMModel for OpenAIModels {
 mod tests {
     use crate::llm_models::llm_model::LLMModel;
     use crate::llm_models::OpenAIModels;
-    use crate::utils::get_tokenizer;
-
-    #[test]
-    fn it_computes_gpt3_5_tokenization() {
-        let bpe = get_tokenizer(&OpenAIModels::Gpt4_32k).unwrap();
-        let tokenized: Result<Vec<_>, _> = bpe
-            .split_by_token_iter("This is a test         with a lot of spaces", true)
-            .collect();
-        let tokenized = tokenized.unwrap();
-        assert_eq!(
-            tokenized,
-            vec!["This", " is", " a", " test", "        ", " with", " a", " lot", " of", " spaces"]
-        );
-    }
 
     // Tests for calculating max requests per model
     #[test]

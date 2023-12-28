@@ -31,3 +31,22 @@ pub(crate) fn sanitize_json_response(json_response: &str) -> String {
     let text_no_json = json_response.replace("json\n", "");
     text_no_json.replace("```", "")
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::llm_models::OpenAIModels;
+    use crate::utils::get_tokenizer;
+
+    #[test]
+    fn it_computes_gpt3_5_tokenization() {
+        let bpe = get_tokenizer(&OpenAIModels::Gpt4_32k).unwrap();
+        let tokenized: Result<Vec<_>, _> = bpe
+            .split_by_token_iter("This is a test         with a lot of spaces", true)
+            .collect();
+        let tokenized = tokenized.unwrap();
+        assert_eq!(
+            tokenized,
+            vec!["This", " is", " a", " test", "        ", " with", " a", " lot", " of", " spaces"]
+        );
+    }
+}

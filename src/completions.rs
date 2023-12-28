@@ -210,6 +210,7 @@ impl<T: LLMModel> Completions<T> {
                 anyhow!("Error: {}", error)
             });
         // Sometimes openai responds with a json object that has a data property. If that's the case, we need to extract the data property and deserialize that.
+        // TODO: This is OpenAI specific and should be implemented within the model.
         if let Err(_e) = response_deser {
             let response_deser: OpenAIDataResponse<U> = serde_json::from_str(&response_text)
                 .map_err(|error| {
