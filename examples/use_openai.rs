@@ -1,5 +1,5 @@
-use openai_safe::OpenAI;
-use openai_safe::OpenAIModels;
+use aidapter::OpenAI;
+use aidapter::OpenAIModels;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
