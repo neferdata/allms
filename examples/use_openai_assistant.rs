@@ -1,10 +1,11 @@
+use std::ffi::OsStr;
 use std::path::Path;
 
 use openai_safe::OpenAIAssistant;
 use openai_safe::OpenAIFile;
 use openai_safe::OpenAIModels;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
@@ -24,11 +25,16 @@ pub struct ConcertInfo {
 async fn main() -> Result<()> {
     env_logger::init();
     let api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    // Read invoice file
-    let path = Path::new("examples/metallica.pdf");
+    // Read concert file
+    let path = Path::new("metallica.pdf");
     let bytes = std::fs::read(path)?;
+    let file_name = path
+        .file_name()
+        .and_then(OsStr::to_str)
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("Failed to extract file name"))?;
 
-    let openai_file = OpenAIFile::new(bytes, &api_key, true).await?;
+    let openai_file = OpenAIFile::new(&file_name, bytes, &api_key, true).await?;
 
     let bands_genres = vec![
         ("Metallica", "Metal"),

@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use log::{error, info};
-use reqwest::{header, Client};
+use reqwest::{header, multipart, Client};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus, OpenAIToolTypes};
 
@@ -151,29 +152,46 @@ pub struct OpenAIFileResp {
 
 impl OpenAIFile {
     //Constructor
-    pub async fn new(file_bytes: Vec<u8>, open_ai_key: &str, debug: bool) -> Result<Self> {
+    pub async fn new(
+        file_name: &str,
+        file_bytes: Vec<u8>,
+        open_ai_key: &str,
+        debug: bool,
+    ) -> Result<Self> {
         let mut new_file = OpenAIFile {
             id: "this-will-be-overwritten".to_string(),
             debug,
             api_key: open_ai_key.to_string(),
         };
         //Upload file and get the ID
-        new_file.upload_file(file_bytes).await?;
+        new_file.upload_file(file_name, file_bytes).await?;
         Ok(new_file)
     }
 
     /*
      * This function uploads a file to OpenAI and assigns it for use with Assistant API
      */
-    async fn upload_file(&mut self, file_bytes: Vec<u8>) -> Result<()> {
+    async fn upload_file(&mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<()> {
         let files_url = "https://api.openai.com/v1/files";
 
-        let form = reqwest::multipart::Form::new()
-            .text("purpose", "assistants")
-            .part(
-                "file",
-                reqwest::multipart::Part::bytes(file_bytes).file_name("file.pdf"),
-            );
+        // Determine MIME type based on file extension
+        let mime_type = match Path::new(file_name)
+            .extension()
+            .and_then(std::ffi::OsStr::to_str)
+        {
+            Some("pdf") => "application/pdf",
+            Some("json") => "application/json",
+            Some("txt") => "text/plain",
+            _ => anyhow::bail!("Unsupported file type"),
+        };
+
+        let form = multipart::Form::new().text("purpose", "assistants").part(
+            "file",
+            multipart::Part::bytes(file_bytes)
+                .file_name(file_name.to_string())
+                .mime_str(mime_type)
+                .context("Failed to set MIME type")?,
+        );
 
         //Make the API call
         let client = Client::new();
