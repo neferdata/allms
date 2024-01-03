@@ -9,7 +9,7 @@ authors = [
 keywords = ["openai", "mistral", "anthropic", "claude", "assistant", "typesafe"]
 description = "One Library to rule them aLLMs"
 license = "MIT"
-repository = "git@github.com:neferdata/aidapter.git"
+repository = "https://github.com/neferdata/aidapter.git"
 readme = "README.md"
 categories = ["ai", "machine-learning", "openai", "api", "anthropic", "claude", "mistral", "assistant"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
