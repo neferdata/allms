@@ -1,9 +1,9 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use aidapter::OpenAIAssistant;
-use aidapter::OpenAIFile;
-use aidapter::OpenAIModels;
+use allms::OpenAIAssistant;
+use allms::OpenAIFile;
+use allms::OpenAIModels;
 
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
