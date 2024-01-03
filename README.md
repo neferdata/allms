@@ -1,6 +1,6 @@
-# AIdapter: One Library to rule them aLLMs
-[![crates.io](https://img.shields.io/crates/v/aidapter.svg)](https://crates.io/crates/aidapter)
-[![docs.rs](https://docs.rs/aidapter/badge.svg)](https://docs.rs/aidapter)
+# allms: One Library to rule them aLLMs
+[![crates.io](https://img.shields.io/crates/v/allms.svg)](https://crates.io/crates/allms)
+[![docs.rs](https://docs.rs/allms/badge.svg)](https://docs.rs/allms)
 
 This Rust library is specialized in providing type-safe interactions with the OpenAI API. It's designed to simplify the process of sending requests to OpenAI and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. This guarantees that the data conforms to predefined structures, reducing runtime errors and increasing the reliability of applications using OpenAI's powerful AI models like GPT-3.5 and GPT-4.
 

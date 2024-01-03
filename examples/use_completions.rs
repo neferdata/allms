@@ -2,7 +2,7 @@ use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 
-use aidapter::{
+use allms::{
     llm_models::{AnthropicModels, MistralModels, OpenAIModels},
     Completions,
 };
