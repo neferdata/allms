@@ -6,7 +6,7 @@ authors = [
     "Kamil Litman <kamil@neferdata.com>",
     "Dario Lencina <dario@neferdata.com>",
 ]
-keywords = ["openai", "mistral', "anthropic", "claude", "assistant", "typesafe"]
+keywords = ["openai", "mistral", "anthropic", "claude", "assistant", "typesafe"]
 description = "One Library to rule them aLLMs"
 license = "MIT"
 repository = "git@github.com:neferdata/aidapter.git"
