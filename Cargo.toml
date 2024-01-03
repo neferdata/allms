@@ -6,12 +6,12 @@ authors = [
     "Kamil Litman <kamil@neferdata.com>",
     "Dario Lencina <dario@neferdata.com>",
 ]
-keywords = ["openai", "mistral", "anthropic", "claude", "assistant", "typesafe"]
+keywords = ["openai", "mistral", "anthropic", "ai", "assistant"]
 description = "One Library to rule them aLLMs"
 license = "MIT"
 repository = "https://github.com/neferdata/allms.git"
 readme = "README.md"
-categories = ["ai", "machine-learning", "openai", "api", "anthropic", "claude", "mistral", "assistant"]
+categories = ["ai", "openai", "anthropic", "mistral", "assistant"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
