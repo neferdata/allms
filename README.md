@@ -1,4 +1,4 @@
-# OpenAI Typesafe Rust Library
+# AIdapter: One Library to rule them aLLMs
 [![crates.io](https://img.shields.io/crates/v/openai-safe.svg)](https://crates.io/crates/openai-safe)
 [![docs.rs](https://docs.rs/openai-safe/badge.svg)](https://docs.rs/openai-safe)
 
