@@ -4,15 +4,14 @@ use schemars::{schema_for, JsonSchema};
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 
-use crate::{domain::OpenAIDataResponse, models::OpenAIModels, utils::get_tokenizer_old};
+use crate::llm_models::LLMModel;
+use crate::{domain::OpenAIDataResponse, utils::get_tokenizer};
 
-/// [Chat Completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api)
-///
-/// Chat models take a list of messages as input and return a model-generated message as output.
-/// Although the chat format is designed to make multi-turn conversations easy,
+/// Completions APIs take a list of messages as input and return a model-generated message as output.
+/// Although the Completions format is designed to make multi-turn conversations easy,
 /// it’s just as useful for single-turn tasks without any conversation.
-pub struct OpenAI {
-    model: OpenAIModels,
+pub struct Completions<T: LLMModel> {
+    model: T,
     //For prompt & response
     max_tokens: usize,
     temperature: u32,
@@ -22,15 +21,15 @@ pub struct OpenAI {
     api_key: String,
 }
 
-impl OpenAI {
+impl<T: LLMModel> Completions<T> {
     ///
     pub fn new(
-        open_ai_key: &str,
-        model: OpenAIModels,
+        model: T,
+        api_key: &str,
         max_tokens: Option<usize>,
         temperature: Option<u32>,
     ) -> Self {
-        OpenAI {
+        Completions {
             //If no max tokens limit is provided we default to max allowed for the model
             max_tokens: max_tokens.unwrap_or_else(|| model.default_max_tokens()),
             function_call: model.function_call_default(),
@@ -38,7 +37,7 @@ impl OpenAI {
             temperature: temperature.unwrap_or(0u32), //Low number makes the output less random and more deterministic
             input_json: None,
             debug: false,
-            api_key: open_ai_key.to_string(),
+            api_key: api_key.to_string(),
         }
     }
 
@@ -63,7 +62,7 @@ impl OpenAI {
      * Using this function you can provide multiple input values by calling it multiple times. New values will be appended with the category name
      * It accepts any instance that implements the Serialize trait.
      */
-    pub fn set_context<T: Serialize>(mut self, input_name: &str, input_data: &T) -> Result<Self> {
+    pub fn set_context<U: Serialize>(mut self, input_name: &str, input_data: &U) -> Result<Self> {
         let input_json = if let Ok(json) = serde_json::to_string(&input_data) {
             json
         } else {
@@ -88,12 +87,12 @@ impl OpenAI {
      * This method is used to check how many tokens would most likely remain for the response
      * This is accomplished by estimating number of tokens needed for system/base instructions, user prompt, and function components including schema definition.
      */
-    pub fn check_prompt_tokens<T: JsonSchema + DeserializeOwned>(
+    pub fn check_prompt_tokens<U: JsonSchema + DeserializeOwned>(
         &self,
         instructions: &str,
     ) -> Result<usize> {
         //Output schema is extracted from the type parameter
-        let schema = schema_for!(T);
+        let schema = schema_for!(U);
         let json_value: Value = serde_json::to_value(&schema)?;
 
         let prompt = format!(
@@ -119,7 +118,7 @@ impl OpenAI {
         );
 
         //Check how many tokens are required for prompt
-        let bpe = get_tokenizer_old(&self.model)?;
+        let bpe = get_tokenizer(&self.model)?;
         let prompt_tokens = bpe.encode_with_special_tokens(&full_prompt).len();
 
         //Assuming another 5% overhead for json formatting
@@ -131,12 +130,12 @@ impl OpenAI {
      * When calling the function you need to specify the type parameter as the response will match the schema of that type.
      * The prompt in this function is written in a way to instruct OpenAI to behave like a computer function that calculates an output based on provided input and its language model.
      */
-    pub async fn get_answer<T: JsonSchema + DeserializeOwned>(
+    pub async fn get_answer<U: JsonSchema + DeserializeOwned>(
         self,
         instructions: &str,
-    ) -> Result<T> {
+    ) -> Result<U> {
         //Output schema is extracted from the type parameter
-        let schema = schema_for!(T);
+        let schema = schema_for!(U);
         let json_value: Value = serde_json::to_value(&schema)?;
 
         let prompt = format!(
@@ -153,7 +152,7 @@ impl OpenAI {
 
         //Validate how many tokens remain for the response (and how many are used for prompt)
         let prompt_tokens = self
-            .check_prompt_tokens::<T>(instructions)
+            .check_prompt_tokens::<U>(instructions)
             .unwrap_or_default();
 
         if prompt_tokens >= self.max_tokens {
@@ -202,19 +201,20 @@ impl OpenAI {
         let response_string = self.model.get_data(&response_text, self.function_call)?;
 
         if self.debug {
-            info!("[debug] OpenAI response data: {}", response_string);
+            info!("[debug] Completions response data: {}", response_string);
         }
         //Deserialize the string response into the expected output type
-        let response_deser: anyhow::Result<T, anyhow::Error> =
+        let response_deser: anyhow::Result<U, anyhow::Error> =
             serde_json::from_str(&response_string).map_err(|error| {
-                error!("[OpenAI] Response serialization error: {}", &error);
+                error!("[Completions] Response serialization error: {}", &error);
                 anyhow!("Error: {}", error)
             });
         // Sometimes openai responds with a json object that has a data property. If that's the case, we need to extract the data property and deserialize that.
+        // TODO: This is OpenAI specific and should be implemented within the model.
         if let Err(_e) = response_deser {
-            let response_deser: OpenAIDataResponse<T> = serde_json::from_str(&response_text)
+            let response_deser: OpenAIDataResponse<U> = serde_json::from_str(&response_text)
                 .map_err(|error| {
-                    error!("[OpenAI] Response serialization error: {}", &error);
+                    error!("[Completions] Response serialization error: {}", &error);
                     anyhow!("Error: {}", error)
                 })?;
             Ok(response_deser.data)

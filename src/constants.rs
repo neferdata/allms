@@ -5,6 +5,16 @@ lazy_static! {
         std::env::var("OPENAI_API_URL").unwrap_or("https://api.openai.com".to_string());
 }
 
+lazy_static! {
+    pub(crate) static ref ANTHROPIC_API_URL: String = std::env::var("ANTHROPIC_API_URL")
+        .unwrap_or("https://api.anthropic.com/v1/complete".to_string());
+}
+
+lazy_static! {
+    pub(crate) static ref MISTRAL_API_URL: String = std::env::var("MISTRAL_API_URL")
+        .unwrap_or("https://api.mistral.ai/v1/chat/completions".to_string());
+}
+
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
 Step 1: Review and understand the 'instructions' from the *Instructions* section.

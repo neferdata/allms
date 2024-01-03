@@ -16,13 +16,13 @@ struct TranslationResponse {
 async fn main() {
     env_logger::init();
     let api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::Gpt3_5Turbo; // Choose the model
+    let model = OpenAIModels::Gpt4; // Choose the model
 
     let open_ai = OpenAI::new(&api_key, model, None, None);
 
     // Example context and instructions
     let instructions =
-        "Translate the following English text to all the languages in the response type";
+        "Translate this exact English sentence to all the languages in the response type";
 
     match open_ai
         .get_answer::<TranslationResponse>(instructions)

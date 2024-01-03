@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
@@ -7,6 +8,7 @@ use serde_json::{json, Value};
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
+    llm_models::LLMModel,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -20,8 +22,9 @@ pub enum OpenAIModels {
     Gpt4Turbo,
 }
 
-impl OpenAIModels {
-    pub fn as_str(&self) -> &'static str {
+#[async_trait(?Send)]
+impl LLMModel for OpenAIModels {
+    fn as_str(&self) -> &'static str {
         match self {
             //In an API call, you can describe functions to gpt-3.5-turbo-0613 and gpt-4-0613
             //On June 27, 2023 the stable gpt-3.5-turbo will be automatically upgraded to gpt-3.5-turbo-0613
@@ -35,7 +38,7 @@ impl OpenAIModels {
         }
     }
 
-    pub fn default_max_tokens(&self) -> usize {
+    fn default_max_tokens(&self) -> usize {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
@@ -49,7 +52,7 @@ impl OpenAIModels {
         }
     }
 
-    pub(crate) fn get_endpoint(&self) -> String {
+    fn get_endpoint(&self) -> String {
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match self {
             OpenAIModels::Gpt3_5Turbo
@@ -70,7 +73,7 @@ impl OpenAIModels {
         }
     }
 
-    pub(crate) fn get_base_instructions(&self, function_call: Option<bool>) -> String {
+    fn get_base_instructions(&self, function_call: Option<bool>) -> String {
         let function_call = function_call.unwrap_or_else(|| self.function_call_default());
         match function_call {
             true => OPENAI_FUNCTION_INSTRUCTIONS.to_string(),
@@ -78,7 +81,7 @@ impl OpenAIModels {
         }
     }
 
-    pub(crate) fn function_call_default(&self) -> bool {
+    fn function_call_default(&self) -> bool {
         //OpenAI documentation: https://platform.openai.com/docs/guides/gpt/function-calling
         match self {
             OpenAIModels::TextDavinci003 | OpenAIModels::Gpt3_5Turbo | OpenAIModels::Gpt4_32k => {
@@ -92,7 +95,7 @@ impl OpenAIModels {
     }
 
     //This method prepares the body of the API call for different models
-    pub(crate) fn get_body(
+    fn get_body(
         &self,
         instructions: &str,
         json_schema: &Value,
@@ -195,7 +198,7 @@ impl OpenAIModels {
      *
      * It returns a String the Response object that needs to be parsed based on the self.model.
      */
-    pub async fn call_api(
+    async fn call_api(
         &self,
         api_key: &str,
         body: &serde_json::Value,
@@ -230,7 +233,7 @@ impl OpenAIModels {
     }
 
     //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
-    pub(crate) fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {
+    fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {
         match self {
             //https://platform.openai.com/docs/api-reference/completions/create
             OpenAIModels::TextDavinci003 => {
@@ -312,43 +315,12 @@ impl OpenAIModels {
             },
         }
     }
-
-    //This function checks how many requests can be sent to an OpenAI model within a minute
-    pub fn get_max_requests(&self) -> usize {
-        let rate_limit = self.get_rate_limit();
-
-        //Check max requests based on rpm
-        let max_requests_from_rpm = rate_limit.rpm;
-
-        //Double check max number of requests based on tpm
-        //Assume we will use ~50% of allowed tokens per request (for prompt + response)
-        let max_tokens_per_minute = rate_limit.tpm;
-        let tpm_per_request = (self.default_max_tokens() as f64 * 0.5).ceil() as usize;
-        //Then check how many requests we can process
-        let max_requests_from_tpm = max_tokens_per_minute / tpm_per_request;
-
-        //To be safe we go with smaller of the numbers
-        std::cmp::min(max_requests_from_rpm, max_requests_from_tpm)
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::models::OpenAIModels;
-    use crate::utils::get_tokenizer_old;
-
-    #[test]
-    fn it_computes_gpt3_5_tokenization() {
-        let bpe = get_tokenizer_old(&OpenAIModels::Gpt4_32k).unwrap();
-        let tokenized: Result<Vec<_>, _> = bpe
-            .split_by_token_iter("This is a test         with a lot of spaces", true)
-            .collect();
-        let tokenized = tokenized.unwrap();
-        assert_eq!(
-            tokenized,
-            vec!["This", " is", " a", " test", "        ", " with", " a", " lot", " of", " spaces"]
-        );
-    }
+    use crate::llm_models::llm_model::LLMModel;
+    use crate::llm_models::OpenAIModels;
 
     // Tests for calculating max requests per model
     #[test]
