@@ -175,6 +175,7 @@ impl OpenAIFile {
         let files_url = "https://api.openai.com/v1/files";
 
         // Determine MIME type based on file extension
+        // OpenAI documentation: https://platform.openai.com/docs/assistants/tools/supported-files
         let mime_type = match Path::new(file_name)
             .extension()
             .and_then(std::ffi::OsStr::to_str)
@@ -182,6 +183,32 @@ impl OpenAIFile {
             Some("pdf") => "application/pdf",
             Some("json") => "application/json",
             Some("txt") => "text/plain",
+            Some("html") => "text/html",
+            Some("c") => "text/x-c",
+            Some("cpp") => "text/x-c++",
+            Some("docx") => {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }
+            Some("java") => "text/x-java",
+            Some("md") => "text/markdown",
+            Some("php") => "text/x-php",
+            Some("pptx") => {
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            }
+            Some("py") => "text/x-python",
+            Some("rb") => "text/x-ruby",
+            Some("tex") => "text/x-tex",
+            //The below are currently only supported for Code Interpreter but NOT Retrieval
+            Some("css") => "text/css",
+            Some("jpeg") | Some("jpg") => "image/jpeg",
+            Some("js") => "text/javascript",
+            Some("gif") => "image/gif",
+            Some("png") => "image/png",
+            Some("tar") => "application/x-tar",
+            Some("ts") => "application/typescript",
+            Some("xlsx") => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Some("xml") => "application/xml",
+            Some("zip") => "application/zip",
             _ => anyhow::bail!("Unsupported file type"),
         };
 
