@@ -88,7 +88,7 @@ async fn main() {
         .unwrap();
     let google_token_str = &google_token.token().unwrap();
 
-    let gemini_completion = Completions::new(model, &google_token_str, None, None);
+    let gemini_completion = Completions::new(model, google_token_str, None, None);
 
     match gemini_completion
         .get_answer::<TranslationResponse>(instructions)

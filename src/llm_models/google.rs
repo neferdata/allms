@@ -162,8 +162,7 @@ impl LLMModel for GoogleModels {
                 "[allms][Google][{}] Response body: {:#?}",
                 response_status,
                 response_txt
-            )
-            .into())
+            ))
         }
     }
 
