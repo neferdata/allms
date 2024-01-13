@@ -198,7 +198,7 @@ impl LLMModel for GoogleModels {
             GoogleModels::GeminiProVertex => Ok(response_text.to_string()),
             GoogleModels::GeminiPro => {
                 //Convert response to struct representing expected response format
-                let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(&response_text)?;
+                let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(response_text)?;
 
                 //Extract the data part from the response
                 Ok(gemini_response
