@@ -101,37 +101,107 @@ impl LLMModel for GoogleModels {
         let client = Client::new();
 
         //Send request
-        let response = client
-            .post(model_url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .bearer_auth(api_key)
-            .json(&body)
-            .send()
-            .await?;
+        match &self {
+            GoogleModels::GeminiProVertex => {
+                let response = client
+                    .post(model_url)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .bearer_auth(api_key)
+                    .json(&body)
+                    .send()
+                    .await?;
 
-        // Google API streams the results. We need to handle that
-        // Check if the API uses streaming
-        if response.status().is_success() {
-            let mut stream = response.bytes_stream();
-            let mut streamed_response = String::new();
+                //For Vertex we are streaming that data spo we need to deserialize each chunk separately
+                // Check if the API uses streaming
+                if response.status().is_success() {
+                    let mut stream = response.bytes_stream();
+                    let mut streamed_response = String::new();
 
-            while let Some(chunk) = stream.next().await {
-                let chunk = chunk?;
+                    while let Some(chunk) = stream.next().await {
+                        let chunk = chunk?;
 
-                // Convert the chunk (Bytes) to a String
-                let mut chunk_str = String::from_utf8(chunk.to_vec()).map_err(|e| anyhow!(e))?;
+                        // Convert the chunk (Bytes) to a String
+                        let mut chunk_str =
+                            String::from_utf8(chunk.to_vec()).map_err(|e| anyhow!(e))?;
 
-                // The chunk response starts with "data: " that needs to be remove
-                if chunk_str.starts_with("data: ") {
-                    // Remove the first 6 characters ("data: ")
-                    chunk_str = chunk_str[6..].to_string();
+                        // The chunk response starts with "data: " that needs to be remove
+                        if chunk_str.starts_with("data: ") {
+                            // Remove the first 6 characters ("data: ")
+                            chunk_str = chunk_str[6..].to_string();
+                        }
+
+                        //Convert response chunk to struct representing expected response format
+                        let gemini_response: GoogleGeminiProApiResp =
+                            serde_json::from_str(&chunk_str)?;
+
+                        //Extract the data part from the response
+                        let part_text = gemini_response
+                            .candidates
+                            .iter()
+                            .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
+                            .flat_map(|candidate| &candidate.content.parts)
+                            .map(|part| &part.text)
+                            .fold(String::new(), |mut acc, text| {
+                                acc.push_str(text);
+                                acc
+                            });
+
+                        //Add the chunk response to output string
+                        streamed_response.push_str(&part_text);
+
+                        // Debug log each chunk if needed
+                        if debug {
+                            info!(
+                                "[allms][Google Vertex AI] Received response chunk: {:?}",
+                                chunk
+                            );
+                        }
+                    }
+                    Ok(streamed_response)
+                } else {
+                    let response_status = response.status();
+                    let response_txt = response.text().await?;
+                    Err(anyhow!(
+                        "[allms][Google][{}] Response body: {:#?}",
+                        response_status,
+                        response_txt
+                    ))
+                }
+            }
+            GoogleModels::GeminiPro => {
+                let url_with_key = format!("{}?key={}", model_url, api_key);
+                let response = client
+                    .post(url_with_key)
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .json(&body)
+                    .send()
+                    .await?;
+
+                let response_status = response.status();
+                let response_text = response.text().await?;
+
+                if debug {
+                    info!(
+                        "[allms][Google AI Studio] API response: [{}] {:#?}",
+                        &response_status, &response_text
+                    );
                 }
 
-                //Convert response chunk to struct representing expected response format
-                let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(&chunk_str)?;
+                Ok(response_text)
+            }
+        }
+    }
+
+    fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
+        match self {
+            //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
+            GoogleModels::GeminiProVertex => Ok(response_text.to_string()),
+            GoogleModels::GeminiPro => {
+                //Convert response to struct representing expected response format
+                let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(&response_text)?;
 
                 //Extract the data part from the response
-                let part_text = gemini_response
+                Ok(gemini_response
                     .candidates
                     .iter()
                     .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
@@ -140,35 +210,9 @@ impl LLMModel for GoogleModels {
                     .fold(String::new(), |mut acc, text| {
                         acc.push_str(text);
                         acc
-                    });
-
-                //Add the chunk response to output string
-                streamed_response.push_str(&part_text);
-
-                // Debug log each chunk if needed
-                if debug {
-                    info!(
-                        "[debug][Google Gemini] Received response chunk: {:?}",
-                        chunk
-                    );
-                }
+                    }))
             }
-
-            Ok(streamed_response)
-        } else {
-            let response_status = response.status();
-            let response_txt = response.text().await?;
-            Err(anyhow!(
-                "[allms][Google][{}] Response body: {:#?}",
-                response_status,
-                response_txt
-            ))
         }
-    }
-
-    //Because GeminPro streams data in chunks the extraction of data/text is handled in call_api method. Here we only pass the input forward
-    fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
-        Ok(response_text.to_string())
     }
 
     //This function allows to check the rate limits for different models

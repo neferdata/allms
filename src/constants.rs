@@ -25,9 +25,9 @@ lazy_static! {
     };
     pub(crate) static ref GOOGLE_GEMINI_API_URL: String = std::env::var("GOOGLE_GEMINI_API_URL")
         .unwrap_or(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:streamGenerateContent"
-            .to_string()
-    );
+            "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+                .to_string()
+        );
 }
 
 //Generic OpenAI instructions
