@@ -15,6 +15,21 @@ lazy_static! {
         .unwrap_or("https://api.mistral.ai/v1/chat/completions".to_string());
 }
 
+lazy_static! {
+    pub(crate) static ref GOOGLE_VERTEX_API_URL: String = {
+        let region = std::env::var("GOOGLE_REGION").unwrap_or("us-central1".to_string());
+        let project_id = std::env::var("GOOGLE_PROJECT_ID").expect("PROJECT_ID not set");
+
+        format!("https://{}-aiplatform.googleapis.com/v1/projects/{}/locations/{}/publishers/google/models/gemini-pro:streamGenerateContent?alt=sse",
+                region, project_id, region)
+    };
+    pub(crate) static ref GOOGLE_GEMINI_API_URL: String = std::env::var("GOOGLE_GEMINI_API_URL")
+        .unwrap_or(
+            "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+                .to_string()
+        );
+}
+
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
 Step 1: Review and understand the 'instructions' from the *Instructions* section.

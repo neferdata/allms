@@ -302,3 +302,75 @@ pub struct MistralAPICompletionsUsage {
     pub completion_tokens: usize,
     pub total_tokens: usize,
 }
+
+///Google GeminiPro API response deserialization structs
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProApiResp {
+    pub candidates: Vec<GoogleGeminiProCandidate>,
+    #[serde(rename = "usageMetadata")]
+    pub usage_metadata: Option<GoogleGeminiProUsageMetadata>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProCandidate {
+    pub content: GoogleGeminiProContent,
+    #[serde(rename = "finishReason")]
+    pub finish_reason: Option<String>,
+    #[serde(rename = "safetyRatings")]
+    pub safety_ratings: Option<Vec<GoogleGeminiProSafetyRating>>,
+    #[serde(rename = "citationMetadata")]
+    pub citation_metadata: Option<GoogleGeminiProCitationMetadata>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProContent {
+    pub parts: Vec<GoogleGeminiProPart>,
+    pub role: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProPart {
+    pub text: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProSafetyRating {
+    pub category: String,
+    pub probability: String,
+    pub blocked: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProCitationMetadata {
+    pub citations: Vec<GoogleGeminiProCitation>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProCitation {
+    #[serde(rename = "startIndex")]
+    pub start_index: i32,
+    #[serde(rename = "endIndex")]
+    pub end_index: i32,
+    pub uri: String,
+    pub title: Option<String>,
+    pub license: Option<String>,
+    #[serde(rename = "publicationDate")]
+    pub publication_date: Option<GoogleGeminiProDate>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProDate {
+    pub year: i32,
+    pub month: i32,
+    pub day: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProUsageMetadata {
+    #[serde(rename = "promptTokenCount")]
+    pub prompt_token_count: i32,
+    #[serde(rename = "candidatesTokenCount")]
+    pub candidates_token_count: i32,
+    #[serde(rename = "totalTokenCount")]
+    pub total_token_count: i32,
+}
