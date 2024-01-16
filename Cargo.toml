@@ -1,17 +1,17 @@
 [package]
 name = "allms"
-version = "0.4.1"
-edition = "2021"
+version = "0.5.0"
+edition = "2024"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
     "Dario Lencina <dario@neferdata.com>",
 ]
-keywords = ["openai", "mistral", "anthropic", "ai", "assistant"]
+keywords = ["openai", "mistral", "anthropic", "gemini", "assistant"]
 description = "One Library to rule them aLLMs"
 license = "MIT"
 repository = "https://github.com/neferdata/allms.git"
 readme = "README.md"
-categories = ["ai", "openai", "anthropic", "mistral", "assistant"]
+categories = ["openai", "anthropic", "mistral", "gemini", "assistant"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
