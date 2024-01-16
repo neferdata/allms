@@ -42,7 +42,7 @@ async fn main() {
     let google_token_str = &google_token.token().unwrap();
 
     // **Pre-requisite**: GeminiPro request through Vertex AI require `PROJECT_ID` environment variable defined
-    let gemini_completion = Completions::new(model, &google_token_str, None, None);
+    let gemini_completion = Completions::new(model, google_token_str, None, None);
 
     match gemini_completion
         .get_answer::<TranslationResponse>(instructions)
