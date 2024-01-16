@@ -2,22 +2,27 @@
 [![crates.io](https://img.shields.io/crates/v/allms.svg)](https://crates.io/crates/allms)
 [![docs.rs](https://docs.rs/allms/badge.svg)](https://docs.rs/allms)
 
-This Rust library is specialized in providing type-safe interactions with the OpenAI API. It's designed to simplify the process of sending requests to OpenAI and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. This guarantees that the data conforms to predefined structures, reducing runtime errors and increasing the reliability of applications using OpenAI's powerful AI models like GPT-3.5 and GPT-4.
+This Rust library is specialized in providing type-safe interactions with APIs of the following LLM providers: OpenAI, Anthropic, Mistral, Google Gemini. (More providers to be added in the future.) It's designed to simplify the process of experimenting with different models. It de-risks the process of migrating between providers reducing vendor lock-in issues. It also standardizes serialization of sending requests to LLM APIs and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. With allms you can focus on creating effective prompts and providing LLM with the right context, instead of worrying about differences in API implementations.
 
 ## Features
 
-- Support for various OpenAI models including GPT-3.5, GPT-4, etc.
-- Easy-to-use functions for completions, chat responses, and other OpenAI features.
-- Structured response handling.
-- Rate limit handling.
+- Support for various LLM models including OpenAI (GPT-3.5, GPT-4), Anthropic (Claude, Claude Instant), Mistral, or Google GeminiPro.
+- Easy-to-use functions for chat/text completions and assistants. Use the same struct and methods regardless of which model you choose.
+- Automated response deserialization to custom types.
+- Standardized approach to providing context with support of function calling, tools, and file uploads.
+- Enhanced developer productivity with automated token calculations, rate limits and debug mode.
+- Extensibility enabling easy adoption of other models with standardized trait.
 - Asynchronous support using Tokio.
 
 ### Prerequisites
-- An OpenAI API key.
+- OpenAI: API key (passed in model constructor)
+- Anthropic: API key (passed in model constructor)
+- Mistral: API key (passed in model constructor)
+- Google AI Studio: API key (passed in model constructor)
+- Google Vertex AI: GCP service account key (used to obtain access token) + GCP project ID (set as environment variable)
 
 ### Examples
-Explore the `examples` directory to see more use cases and how to handle different types of responses from the
-OpenAI API.
+Explore the `examples` directory to see more use cases and how to use different LLM providers and endpoint types.
 
 This is the output of calling the assistant api with metallica.pdf
 
