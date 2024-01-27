@@ -150,6 +150,13 @@ pub struct OpenAIFileResp {
     id: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct OpenAIDFileDeleteResp {
+    id: String,
+    object: String,
+    deleted: bool,
+}
+
 impl OpenAIFile {
     //Constructor
     pub async fn new(
@@ -255,6 +262,49 @@ impl OpenAIFile {
         self.id = response_deser.id;
 
         Ok(())
+    }
+
+    /*
+     * This function deletes a file from OpenAI
+     */
+    pub async fn delete_file(&self) -> Result<()> {
+        let files_url = format!("https://api.openai.com/v1/files/{}", self.id);
+
+        //Make the API call
+        let client = Client::new();
+
+        let response = client
+            .delete(files_url)
+            .bearer_auth(&self.api_key)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if self.debug {
+            info!(
+                "[debug] OpenAI Files status API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        //Check if the file was successfully deleted
+        serde_json::from_str::<OpenAIDFileDeleteResp>(&response_text)
+            .map_err(|error| {
+                error!(
+                    "[OpenAIAssistant] Files Delete API response serialization error: {}",
+                    &error
+                );
+                anyhow!(
+                    "[OpenAIAssistant] Files Delete API response serialization error: {}",
+                    error
+                )
+            })
+            .and_then(|response| match response.deleted {
+                true => Ok(()),
+                false => Err(anyhow!("[OpenAIAssistant] Failed to delete the file.")),
+            })
     }
 }
 
