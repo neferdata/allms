@@ -19,14 +19,6 @@ pub enum OpenAIAssistantRole {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum OpenAIMessageAttachmentType {
-    #[serde(rename(deserialize = "code_interpreter", serialize = "code_interpreter"))]
-    CodeInterpreter,
-    #[serde(rename(deserialize = "file_search", serialize = "file_search"))]
-    FileSearch,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum OpenAIRunStatus {
     #[serde(rename(deserialize = "queued", serialize = "queued"))]
     Queued,
