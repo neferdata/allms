@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 use allms::OpenAIAssistant;
+use allms::OpenAIAssistantVersion;
 use allms::OpenAIFile;
 use allms::OpenAIModels;
 
@@ -45,7 +46,7 @@ async fn main() -> Result<()> {
     ];
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true, OpenAIAssistantVersion::V1)
         .await?
         .set_context(
             "bands_genres",

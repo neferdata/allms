@@ -20,7 +20,7 @@ pub enum OpenAIModels {
     Gpt4_32k,
     TextDavinci003,
     Gpt4Turbo,
-    Gpt4o
+    Gpt4o,
 }
 
 #[async_trait(?Send)]
@@ -309,7 +309,7 @@ impl LLMModel for OpenAIModels {
                 rpm: 10_000,
             },
             OpenAIModels::Gpt4Turbo => RateLimit {
-                tpm: 2_000_000 ,
+                tpm: 2_000_000,
                 rpm: 10_000,
             },
             OpenAIModels::Gpt4_32k => RateLimit {

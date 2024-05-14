@@ -9,6 +9,7 @@ mod openai;
 mod utils;
 
 pub use crate::assistant::OpenAIAssistant;
+pub use crate::assistant::OpenAIAssistantVersion;
 pub use crate::completions::Completions;
 pub use crate::domain::OpenAIFile;
 pub use crate::models::OpenAIModels;

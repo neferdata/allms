@@ -85,7 +85,7 @@ pub struct OpenAIAssistantResp {
     pub instructions: Option<String>,
     pub model: String,
     pub tools: Vec<OpenAITools>,
-    pub file_ids: Vec<String>,
+    pub file_ids: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

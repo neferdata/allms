@@ -6,6 +6,8 @@ pub enum OpenAIToolTypes {
     CodeInterpreter,
     #[serde(rename(deserialize = "retrieval", serialize = "retrieval"))]
     Retrieval,
+    #[serde(rename(deserialize = "file_search", serialize = "file_search"))]
+    FileSearch,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
