@@ -5,7 +5,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus, OpenAIToolTypes};
+use crate::enums::{
+    OpenAIAssistantRole, OpenAIMessageAttachmentType, OpenAIRunStatus, OpenAIToolTypes,
+};
 
 //OpenAI API response type format for Completions API
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -115,6 +117,7 @@ pub struct OpenAIMessageResp {
     pub thread_id: String,
     pub role: OpenAIAssistantRole,
     pub content: Vec<OpenAIContent>,
+    pub attachments: Option<Vec<OpenAIMessageAttachment>>,
     //Other fields omitted as no use for now
 }
 
@@ -128,6 +131,18 @@ pub struct OpenAIContent {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIContentText {
     pub value: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct OpenAIMessageAttachment {
+    pub file_id: String,
+    pub tools: Vec<OpenAIMessageAttachmentTools>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct OpenAIMessageAttachmentTools {
+    #[serde(rename(deserialize = "type", serialize = "type"))]
+    pub tool_type: OpenAIMessageAttachmentType,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
