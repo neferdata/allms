@@ -233,7 +233,7 @@ impl OpenAIAssistant {
         });
 
         if !file_ids.is_empty() {
-            message = self.version.add_message_attachments(&message, &file_ids);
+            message = self.version.add_message_attachments(&message, file_ids);
         }
 
         //If there is no thread_id we need to create one

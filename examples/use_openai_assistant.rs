@@ -64,7 +64,7 @@ async fn main() -> Result<()> {
     println!("Concert Info: {:?}", concert_info);
 
     //Remove the file from OpenAI
-    let _delete_file = openai_file.delete_file().await?;
+    openai_file.delete_file().await?;
 
     Ok(())
 }
