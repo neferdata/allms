@@ -366,7 +366,7 @@ mod tests {
     fn test_gpt3_5turbo_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(3500, 90000 / ((4096_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((4096_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -374,7 +374,7 @@ mod tests {
     fn test_gpt3_5turbo0613_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo0613;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(3500, 90000 / ((4096_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((4096_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -382,7 +382,7 @@ mod tests {
     fn test_gpt3_5turbo16k_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo16k;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(3500, 180000 / ((16384_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((16384_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -390,7 +390,7 @@ mod tests {
     fn test_gpt4_max_requests() {
         let model = OpenAIModels::Gpt4;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(200, 10000 / ((8192_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 300_000 / ((8192_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 }
