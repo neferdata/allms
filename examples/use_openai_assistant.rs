@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
     ];
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
         .await?
         .set_context(
             "bands_genres",
