@@ -1,7 +1,7 @@
 use tiktoken_rs::{cl100k_base, get_bpe_from_model, CoreBPE};
 
 use crate::llm_models::LLMModel;
-use crate::models::OpenAIModels;
+use crate::OpenAIModels;
 
 // Get the tokenizer given a model
 pub(crate) fn get_tokenizer_old(model: &OpenAIModels) -> anyhow::Result<CoreBPE> {

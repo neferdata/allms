@@ -4,13 +4,11 @@ mod constants;
 mod domain;
 mod enums;
 pub mod llm_models;
-mod models;
-mod openai;
+mod openai_legacy;
 mod utils;
 
 pub use crate::assistant::OpenAIAssistant;
 pub use crate::assistant::OpenAIAssistantVersion;
 pub use crate::completions::Completions;
 pub use crate::domain::OpenAIFile;
-pub use crate::models::OpenAIModels;
-pub use crate::openai::OpenAI;
+pub use crate::openai_legacy::{OpenAI, OpenAIModels};
