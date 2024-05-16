@@ -44,13 +44,8 @@ pub struct OpenAIAssistant {
 
 impl OpenAIAssistant {
     //Constructor
-    pub async fn new(
-        model: OpenAIModels,
-        open_ai_key: &str,
-        debug: bool,
-        version: OpenAIAssistantVersion,
-    ) -> Result<Self> {
-        let mut new_assistant = OpenAIAssistant {
+    pub async fn new(model: OpenAIModels, open_ai_key: &str, debug: bool) -> Result<Self> {
+        Ok(OpenAIAssistant {
             id: None,
             thread_id: None,
             run_id: None,
@@ -58,18 +53,18 @@ impl OpenAIAssistant {
             instructions: OPENAI_ASSISTANT_INSTRUCTIONS.to_string(),
             debug,
             api_key: open_ai_key.to_string(),
-            version,
-        };
+            // Defaulting to V1 for now
+            version: OpenAIAssistantVersion::V1,
+        })
+    }
 
-        //Call OpenAI API to get an ID for the assistant
-        new_assistant.create_assistant().await?;
-
-        //Add first message thus initializing the thread
-        new_assistant
-            .add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
-            .await?;
-
-        Ok(new_assistant)
+    ///
+    /// This method can be used to set the version of Assistants API Beta
+    /// Current default is V1
+    ///
+    pub fn version(mut self, version: OpenAIAssistantVersion) -> Self {
+        self.version = version;
+        self
     }
 
     /*
@@ -136,6 +131,16 @@ impl OpenAIAssistant {
         message: &str,
         file_ids: &[String],
     ) -> Result<T> {
+        // If the assistant and thread are not initialized we do that first
+        if self.id.is_none() {
+            //Call OpenAI API to get an ID for the assistant
+            self.create_assistant().await?;
+
+            //Add first message thus initializing the thread
+            self.add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
+                .await?;
+        }
+
         //Step 1: Instruct the Assistant to answer with the right Json format
         //Output schema is extracted from the type parameter
         let schema = schema_for!(T);
@@ -211,6 +216,16 @@ impl OpenAIAssistant {
     /// It accepts any struct that implements the Serialize trait.
     ///
     pub async fn set_context<T: Serialize>(mut self, dataset_name: &str, data: &T) -> Result<Self> {
+        // If the assistant and thread are not initialized we do that first
+        if self.id.is_none() {
+            //Call OpenAI API to get an ID for the assistant
+            self.create_assistant().await?;
+
+            //Add first message thus initializing the thread
+            self.add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
+                .await?;
+        }
+
         let serialized_data = if let Ok(json) = serde_json::to_string(&data) {
             json
         } else {
