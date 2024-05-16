@@ -4,7 +4,7 @@ use std::path::Path;
 use allms::OpenAIAssistant;
 use allms::OpenAIAssistantVersion;
 use allms::OpenAIFile;
-use allms::OpenAIModels;
+use allms::llm_models::OpenAIModels;
 
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;

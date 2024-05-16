@@ -7,7 +7,7 @@ use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::utils::sanitize_json_response;
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_ASSISTANT_INSTRUCTIONS},
-    models::OpenAIModels,
+    llm_models::{LLMModel, OpenAIModels},
 };
 use anyhow::{anyhow, Result};
 use log::error;
