@@ -18,6 +18,7 @@ pub enum OpenAIModels {
     Gpt4_32k,
     TextDavinci003,
     Gpt4Turbo,
+    Gpt4o,
 }
 
 impl OpenAIModels {
@@ -32,6 +33,7 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => "gpt-4-32k",
             OpenAIModels::TextDavinci003 => "text-davinci-003",
             OpenAIModels::Gpt4Turbo => "gpt-4-1106-preview",
+            OpenAIModels::Gpt4o => "gpt-4o",
         }
     }
 
@@ -46,6 +48,7 @@ impl OpenAIModels {
             OpenAIModels::Gpt4_32k => 32768,
             OpenAIModels::TextDavinci003 => 4097,
             OpenAIModels::Gpt4Turbo => 128_000,
+            OpenAIModels::Gpt4o => 128_000,
         }
     }
 
@@ -57,6 +60,7 @@ impl OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4_32k => {
                 format!(
                     "{OPENAI_API_URL}/v1/chat/completions",
@@ -87,7 +91,8 @@ impl OpenAIModels {
             OpenAIModels::Gpt3_5Turbo0613
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
-            | OpenAIModels::Gpt4Turbo => true,
+            | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4o => true,
         }
     }
 
@@ -123,6 +128,7 @@ impl OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4_32k => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
                 let system_message = json!({
@@ -252,6 +258,7 @@ impl OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4_32k => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
@@ -283,28 +290,32 @@ impl OpenAIModels {
         //This is the max tokens allowed between prompt & response
         match self {
             OpenAIModels::Gpt3_5Turbo => RateLimit {
-                tpm: 90_000,
-                rpm: 3_500,
+                tpm: 2_000_000,
+                rpm: 10_000,
             },
             OpenAIModels::Gpt3_5Turbo0613 => RateLimit {
-                tpm: 90_000,
-                rpm: 3_500,
+                tpm: 2_000_000,
+                rpm: 10_000,
             },
             OpenAIModels::Gpt3_5Turbo16k => RateLimit {
-                tpm: 180_000,
-                rpm: 3_500,
+                tpm: 2_000_000,
+                rpm: 10_000,
             },
             OpenAIModels::Gpt4 => RateLimit {
-                tpm: 10_000,
-                rpm: 200,
+                tpm: 300_000,
+                rpm: 10_000,
             },
             OpenAIModels::Gpt4Turbo => RateLimit {
-                tpm: 10_000,
-                rpm: 200,
+                tpm: 2_000_000,
+                rpm: 10_000,
             },
             OpenAIModels::Gpt4_32k => RateLimit {
-                tpm: 10_000,
-                rpm: 200,
+                tpm: 300_000,
+                rpm: 10_000,
+            },
+            OpenAIModels::Gpt4o => RateLimit {
+                tpm: 2_000_000,
+                rpm: 10_000,
             },
             OpenAIModels::TextDavinci003 => RateLimit {
                 tpm: 250_000,
@@ -355,7 +366,7 @@ mod tests {
     fn test_gpt3_5turbo_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(3500, 90000 / ((4096_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((4096_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -363,7 +374,7 @@ mod tests {
     fn test_gpt3_5turbo0613_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo0613;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(3500, 90000 / ((4096_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((4096_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -371,7 +382,7 @@ mod tests {
     fn test_gpt3_5turbo16k_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo16k;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(3500, 180000 / ((16384_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((16384_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -379,7 +390,7 @@ mod tests {
     fn test_gpt4_max_requests() {
         let model = OpenAIModels::Gpt4;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(200, 10000 / ((8192_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 300_000 / ((8192_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 }

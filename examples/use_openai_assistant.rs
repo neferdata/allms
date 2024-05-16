@@ -2,6 +2,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 use allms::OpenAIAssistant;
+use allms::OpenAIAssistantVersion;
 use allms::OpenAIFile;
 use allms::OpenAIModels;
 
@@ -45,8 +46,10 @@ async fn main() -> Result<()> {
     ];
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key, true)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
         .await?
+        // Constructor defaults to V1
+        .version(OpenAIAssistantVersion::V2)
         .set_context(
             "bands_genres",
             &bands_genres
@@ -63,7 +66,7 @@ async fn main() -> Result<()> {
     println!("Concert Info: {:?}", concert_info);
 
     //Remove the file from OpenAI
-    let _delete_file = openai_file.delete_file().await?;
+    openai_file.delete_file().await?;
 
     Ok(())
 }
