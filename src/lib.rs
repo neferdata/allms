@@ -8,4 +8,6 @@ pub mod llm_models;
 mod utils;
 
 pub use crate::completions::Completions;
-pub use crate::legacy::{OpenAI, OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIModels};
+pub use crate::legacy::{
+    OpenAI, OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIModels,
+};

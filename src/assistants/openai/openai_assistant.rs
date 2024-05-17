@@ -21,7 +21,6 @@ use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::llm_models::{LLMModel, OpenAIModels};
 use crate::utils::sanitize_json_response;
 
-
 /// [OpenAI Docs](https://platform.openai.com/docs/assistants/overview)
 ///
 /// The Assistants API allows you to build AI assistants within your own applications.

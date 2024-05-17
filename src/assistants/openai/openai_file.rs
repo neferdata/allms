@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use log::{error, info};
-use reqwest::{header, Client, multipart};
+use reqwest::{header, multipart, Client};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 

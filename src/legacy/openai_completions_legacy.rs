@@ -5,11 +5,10 @@ use schemars::{schema_for, JsonSchema};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 
-
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
-    domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit, OpenAIDataResponse},
-    utils::get_tokenizer_old
+    domain::{OpenAIDataResponse, OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
+    utils::get_tokenizer_old,
 };
 
 /// This is a LEGACY implementation of OpenAI LLM Models that will not be maintained going forward (after May 2024).
@@ -348,11 +347,10 @@ impl OpenAIModels {
     }
 }
 
-
 /// This is a LEGACY implementation of Chat Completions with OpenAI API.
 /// This implementation will not be maintained going forward (after May 2024).
 /// For current implementation refer to `llm_models` and `completions` modules.
-/// 
+///
 /// [Chat Completions API](https://platform.openai.com/docs/guides/text-generation/chat-completions-api)
 ///
 /// Chat models take a list of messages as input and return a model-generated message as output.

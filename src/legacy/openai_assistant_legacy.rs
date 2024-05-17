@@ -2,7 +2,7 @@ use anyhow::{anyhow, Context, Result};
 use log::{error, info};
 use reqwest::{
     header::{self, HeaderMap, HeaderValue},
-    Client, multipart
+    multipart, Client,
 };
 use schemars::{schema_for, JsonSchema};
 use serde::de::DeserializeOwned;
