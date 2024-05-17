@@ -571,8 +571,8 @@ impl OpenAI {
 
 #[cfg(test)]
 mod tests {
-    use crate::OpenAIModels;
     use crate::utils::get_tokenizer_old;
+    use crate::OpenAIModels;
 
     #[test]
     fn it_computes_gpt3_5_tokenization() {
