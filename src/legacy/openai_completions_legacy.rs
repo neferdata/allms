@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// This is a LEGACY implementation of OpenAI LLM Models that will not be maintained going forward (after May 2024).
-/// For current implementation refer to `llm_models` modules.
+/// For current implementation refer to `llm_models` module.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum OpenAIModels {
     Gpt3_5Turbo,

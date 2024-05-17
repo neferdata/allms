@@ -22,7 +22,7 @@ async fn main() {
 
     // Example context and instructions
     let instructions =
-        "Translate this exact English sentence to all the languages in the response type";
+        "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     match open_ai
         .get_answer::<TranslationResponse>(instructions)
