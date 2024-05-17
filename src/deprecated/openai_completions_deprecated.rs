@@ -13,6 +13,10 @@ use crate::{
 
 /// This is a LEGACY implementation of OpenAI LLM Models that will not be maintained going forward (after May 2024).
 /// For current implementation refer to `llm_models` module.
+#[deprecated(
+    since = "0.6.1",
+    note = "This struct is deprecated. Please use the `llm_models::OpenAIModels` struct for latest functionality."
+)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum OpenAIModels {
     Gpt3_5Turbo,
@@ -356,6 +360,10 @@ impl OpenAIModels {
 /// Chat models take a list of messages as input and return a model-generated message as output.
 /// Although the chat format is designed to make multi-turn conversations easy,
 /// it’s just as useful for single-turn tasks without any conversation.
+#[deprecated(
+    since = "0.6.1",
+    note = "This struct is deprecated. Please use the `Completions` struct for latest functionality including GPT-4o."
+)]
 pub struct OpenAI {
     model: OpenAIModels,
     //For prompt & response

@@ -21,8 +21,8 @@ use crate::domain::{
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::utils::sanitize_json_response;
 
-/// This is a LEGACY implementation of OpenAI Assistants API that will not be maintained going forward (after May 2024).
-/// For current implementation refer to `assistants` module.
+/// This is a DEPRECATED implementation of OpenAI Assistants API that will not be maintained going forward (after May 2024).
+/// For current implementation, including support for Assistants API v2 and GPT-4o, refer to `assistants` module.
 ///
 /// [OpenAI Docs](https://platform.openai.com/docs/assistants/overview)
 ///
@@ -31,6 +31,10 @@ use crate::utils::sanitize_json_response;
 /// The Assistants API currently supports three types of tools: Code Interpreter, Retrieval, and Function calling.
 /// In the future, we plan to release more OpenAI-built tools, and allow you to provide
 /// your own tools on our platform.
+#[deprecated(
+    since = "0.6.1",
+    note = "This struct is deprecated. Please use the `assistants::OpenAIAssistant` struct for latest functionality including Assistants API v2."
+)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIAssistant {
     id: Option<String>,
@@ -539,6 +543,10 @@ impl OpenAIAssistant {
     }
 }
 
+#[deprecated(
+    since = "0.6.1",
+    note = "This struct is deprecated. Please use the `assistants::OpenAIAssistantVersion` struct for latest functionality including Assistants API v2+."
+)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum OpenAIAssistantVersion {
     V1,
@@ -616,8 +624,10 @@ impl OpenAIAssistantVersion {
 
 /// This is a LEGACY implementation of OpenAI File API that will not be maintained going forward (after May 2024).
 /// For current implementation refer to `assistants` module.
-///
-
+#[deprecated(
+    since = "0.6.1",
+    note = "This struct is deprecated. Please use the `assistants::OpenAIFile` struct for latest functionality."
+)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIFile {
     pub id: String,

@@ -1,13 +1,13 @@
 pub mod assistants;
 mod completions;
 mod constants;
+mod deprecated;
 mod domain;
 mod enums;
-mod legacy;
 pub mod llm_models;
 mod utils;
 
 pub use crate::completions::Completions;
-pub use crate::legacy::{
+pub use crate::deprecated::{
     OpenAI, OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIModels,
 };
