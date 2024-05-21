@@ -1,10 +1,10 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use allms::assistants::OpenAIAssistant;
-use allms::assistants::OpenAIAssistantVersion;
-use allms::assistants::OpenAIFile;
-use allms::llm_models::OpenAIModels;
+use allms::OpenAIAssistant;
+use allms::OpenAIAssistantVersion;
+use allms::OpenAIFile;
+use allms::OpenAIModels;
 
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;

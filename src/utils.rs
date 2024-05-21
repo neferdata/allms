@@ -1,9 +1,15 @@
 use tiktoken_rs::{cl100k_base, get_bpe_from_model, CoreBPE};
 
 use crate::llm_models::LLMModel;
-use crate::models::OpenAIModels;
+#[allow(deprecated)]
+use crate::OpenAIModels;
 
 // Get the tokenizer given a model
+#[allow(deprecated)]
+#[deprecated(
+    since = "0.6.1",
+    note = "This function is deprecated. Please use the `get_tokenizer` function instead."
+)]
 pub(crate) fn get_tokenizer_old(model: &OpenAIModels) -> anyhow::Result<CoreBPE> {
     let tokenizer = get_bpe_from_model(model.as_str());
     if let Err(_error) = tokenizer {
