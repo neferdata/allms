@@ -103,7 +103,7 @@ impl OpenAIVectorStore {
             self.create(Some(file_ids.to_vec())).await?;
         } else {
             // If working with existing Vector Store we simply upload files
-            self.assign_to_store(&file_ids).await?;
+            self.assign_to_store(file_ids).await?;
         }
         Ok(self.clone())
     }
