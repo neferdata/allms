@@ -542,6 +542,11 @@ impl OpenAIAssistant {
     /// This method can be used to attach a Vector Store object to an Assistant
     ///
     pub async fn vector_store(mut self, vector_store: OpenAIVectorStore) -> Result<Self> {
+        if self.version != OpenAIAssistantVersion::V2 {
+            return Err(anyhow!(
+                "[OpenAI][Assistants] Vector Store only supported for v2 API."
+            ));
+        }
         if vector_store.id.is_none() {
             return Err(anyhow!(
                 "[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."
