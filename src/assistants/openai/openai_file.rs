@@ -6,7 +6,7 @@ use std::path::Path;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIFile {
-    pub id: String,
+    pub id: Option<String>,
     debug: bool,
     api_key: String,
 }
@@ -24,27 +24,30 @@ pub struct OpenAIDFileDeleteResp {
 }
 
 impl OpenAIFile {
-    //Constructor
-    pub async fn new(
-        file_name: &str,
-        file_bytes: Vec<u8>,
+    /// Constructor
+    pub fn new(
+        id: Option<String>,
         open_ai_key: &str,
-        debug: bool,
-    ) -> Result<Self> {
-        let mut new_file = OpenAIFile {
-            id: "this-will-be-overwritten".to_string(),
-            debug,
+    ) -> Self {
+        OpenAIFile {
+            id,
+            debug: false,
             api_key: open_ai_key.to_string(),
-        };
-        //Upload file and get the ID
-        new_file.upload_file(file_name, file_bytes).await?;
-        Ok(new_file)
+        }
+    }
+    
+    ///
+    /// This method can be used to turn on debug mode for the OpenAIFile struct
+    ///
+    pub fn debug(mut self) -> Self {
+        self.debug = true;
+        self
     }
 
-    /*
-     * This function uploads a file to OpenAI and assigns it for use with Assistant API
-     */
-    async fn upload_file(&mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<()> {
+    ///
+    /// This function uploads a file to OpenAI and assigns it for use with Assistant API
+    ///
+    pub async fn upload(mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<Self> {
         let files_url = "https://api.openai.com/v1/files";
 
         // Determine MIME type based on file extension
@@ -125,16 +128,22 @@ impl OpenAIFile {
                 anyhow!("Error: {}", error)
             })?;
 
-        self.id = response_deser.id;
+        self.id = Some(response_deser.id);
 
-        Ok(())
+        Ok(self)
     }
 
     /*
      * This function deletes a file from OpenAI
      */
-    pub async fn delete_file(&self) -> Result<()> {
-        let files_url = format!("https://api.openai.com/v1/files/{}", self.id);
+    pub async fn delete(&self) -> Result<()> {
+        let file_id = if let Some(id) = &self.id {
+            id
+        } else {
+            return Err(anyhow!("[OpenAI][File API] Unable to delete file without an ID."))
+        };
+
+        let files_url = format!("https://api.openai.com/v1/files/{}", file_id);
 
         //Make the API call
         let client = Client::new();
