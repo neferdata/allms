@@ -1,9 +1,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use allms::assistants::OpenAIAssistant;
-use allms::assistants::OpenAIAssistantVersion;
-use allms::assistants::OpenAIFile;
+use allms::assistants::{OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIVectorStore};
 use allms::llm_models::OpenAIModels;
 
 use anyhow::{anyhow, Result};
@@ -35,7 +33,8 @@ async fn main() -> Result<()> {
         .map(|s| s.to_string())
         .ok_or_else(|| anyhow!("Failed to extract file name"))?;
 
-    let openai_file = OpenAIFile::new(&file_name, bytes, &api_key, true).await?;
+    // Upload concert file to OpenAI
+    let openai_file = OpenAIFile::new(&file_name, bytes, &api_key, false).await?;
 
     let bands_genres = vec![
         ("Metallica", "Metal"),
@@ -45,8 +44,13 @@ async fn main() -> Result<()> {
         ("Johnny Cash", "Country"),
     ];
 
+    // Create a Vector Store and assign the file to it
+    let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
+        .debug()
+        .upload(&[openai_file.id.clone()]).await?;
+
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, false)
         .await?
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
@@ -63,7 +67,7 @@ async fn main() -> Result<()> {
         )
         .await?;
 
-    println!("Concert Info: {:?}", concert_info);
+    println!("Concert Info: {:#?}", concert_info);
 
     //Remove the file from OpenAI
     openai_file.delete_file().await?;
