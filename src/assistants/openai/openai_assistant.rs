@@ -635,7 +635,7 @@ impl OpenAIAssistant {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIAssistantVersion {
     V1,
     V2,
