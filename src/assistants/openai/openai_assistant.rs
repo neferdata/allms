@@ -13,6 +13,7 @@ use std::time::Duration;
 use tokio::time;
 use tokio::time::timeout;
 
+use crate::assistants::OpenAIVectorStore;
 use crate::constants::{OPENAI_API_URL, OPENAI_ASSISTANT_INSTRUCTIONS};
 use crate::domain::{
     OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp, OpenAIThreadResp,
@@ -38,6 +39,7 @@ pub struct OpenAIAssistant {
     debug: bool,
     api_key: String,
     version: OpenAIAssistantVersion,
+    vector_store: Option<OpenAIVectorStore>,
 }
 
 impl OpenAIAssistant {
@@ -53,6 +55,7 @@ impl OpenAIAssistant {
             api_key: open_ai_key.to_string(),
             // Defaulting to V1 for now
             version: OpenAIAssistantVersion::V1,
+            vector_store: None,
         })
     }
 
@@ -533,6 +536,92 @@ impl OpenAIAssistant {
             })?;
 
         Ok(response_deser)
+    }
+
+    ///
+    /// This method can be used to attach a Vector Store object to an Assistant
+    ///
+    pub async fn vector_store(mut self, vector_store: OpenAIVectorStore) -> Result<Self> {
+        if vector_store.id.is_none() {
+            return Err(anyhow!("[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."));
+        }
+        self.attach_vector_store(&vector_store).await?;
+        self.vector_store = Some(vector_store);
+        Ok(self)
+    }
+
+    /*
+     * This function checks the status of an assistant run
+     */
+     async fn attach_vector_store(&mut self, vector_store: &OpenAIVectorStore) -> Result<()> {
+        // If the assistant and thread are not initialized we do that first
+        if self.id.is_none() {
+            //Call OpenAI API to get an ID for the assistant
+            self.create_assistant().await?;
+
+            //Add first message thus initializing the thread
+            self.add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
+                .await?;
+        }
+
+        // Extract Vector Store ID
+        let vector_store_id = if let Some(id) = &vector_store.id {
+            id.to_string()
+        } else {
+            return Err(anyhow!("[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."));
+        };
+
+        //Get version-specific URL
+        let run_url = format!(
+            "{}/assistants/{}",
+            self.version.get_endpoint(),
+            &self.id.clone().unwrap_or_default(),
+        );
+
+        //Get version-specific headers
+        let version_headers = self.version.get_headers();
+
+        let body = json!({
+            "tool_resources": {
+                "file_search": {
+                    "vector_store_ids": vec![vector_store_id]
+                }
+            },
+        });
+
+        //Make the API call
+        let client = Client::new();
+
+        let response = client
+            .post(run_url)
+            .headers(version_headers)
+            .bearer_auth(&self.api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if self.debug {
+            info!(
+                "[debug] OpenAI Vector Store Attach API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        //Deserialize the string response into the Assistants object to confirm if there were any errors
+        serde_json::from_str::<OpenAIAssistantResp>(&response_text).map_err(|error| {
+            error!(
+                "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
+                &error
+            );
+            anyhow!(
+                "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
+                error
+            )
+        })
+        .map(|_| Ok(()))?
     }
 }
 
