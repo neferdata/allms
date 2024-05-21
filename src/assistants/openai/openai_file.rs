@@ -25,17 +25,14 @@ pub struct OpenAIDFileDeleteResp {
 
 impl OpenAIFile {
     /// Constructor
-    pub fn new(
-        id: Option<String>,
-        open_ai_key: &str,
-    ) -> Self {
+    pub fn new(id: Option<String>, open_ai_key: &str) -> Self {
         OpenAIFile {
             id,
             debug: false,
             api_key: open_ai_key.to_string(),
         }
     }
-    
+
     ///
     /// This method can be used to turn on debug mode for the OpenAIFile struct
     ///
@@ -140,7 +137,9 @@ impl OpenAIFile {
         let file_id = if let Some(id) = &self.id {
             id
         } else {
-            return Err(anyhow!("[OpenAI][File API] Unable to delete file without an ID."))
+            return Err(anyhow!(
+                "[OpenAI][File API] Unable to delete file without an ID."
+            ));
         };
 
         let files_url = format!("https://api.openai.com/v1/files/{}", file_id);
