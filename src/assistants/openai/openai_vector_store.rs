@@ -20,11 +20,7 @@ const VECTOR_STORE_API: &str = "https://api.openai.com/v1/vector_stores";
 
 impl OpenAIVectorStore {
     /// Constructor
-    pub fn new(
-        id: Option<String>,
-        name: &str,
-        api_key: &str,
-    ) -> Self {
+    pub fn new(id: Option<String>, name: &str, api_key: &str) -> Self {
         OpenAIVectorStore {
             id,
             name: name.to_string(),
@@ -44,8 +40,8 @@ impl OpenAIVectorStore {
     }
 
     /*
-    * This function creates a new Vector Store and updates the ID of the struct 
-    */
+     * This function creates a new Vector Store and updates the ID of the struct
+     */
     async fn create(&mut self, file_ids: Option<Vec<String>>) -> Result<()> {
         //Make the API call
         let client = Client::new();
@@ -113,22 +109,20 @@ impl OpenAIVectorStore {
     }
 
     /*
-    * This function assigns OpenAI Files to an existing Vector Store 
-    */
+     * This function assigns OpenAI Files to an existing Vector Store
+     */
     async fn assign_to_store(&self, file_ids: &[String]) -> Result<()> {
         // The function requires an ID of an existing vector store
         let vs_id = if let Some(id) = &self.id {
             id
         } else {
-            return Err(anyhow!("[allms][OpenAI][VectorStore][debug] Unable to assign files. No ID provided."));
+            return Err(anyhow!(
+                "[allms][OpenAI][VectorStore][debug] Unable to assign files. No ID provided."
+            ));
         };
-        
+
         // Construct the API url
-        let url = format!(
-            "{}/{}/file_batches",
-            VECTOR_STORE_API,
-            &vs_id,
-        );
+        let url = format!("{}/{}/file_batches", VECTOR_STORE_API, &vs_id,);
 
         //Get the version-specific header
         let version_headers = self.version.get_headers();
@@ -173,22 +167,20 @@ impl OpenAIVectorStore {
     }
 
     ///
-    /// This method checks the status of a Vector Store 
+    /// This method checks the status of a Vector Store
     ///
     pub async fn status(&self) -> Result<OpenAIVectorStoreStatus> {
         // Requires an ID of an existing vector store
         let vs_id = if let Some(id) = &self.id {
             id
         } else {
-            return Err(anyhow!("[allms][OpenAI][VectorStore][debug] Unable to check status. No ID provided."));
+            return Err(anyhow!(
+                "[allms][OpenAI][VectorStore][debug] Unable to check status. No ID provided."
+            ));
         };
-        
+
         // Construct the API url
-        let url = format!(
-            "{}/{}",
-            VECTOR_STORE_API,
-            &vs_id,
-        );
+        let url = format!("{}/{}", VECTOR_STORE_API, &vs_id,);
 
         //Get the version-specific header
         let version_headers = self.version.get_headers();
@@ -229,22 +221,20 @@ impl OpenAIVectorStore {
     }
 
     ///
-    /// This method checks the counts of files added to a Vector Store and their statuses 
+    /// This method checks the counts of files added to a Vector Store and their statuses
     ///
     pub async fn file_count(&self) -> Result<OpenAIVectorStoreFileCounts> {
         // Requires an ID of an existing vector store
         let vs_id = if let Some(id) = &self.id {
             id
         } else {
-            return Err(anyhow!("[allms][OpenAI][VectorStore][debug] Unable to check status. No ID provided."));
+            return Err(anyhow!(
+                "[allms][OpenAI][VectorStore][debug] Unable to check status. No ID provided."
+            ));
         };
-        
+
         // Construct the API url
-        let url = format!(
-            "{}/{}",
-            VECTOR_STORE_API,
-            &vs_id,
-        );
+        let url = format!("{}/{}", VECTOR_STORE_API, &vs_id,);
 
         //Get the version-specific header
         let version_headers = self.version.get_headers();
@@ -283,10 +273,66 @@ impl OpenAIVectorStore {
             })?;
         Ok(response_deser.file_counts)
     }
+
+    ///
+    /// This method can be used to delete a Vector Store
+    ///
+    pub async fn delete(&self) -> Result<()> {
+        // Requires an ID of an existing vector store
+        let vs_id = if let Some(id) = &self.id {
+            id
+        } else {
+            return Err(anyhow!(
+                "[allms][OpenAI][VectorStore][debug] Unable to delete. No ID provided."
+            ));
+        };
+
+        // Construct the API url
+        let url = format!("{}/{}", VECTOR_STORE_API, &vs_id,);
+
+        //Get the version-specific header
+        let version_headers = self.version.get_headers();
+
+        //Make the API call
+        let client = Client::new();
+
+        let response = client
+            .delete(&url)
+            .headers(version_headers)
+            .bearer_auth(&self.api_key)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if self.debug {
+            info!(
+                "[allms][OpenAI][VectorStore][debug] VectorStore Delete API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        //Deserialize & validate the string response
+        serde_json::from_str::<OpenAIVectorStoreDeleteResp>(&response_text).map_err(|error| {
+            error!(
+                "[allms][OpenAI][VectorStore][debug] VectorStore Delete API response serialization error: {}",
+                &error
+            );
+            anyhow!(
+                "[allms][OpenAI][VectorStore][debug] VectorStore Delete API response serialization error: {}",
+                error
+            )
+        })
+        .and_then(|response| match response.deleted {
+            true => Ok(()),
+            false => Err(anyhow!("[OpenAIAssistant] VectorStore Delete API failed to delete the store.")),
+        })
+    }
 }
 
 /******************************************************************************************
-* 
+*
 * API Response serialization / deserialization structs
 *
 ******************************************************************************************/
@@ -338,5 +384,11 @@ enum OpenAIVectorStoreFileBatchStatus {
     #[serde(rename(deserialize = "cancelled", serialize = "cancelled"))]
     Cancelled,
     #[serde(rename(deserialize = "failed", serialize = "failed"))]
-    Failed
+    Failed,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+struct OpenAIVectorStoreDeleteResp {
+    id: String,
+    deleted: bool,
 }

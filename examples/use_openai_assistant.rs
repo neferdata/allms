@@ -47,20 +47,27 @@ async fn main() -> Result<()> {
     // Create a Vector Store and assign the file to it
     let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
         .debug()
-        .upload(&[openai_file.id.clone()]).await?;
+        .upload(&[openai_file.id.clone()])
+        .await?;
 
     let status = openai_vector_store.status().await?;
-    println!("Vector Store: {:?}; Status: {:?}", &openai_vector_store.id, &status);
+    println!(
+        "Vector Store: {:?}; Status: {:?}",
+        &openai_vector_store.id, &status
+    );
 
     let file_count = openai_vector_store.file_count().await?;
-    println!("Vector Store: {:?}; File count: {:?}", &openai_vector_store.id, &file_count);
+    println!(
+        "Vector Store: {:?}; File count: {:?}",
+        &openai_vector_store.id, &file_count
+    );
 
     // Extract concert information using Assistant API
     let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
         .await?
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
-        .vector_store(openai_vector_store)
+        .vector_store(openai_vector_store.clone())
         .await?
         .set_context(
             "bands_genres",
@@ -81,6 +88,7 @@ async fn main() -> Result<()> {
     openai_file.delete_file().await?;
 
     // Delete the Vector Store
+    openai_vector_store.delete().await?;
 
     Ok(())
 }

@@ -543,7 +543,9 @@ impl OpenAIAssistant {
     ///
     pub async fn vector_store(mut self, vector_store: OpenAIVectorStore) -> Result<Self> {
         if vector_store.id.is_none() {
-            return Err(anyhow!("[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."));
+            return Err(anyhow!(
+                "[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."
+            ));
         }
         self.attach_vector_store(&vector_store).await?;
         self.vector_store = Some(vector_store);
@@ -553,7 +555,7 @@ impl OpenAIAssistant {
     /*
      * This function checks the status of an assistant run
      */
-     async fn attach_vector_store(&mut self, vector_store: &OpenAIVectorStore) -> Result<()> {
+    async fn attach_vector_store(&mut self, vector_store: &OpenAIVectorStore) -> Result<()> {
         // If the assistant and thread are not initialized we do that first
         if self.id.is_none() {
             //Call OpenAI API to get an ID for the assistant
@@ -568,7 +570,9 @@ impl OpenAIAssistant {
         let vector_store_id = if let Some(id) = &vector_store.id {
             id.to_string()
         } else {
-            return Err(anyhow!("[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."));
+            return Err(anyhow!(
+                "[OpenAI][Assistants] Unable to attach Vector Store. No valid ID found."
+            ));
         };
 
         //Get version-specific URL
@@ -611,17 +615,18 @@ impl OpenAIAssistant {
         }
 
         //Deserialize the string response into the Assistants object to confirm if there were any errors
-        serde_json::from_str::<OpenAIAssistantResp>(&response_text).map_err(|error| {
-            error!(
-                "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
-                &error
-            );
-            anyhow!(
-                "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
-                error
-            )
-        })
-        .map(|_| Ok(()))?
+        serde_json::from_str::<OpenAIAssistantResp>(&response_text)
+            .map_err(|error| {
+                error!(
+                    "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
+                    &error
+                );
+                anyhow!(
+                    "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
+                    error
+                )
+            })
+            .map(|_| Ok(()))?
     }
 }
 
