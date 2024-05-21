@@ -9,7 +9,7 @@ use crate::assistants::OpenAIAssistantVersion;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIVectorStore {
     pub id: Option<String>,
-    name: String,
+    pub name: String,
     api_key: String,
     status: OpenAIVectorStoreStatus,
     debug: bool,
@@ -91,8 +91,9 @@ impl OpenAIVectorStore {
                 )
             })?;
 
-        //Add correct ID to self
+        //Add correct ID & statsu to self
         self.id = Some(response_deser.id);
+        self.status = response_deser.status;
 
         Ok(())
     }
@@ -100,21 +101,22 @@ impl OpenAIVectorStore {
     ///
     /// This method uploads files to a Vector Store. If no ID was provided the method first creates the Vector Store
     ///
-    pub async fn upload(mut self, file_ids: &[String]) -> Result<()> {
+    pub async fn upload(&mut self, file_ids: &[String]) -> Result<Self> {
         // If the Vector Store was not yet created we do that first
         if self.id.is_none() {
-            self.create(Some(file_ids.to_vec())).await
+            self.create(Some(file_ids.to_vec())).await?;
         } else {
             // If working with existing Vector Store we simply upload files
-            self.assign_to_store(&file_ids).await
+            self.assign_to_store(&file_ids).await?;
         }
+        Ok(self.clone())
     }
 
     /*
     * This function assigns OpenAI Files to an existing Vector Store 
     */
     async fn assign_to_store(&self, file_ids: &[String]) -> Result<()> {
-        // If the Vector Store was not yet created we do that first
+        // The function requires an ID of an existing vector store
         let vs_id = if let Some(id) = &self.id {
             id
         } else {
@@ -169,6 +171,118 @@ impl OpenAIVectorStore {
         })
         .map(|_| Ok(()))?
     }
+
+    ///
+    /// This method checks the status of a Vector Store 
+    ///
+    pub async fn status(&self) -> Result<OpenAIVectorStoreStatus> {
+        // Requires an ID of an existing vector store
+        let vs_id = if let Some(id) = &self.id {
+            id
+        } else {
+            return Err(anyhow!("[allms][OpenAI][VectorStore][debug] Unable to check status. No ID provided."));
+        };
+        
+        // Construct the API url
+        let url = format!(
+            "{}/{}",
+            VECTOR_STORE_API,
+            &vs_id,
+        );
+
+        //Get the version-specific header
+        let version_headers = self.version.get_headers();
+
+        //Make the API call
+        let client = Client::new();
+
+        let response = client
+            .get(&url)
+            .headers(version_headers)
+            .bearer_auth(&self.api_key)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if self.debug {
+            info!(
+                "[allms][OpenAI][VectorStore][debug] VectorStore Status API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        //Deserialize & validate the string response
+        let response_deser: OpenAIVectorStoreResp =
+            serde_json::from_str(&response_text).map_err(|error| {
+                error!(
+                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
+                    &error
+                );
+                anyhow!(
+                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
+                    error
+                )
+            })?;
+        Ok(response_deser.status)
+    }
+
+    ///
+    /// This method checks the counts of files added to a Vector Store and their statuses 
+    ///
+    pub async fn file_count(&self) -> Result<OpenAIVectorStoreFileCounts> {
+        // Requires an ID of an existing vector store
+        let vs_id = if let Some(id) = &self.id {
+            id
+        } else {
+            return Err(anyhow!("[allms][OpenAI][VectorStore][debug] Unable to check status. No ID provided."));
+        };
+        
+        // Construct the API url
+        let url = format!(
+            "{}/{}",
+            VECTOR_STORE_API,
+            &vs_id,
+        );
+
+        //Get the version-specific header
+        let version_headers = self.version.get_headers();
+
+        //Make the API call
+        let client = Client::new();
+
+        let response = client
+            .get(&url)
+            .headers(version_headers)
+            .bearer_auth(&self.api_key)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if self.debug {
+            info!(
+                "[allms][OpenAI][VectorStore][debug] VectorStore Status API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        //Deserialize & validate the string response
+        let response_deser: OpenAIVectorStoreResp =
+            serde_json::from_str(&response_text).map_err(|error| {
+                error!(
+                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
+                    &error
+                );
+                anyhow!(
+                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
+                    error
+                )
+            })?;
+        Ok(response_deser.file_counts)
+    }
 }
 
 /******************************************************************************************
@@ -188,7 +302,7 @@ struct OpenAIVectorStoreResp {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-struct OpenAIVectorStoreFileCounts {
+pub struct OpenAIVectorStoreFileCounts {
     in_progress: i32,
     completed: i32,
     failed: i32,
@@ -197,7 +311,7 @@ struct OpenAIVectorStoreFileCounts {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-enum OpenAIVectorStoreStatus {
+pub enum OpenAIVectorStoreStatus {
     #[serde(rename(deserialize = "expired", serialize = "expired"))]
     Expired,
     #[serde(rename(deserialize = "in_progress", serialize = "in_progress"))]

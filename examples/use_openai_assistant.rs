@@ -49,6 +49,12 @@ async fn main() -> Result<()> {
         .debug()
         .upload(&[openai_file.id.clone()]).await?;
 
+    let status = openai_vector_store.status().await?;
+    println!("Vector Store: {:?}; Status: {:?}", &openai_vector_store.id, &status);
+
+    let file_count = openai_vector_store.file_count().await?;
+    println!("Vector Store: {:?}; File count: {:?}", &openai_vector_store.id, &file_count);
+
     // Extract concert information using Assistant API
     let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, false)
         .await?
