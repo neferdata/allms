@@ -87,7 +87,7 @@ impl OpenAIVectorStore {
                 )
             })?;
 
-        //Add correct ID & statsu to self
+        //Add correct ID & status to self
         self.id = Some(response_deser.id);
         self.status = response_deser.status;
 
