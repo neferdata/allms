@@ -33,8 +33,10 @@ async fn main() -> Result<()> {
         .map(|s| s.to_string())
         .ok_or_else(|| anyhow!("Failed to extract file name"))?;
 
-    // Upload concert file to OpenAI
-    let openai_file = OpenAIFile::new(&file_name, bytes, &api_key, true).await?;
+    let openai_file = OpenAIFile::new(None, &api_key)
+        .debug()
+        .upload(&file_name, bytes)
+        .await?;
 
     let bands_genres = vec![
         ("Metallica", "Metal"),
@@ -47,7 +49,7 @@ async fn main() -> Result<()> {
     // Create a Vector Store and assign the file to it
     let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
         .debug()
-        .upload(&[openai_file.id.clone()])
+        .upload(&[openai_file.id.clone().unwrap_or_default()])
         .await?;
 
     let status = openai_vector_store.status().await?;
@@ -63,8 +65,8 @@ async fn main() -> Result<()> {
     );
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
-        .await?
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
+        .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
         .vector_store(openai_vector_store.clone())
@@ -78,14 +80,14 @@ async fn main() -> Result<()> {
             "Extract the information requested in the response type from the attached concert information.
             The response should include the genre of the music the 'band' represents.
             The mapping of bands to genres was provided in 'bands_genres' list in a previous message.",
-            &[], // No files attached to the message. Assistant will use the Vector Store
+            &[openai_file.id.clone().unwrap_or_default()],
         )
         .await?;
 
     println!("Concert Info: {:#?}", concert_info);
 
-    // Remove the file from OpenAI
-    openai_file.delete_file().await?;
+    //Remove the file from OpenAI
+    openai_file.delete().await?;
 
     // Delete the Vector Store
     openai_vector_store.delete().await?;

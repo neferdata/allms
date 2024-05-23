@@ -44,19 +44,27 @@ pub struct OpenAIAssistant {
 
 impl OpenAIAssistant {
     //Constructor
-    pub async fn new(model: OpenAIModels, open_ai_key: &str, debug: bool) -> Result<Self> {
-        Ok(OpenAIAssistant {
+    pub fn new(model: OpenAIModels, open_ai_key: &str) -> Self {
+        OpenAIAssistant {
             id: None,
             thread_id: None,
             run_id: None,
             model,
             instructions: OPENAI_ASSISTANT_INSTRUCTIONS.to_string(),
-            debug,
+            debug: false,
             api_key: open_ai_key.to_string(),
             // Defaulting to V1 for now
             version: OpenAIAssistantVersion::V1,
             vector_store: None,
-        })
+        }
+    }
+
+    ///
+    /// This method can be used to turn on debug mode for the Assistant
+    ///
+    pub fn debug(mut self) -> Self {
+        self.debug = true;
+        self
     }
 
     ///
