@@ -35,7 +35,10 @@ async fn main() -> Result<()> {
         .map(|s| s.to_string())
         .ok_or_else(|| anyhow!("Failed to extract file name"))?;
 
-    let openai_file = OpenAIFile::new(&file_name, bytes, &api_key, true).await?;
+    let openai_file = OpenAIFile::new(None, &api_key)
+        .debug()
+        .upload(&file_name, bytes)
+        .await?;
 
     let bands_genres = vec![
         ("Metallica", "Metal"),
@@ -46,8 +49,8 @@ async fn main() -> Result<()> {
     ];
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key, true)
-        .await?
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
+        .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
         .set_context(
@@ -59,14 +62,14 @@ async fn main() -> Result<()> {
             "Extract the information requested in the response type from the attached concert information.
             The response should include the genre of the music the 'band' represents.
             The mapping of bands to genres was provided in 'bands_genres' list in a previous message.",
-            &[openai_file.id.clone()],
+            &[openai_file.id.clone().unwrap_or_default()],
         )
         .await?;
 
-    println!("Concert Info: {:?}", concert_info);
+    println!("Concert Info: {:#?}", concert_info);
 
     //Remove the file from OpenAI
-    openai_file.delete_file().await?;
+    openai_file.delete().await?;
 
     Ok(())
 }
