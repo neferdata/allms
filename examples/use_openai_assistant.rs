@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
             "Extract the information requested in the response type from the attached concert information.
             The response should include the genre of the music the 'band' represents.
             The mapping of bands to genres was provided in 'bands_genres' list in a previous message.",
-            &[openai_file.id.clone().unwrap_or_default()],
+            &[],
         )
         .await?;
 
