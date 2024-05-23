@@ -33,7 +33,7 @@ async fn main() {
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("OpenAI response: {:?}", response),
+        Ok(response) => println!("OpenAI response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
@@ -48,7 +48,7 @@ async fn main() {
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("Anthropic response: {:?}", response),
+        Ok(response) => println!("Anthropic response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
@@ -63,7 +63,7 @@ async fn main() {
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("Mistral response: {:?}", response),
+        Ok(response) => println!("Mistral response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
@@ -79,7 +79,7 @@ async fn main() {
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("Gemini response: {:?}", response),
+        Ok(response) => println!("Gemini response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }

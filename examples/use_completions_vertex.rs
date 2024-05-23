@@ -48,7 +48,7 @@ async fn main() {
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("Gemini response: {:?}", response),
+        Ok(response) => println!("Gemini response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }

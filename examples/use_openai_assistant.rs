@@ -1,9 +1,7 @@
 use std::ffi::OsStr;
 use std::path::Path;
 
-use allms::assistants::OpenAIAssistant;
-use allms::assistants::OpenAIAssistantVersion;
-use allms::assistants::OpenAIFile;
+use allms::assistants::{OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIVectorStore};
 use allms::llm_models::OpenAIModels;
 
 use anyhow::{anyhow, Result};
@@ -48,11 +46,31 @@ async fn main() -> Result<()> {
         ("Johnny Cash", "Country"),
     ];
 
+    // Create a Vector Store and assign the file to it
+    let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
+        .debug()
+        .upload(&[openai_file.id.clone().unwrap_or_default()])
+        .await?;
+
+    let status = openai_vector_store.status().await?;
+    println!(
+        "Vector Store: {:?}; Status: {:?}",
+        &openai_vector_store.id, &status
+    );
+
+    let file_count = openai_vector_store.file_count().await?;
+    println!(
+        "Vector Store: {:?}; File count: {:?}",
+        &openai_vector_store.id, &file_count
+    );
+
     // Extract concert information using Assistant API
     let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
         .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
+        .vector_store(openai_vector_store.clone())
+        .await?
         .set_context(
             "bands_genres",
             &bands_genres
@@ -62,7 +80,7 @@ async fn main() -> Result<()> {
             "Extract the information requested in the response type from the attached concert information.
             The response should include the genre of the music the 'band' represents.
             The mapping of bands to genres was provided in 'bands_genres' list in a previous message.",
-            &[openai_file.id.clone().unwrap_or_default()],
+            &[],
         )
         .await?;
 
@@ -70,6 +88,9 @@ async fn main() -> Result<()> {
 
     //Remove the file from OpenAI
     openai_file.delete().await?;
+
+    // Delete the Vector Store
+    openai_vector_store.delete().await?;
 
     Ok(())
 }
