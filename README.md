@@ -14,6 +14,23 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 - Extensibility enabling easy adoption of other models with standardized trait.
 - Asynchronous support using Tokio.
 
+### Foundational Models
+OpenAI:
+- APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
+- Models: GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k
+
+Anthropic:
+- APIs: Text Completions
+- Models: Claude 2.0, Claude Instant 1.2 (Claude 3 coming soon)
+
+Mistral:
+- APIs: Chat Completions
+- Models: Mistral Small, Mistral Medium, Mistral Large (Mistral 7B & Mixtral 8x coming soon)
+
+Google Vertex AI / AI Studio:
+- APIs: Chat Completions (including streaming)
+- Models: Gemini 1.0 Pro (Gemini 1.5 Pro coming soon)
+
 ### Prerequisites
 - OpenAI: API key (passed in model constructor)
 - Anthropic: API key (passed in model constructor)
@@ -24,32 +41,54 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 ### Examples
 Explore the `examples` directory to see more use cases and how to use different LLM providers and endpoint types.
 
-This is the output of calling the assistant api with metallica.pdf
+Using `Completions` API with different foundational models:
+```
+let openai_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
 
+let anthropic_answer = Completions::new(AnthropicModels::Claude2, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let mistral_answer = Completions::new(MistralModels::MistralSmall, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let google_answer = Completions::new(GoogleModels::GeminiPro, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+```
+
+Example:
+```
+RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_completions
+```
+
+Using `Assistant` API to analyze your files with `File` and `VectorStore` capabilities:
+```
+// Create a File
+let openai_file = OpenAIFile::new(None, &API_KEY)
+    .upload(&file_name, bytes)
+    .await?;
+
+// Create a Vector Store
+let openai_vector_store = OpenAIVectorStore::new(None, "Name", &API_KEY)
+    .upload(&[openai_file.id.clone().unwrap_or_default()])
+    .await?;
+
+// Extract data using Assistant 
+let openai_answer = OpenAIAssistant::new(OpenAIModels::Gpt4o, &API_KEY)
+    .version(OpenAIAssistantVersion::V2)
+    .vector_store(openai_vector_store.clone())
+    .await?
+    .get_answer::<T>(instructions, &[])
+    .await?;
+```
+
+Example:
 ```
 RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_openai_assistant
-```
-
-This program will send this press release to OpenAI Assistant API and get the data requested in the response type back:
-
-```
-pub struct ConcertInfo {
-    dates: Vec<String>,
-    band: String,
-    venue: String,
-    city: String,
-    country: String,
-    ticket_price: String,
-}
-```
-
-<img width="600" src="/examples/metallica.png">
-
-Output:
-```
-Running `target/debug/examples/use_openai_assistant`
-
-ConcertInfo { dates: ["Friday September 6, 2019"], band: "Metallica and the San Francisco Symphony", venue: "Chase Center", city: "San Francisco", country: "USA", ticket_price: "Information not available" }
 ```
 
 ## License
