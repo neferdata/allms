@@ -20,6 +20,7 @@ pub enum OpenAIModels {
     Gpt4_32k,
     TextDavinci003,
     Gpt4Turbo,
+    Gpt4TurboPreview,
     Gpt4o,
 }
 
@@ -32,10 +33,11 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt3_5Turbo => "gpt-3.5-turbo",
             OpenAIModels::Gpt3_5Turbo0613 => "gpt-3.5-turbo-0613",
             OpenAIModels::Gpt3_5Turbo16k => "gpt-3.5-turbo-16k",
-            OpenAIModels::Gpt4 => "gpt-4-0613",
+            OpenAIModels::Gpt4 => "gpt-4",
             OpenAIModels::Gpt4_32k => "gpt-4-32k",
             OpenAIModels::TextDavinci003 => "text-davinci-003",
-            OpenAIModels::Gpt4Turbo => "gpt-4-1106-preview",
+            OpenAIModels::Gpt4Turbo => "gpt-4-turbo",
+            OpenAIModels::Gpt4TurboPreview => "gpt-4-turbo-preview",
             OpenAIModels::Gpt4o => "gpt-4o",
         }
     }
@@ -51,6 +53,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4_32k => 32768,
             OpenAIModels::TextDavinci003 => 4097,
             OpenAIModels::Gpt4Turbo => 128_000,
+            OpenAIModels::Gpt4TurboPreview => 128_000,
             OpenAIModels::Gpt4o => 128_000,
         }
     }
@@ -63,6 +66,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4_32k => {
                 format!(
@@ -95,6 +99,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o => true,
         }
     }
@@ -131,6 +136,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4_32k => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
@@ -261,6 +267,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
+            | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4_32k => {
                 //Convert API response to struct representing expected response format
@@ -309,6 +316,10 @@ impl LLMModel for OpenAIModels {
                 rpm: 10_000,
             },
             OpenAIModels::Gpt4Turbo => RateLimit {
+                tpm: 2_000_000,
+                rpm: 10_000,
+            },
+            OpenAIModels::Gpt4TurboPreview => RateLimit {
                 tpm: 2_000_000,
                 rpm: 10_000,
             },
