@@ -11,3 +11,4 @@ __pycache__
 target/
 .idea
 examples/secrets
+examples/data
