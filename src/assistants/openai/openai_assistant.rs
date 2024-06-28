@@ -86,14 +86,18 @@ impl OpenAIAssistant {
         //Get the version-specific header
         let version_headers = self.version.get_headers();
 
-        //Get the retrieval / file_search part of the payload
-        let tools_payload = self.version.get_tools_payload();
-
-        let assistant_body = json!({
+        let mut assistant_body = json!({
             "instructions": self.instructions.clone(),
             "model": self.model.as_str(),
-            "tools": tools_payload,
         });
+
+        //Get the retrieval / file_search part of the payload (if supported)
+        if self.model.tools_support() {
+            if let Some(assistant_body_object) = assistant_body.as_object_mut() {
+                let tools_payload = self.version.get_tools_payload();
+                assistant_body_object.insert("tools".to_string(), tools_payload);
+            }
+        }
 
         //Make the API call
         let client = Client::new();
@@ -677,14 +681,14 @@ impl OpenAIAssistantVersion {
         headers
     }
 
-    pub(crate) fn get_tools_payload(&self) -> Vec<Value> {
+    pub(crate) fn get_tools_payload(&self) -> Value {
         match self {
-            OpenAIAssistantVersion::V1 => vec![json!({
+            OpenAIAssistantVersion::V1 => json!([{
                 "type": "retrieval"
-            })],
-            OpenAIAssistantVersion::V2 => vec![json!({
+            }]),
+            OpenAIAssistantVersion::V2 => json!([{
                 "type": "file_search"
-            })],
+            }]),
         }
     }
 
