@@ -342,13 +342,13 @@ impl LLMModel for OpenAIModels {
 impl OpenAIModels {
     // This function checks if a model supports tool use in Assistants API (e.g. file_search)
     pub fn tools_support(&self) -> bool {
-        match self {
+        matches!(
+            self,
             OpenAIModels::Gpt3_5Turbo
-            | OpenAIModels::Gpt4Turbo
-            | OpenAIModels::Gpt4TurboPreview
-            | OpenAIModels::Gpt4o => true,
-            _ => false,
-        }
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+        )
     }
 }
 
