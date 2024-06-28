@@ -6,7 +6,7 @@ authors = [
     "Kamil Litman <kamil@neferdata.com>",
     "Dario Lencina <dario@neferdata.com>",
 ]
-keywords = ["openai", "mistral", "anthropic", "gemini", "assistant"]
+keywords = ["api-bindings", "development-tools", "parsing", "science", "text-processing"]
 description = "One Library to rule them aLLMs"
 license = "MIT"
 repository = "https://github.com/neferdata/allms.git"
