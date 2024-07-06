@@ -140,7 +140,7 @@ impl OpenAIAssistant {
      * This function performs all the orchestration needed to submit a prompt and get and answer
      */
     pub async fn get_answer<T: JsonSchema + DeserializeOwned>(
-        mut self,
+        &mut self,
         message: &str,
         file_ids: &[String],
     ) -> Result<T> {
