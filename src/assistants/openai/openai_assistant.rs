@@ -553,7 +553,7 @@ impl OpenAIAssistant {
     ///
     /// This method can be used to attach a Vector Store object to an Assistant
     ///
-    pub async fn vector_store(mut self, vector_store: OpenAIVectorStore) -> Result<Self> {
+    pub async fn vector_store(&mut self, vector_store: OpenAIVectorStore) -> Result<Self> {
         if self.version != OpenAIAssistantVersion::V2 {
             return Err(anyhow!(
                 "[OpenAI][Assistants] Vector Store only supported for v2 API."
@@ -566,11 +566,11 @@ impl OpenAIAssistant {
         }
         self.attach_vector_store(&vector_store).await?;
         self.vector_store = Some(vector_store);
-        Ok(self)
+        Ok(self.clone())
     }
 
     /*
-     * This function checks the status of an assistant run
+     * This function attaches a vector store to an Assistant
      */
     async fn attach_vector_store(&mut self, vector_store: &OpenAIVectorStore) -> Result<()> {
         // If the assistant and thread are not initialized we do that first
