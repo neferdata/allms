@@ -266,9 +266,7 @@ impl OpenAIAssistant {
             .filter(|message| message.role == OpenAIAssistantRole::Assistant)
             .find_map(|message| {
                 message.content.into_iter().find_map(|content| {
-                    content
-                        .text
-                        .and_then(|text| Some(sanitize_json_response(&text.value)))
+                    content.text.map(|text| sanitize_json_response(&text.value))
                 })
             })
             .ok_or(anyhow!("No valid response form OpenAI Assistant found."))
