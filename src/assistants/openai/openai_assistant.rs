@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use jsonschema::JSONSchema;
 use log::error;
 use log::info;
 use reqwest::{
@@ -16,7 +17,8 @@ use tokio::time::timeout;
 use crate::assistants::OpenAIVectorStore;
 use crate::constants::{OPENAI_API_URL, OPENAI_ASSISTANT_INSTRUCTIONS};
 use crate::domain::{
-    OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp, OpenAIThreadResp,
+    AllmsError, OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp,
+    OpenAIThreadResp,
 };
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::llm_models::{LLMModel, OpenAIModels};
@@ -136,14 +138,70 @@ impl OpenAIAssistant {
         Ok(())
     }
 
-    /*
-     * This function performs all the orchestration needed to submit a prompt and get and answer
-     */
+    ///
+    /// This function performs all the orchestration needed to submit a prompt and get and answer
+    ///
     pub async fn get_answer<T: JsonSchema + DeserializeOwned>(
         &mut self,
         message: &str,
         file_ids: &[String],
     ) -> Result<T> {
+        // Instruct the Assistant to answer with the right Json format
+        // Output schema is extracted from the type parameter
+        let schema = schema_for!(T);
+
+        // Convert the schema to a JSON value
+        let mut schema_json: Value = serde_json::to_value(&schema)?;
+
+        // Remove '$schema' and 'title' elements that are added by schema_for macro but are not needed
+        if let Some(obj) = schema_json.as_object_mut() {
+            obj.remove("$schema");
+            obj.remove("title");
+        }
+
+        // Convert the modified JSON value back to a pretty-printed JSON string
+        let schema_string = serde_json::to_string_pretty(&schema_json)?;
+
+        // Call assistant
+        let assistant_response = self
+            .call_assistant(&schema_string, message, file_ids)
+            .await?;
+
+        // Deserialize assistant message
+        serde_json::from_str::<T>(&assistant_response).map_err(|e| {
+            let error = AllmsError {
+                crate_name: "alms".to_string(),
+                module: "assistants::openai_assistant".to_string(),
+                error_message: format!("Deserialization error: {:?}", e),
+                error_detail: assistant_response,
+            };
+            anyhow!("{:?}", error)
+        })
+    }
+
+    ///
+    /// This function is similar to _get_answer_ however it returns a Json Value matching the provided schema
+    ///
+    pub async fn get_json_answer(
+        &mut self,
+        message: &str,
+        json_schema: &str,
+        file_ids: &[String],
+    ) -> Result<Value> {
+        // Call assistant
+        let assistant_response = self.call_assistant(json_schema, message, file_ids).await?;
+
+        // Deserialize assistant message
+        self.get_valid_json(json_schema, &assistant_response)
+    }
+
+    // This function performs orchestration with Assistants API to get a message with response
+    async fn call_assistant(
+        &mut self,
+        json_schema: &str,
+        message: &str,
+        file_ids: &[String],
+    ) -> Result<String> {
         // If the assistant and thread are not initialized we do that first
         if self.id.is_none() {
             //Call OpenAI API to get an ID for the assistant
@@ -154,19 +212,13 @@ impl OpenAIAssistant {
                 .await?;
         }
 
-        //Step 1: Instruct the Assistant to answer with the right Json format
-        //Output schema is extracted from the type parameter
-        let schema = schema_for!(T);
-        let schema_json: Value = serde_json::to_value(&schema)?;
-        let schema_string = serde_json::to_string(&schema_json).unwrap_or_default();
-
-        //We instruct Assistant to answer with that schema
+        // Instruct Assistant to answer with that schema
         let schema_message = format!(
             "Response should include only the data portion of a Json formatted as per the following schema: {}. 
             The response should only include well-formatted data, and not the schema itself.
             Do not include any other words or characters, including the word 'json'. Only respond with the data. 
             You need to validate the Json before returning.",
-            schema_string
+            json_schema
         );
         self.add_message(&schema_message, &Vec::new()).await?;
 
@@ -214,13 +266,57 @@ impl OpenAIAssistant {
             .filter(|message| message.role == OpenAIAssistantRole::Assistant)
             .find_map(|message| {
                 message.content.into_iter().find_map(|content| {
-                    content.text.and_then(|text| {
-                        let sanitized_text = sanitize_json_response(&text.value);
-                        serde_json::from_str::<T>(&sanitized_text).ok()
-                    })
+                    content
+                        .text
+                        .and_then(|text| Some(sanitize_json_response(&text.value)))
                 })
             })
             .ok_or(anyhow!("No valid response form OpenAI Assistant found."))
+    }
+
+    // This function checks if a Json object matches the schema
+    fn get_valid_json(&self, schema: &str, value: &str) -> Result<Value> {
+        let schema_value = serde_json::from_str(schema).map_err(|e| {
+            let error = AllmsError {
+                crate_name: "alms".to_string(),
+                module: "assistants::openai_assistant".to_string(),
+                error_message: format!("Json Schema parsing error: {:?}", e),
+                error_detail: format!("Schema: {:?}", schema),
+            };
+            anyhow!("{:?}", error)
+        })?;
+
+        let compiled_schema = JSONSchema::compile(&schema_value).map_err(|e| {
+            let error = AllmsError {
+                crate_name: "alms".to_string(),
+                module: "assistants::openai_assistant".to_string(),
+                error_message: format!("Json Schema compilation error: {:?}", e),
+                error_detail: format!("Schema: {:?}", schema_value),
+            };
+            anyhow!("{:?}", error)
+        })?;
+
+        let data_value = serde_json::from_str(value).map_err(|e| {
+            let error = AllmsError {
+                crate_name: "alms".to_string(),
+                module: "assistants::openai_assistant".to_string(),
+                error_message: format!("Json data parsing error: {:?}", e),
+                error_detail: format!("Data: {:?}", value),
+            };
+            anyhow!("{:?}", error)
+        })?;
+
+        compiled_schema.validate(&data_value).map_err(|_| {
+            let error = AllmsError {
+                crate_name: "alms".to_string(),
+                module: "assistants::openai_assistant".to_string(),
+                error_message: "Json Schema validation error".to_string(),
+                error_detail: format!("Data: {:?}\nSchema: {:?}", &data_value, &schema_value),
+            };
+            anyhow!("{:?}", error)
+        })?;
+
+        Ok(data_value)
     }
 
     ///
