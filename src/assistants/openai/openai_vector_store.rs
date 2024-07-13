@@ -349,11 +349,11 @@ struct OpenAIVectorStoreResp {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIVectorStoreFileCounts {
-    in_progress: i32,
-    completed: i32,
-    failed: i32,
-    cancelled: i32,
-    total: i32,
+    pub in_progress: i32,
+    pub completed: i32,
+    pub failed: i32,
+    pub cancelled: i32,
+    pub total: i32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -376,7 +376,7 @@ struct OpenAIVectorStoreFileBatchResp {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-enum OpenAIVectorStoreFileBatchStatus {
+pub enum OpenAIVectorStoreFileBatchStatus {
     #[serde(rename(deserialize = "in_progress", serialize = "in_progress"))]
     InProgress,
     #[serde(rename(deserialize = "completed", serialize = "completed"))]
