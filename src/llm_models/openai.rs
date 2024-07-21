@@ -22,6 +22,7 @@ pub enum OpenAIModels {
     Gpt4Turbo,
     Gpt4TurboPreview,
     Gpt4o,
+    Gpt4oMini,
 }
 
 #[async_trait(?Send)]
@@ -39,6 +40,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4Turbo => "gpt-4-turbo",
             OpenAIModels::Gpt4TurboPreview => "gpt-4-turbo-preview",
             OpenAIModels::Gpt4o => "gpt-4o",
+            OpenAIModels::Gpt4oMini => "gpt-4o-mini",
         }
     }
 
@@ -55,6 +57,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4Turbo => 128_000,
             OpenAIModels::Gpt4TurboPreview => 128_000,
             OpenAIModels::Gpt4o => 128_000,
+            OpenAIModels::Gpt4oMini => 128_000,
         }
     }
 
@@ -68,6 +71,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k => {
                 format!(
                     "{OPENAI_API_URL}/v1/chat/completions",
@@ -100,7 +104,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
-            | OpenAIModels::Gpt4o => true,
+            | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4oMini => true,
         }
     }
 
@@ -138,6 +143,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
                 let system_message = json!({
@@ -269,6 +275,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
@@ -331,6 +338,10 @@ impl LLMModel for OpenAIModels {
                 tpm: 2_000_000,
                 rpm: 10_000,
             },
+            OpenAIModels::Gpt4oMini => RateLimit {
+                tpm: 1_000_000,
+                rpm: 10_000,
+            },
             OpenAIModels::TextDavinci003 => RateLimit {
                 tpm: 250_000,
                 rpm: 3_000,
@@ -348,6 +359,7 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4Turbo
                 | OpenAIModels::Gpt4TurboPreview
                 | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4oMini
         )
     }
 }
