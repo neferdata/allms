@@ -214,17 +214,26 @@ impl OpenAIAssistant {
         let messages = self.get_message_thread().await?;
 
         messages
-            .into_iter()
+            .iter()
             .filter(|message| message.role == OpenAIAssistantRole::Assistant)
             .find_map(|message| {
-                message.content.into_iter().find_map(|content| {
-                    content.text.and_then(|text| {
+                message.content.iter().find_map(|content| {
+                    content.text.as_ref().and_then(|text| {
                         let sanitized_text = sanitize_json_response(&text.value);
                         serde_json::from_str::<T>(&sanitized_text).ok()
                     })
                 })
             })
-            .ok_or(anyhow!("No valid response form OpenAI Assistant found."))
+            .ok_or({
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: "No valid response from OpenAI Assistant found.".to_string(),
+                    error_detail: format!("{:?}", &messages),
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
+            })
     }
 
     ///
