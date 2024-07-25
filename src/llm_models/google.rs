@@ -7,16 +7,22 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::constants::{GOOGLE_GEMINI_API_URL, GOOGLE_VERTEX_API_URL};
-use crate::{
-    domain::{GoogleGeminiProApiResp, RateLimit},
-    llm_models::LLMModel,
-};
+use crate::domain::{GoogleGeminiProApiResp, RateLimit};
+use crate::llm_models::LLMModel;
+use crate::utils::sanitize_json_response;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 //Google docs: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 pub enum GoogleModels {
     GeminiPro,
+    Gemini1_5Flash,
+    Gemini1_5Pro,
+    Gemini1_0Pro,
+    // Vertex
     GeminiProVertex,
+    Gemini1_5FlashVertex,
+    Gemini1_5ProVertex,
+    Gemini1_0ProVertex,
 }
 
 #[async_trait(?Send)]
@@ -24,6 +30,10 @@ impl LLMModel for GoogleModels {
     fn as_str(&self) -> &'static str {
         match self {
             GoogleModels::GeminiPro | GoogleModels::GeminiProVertex => "gemini-pro",
+            GoogleModels::Gemini1_5Pro | GoogleModels::Gemini1_5ProVertex => "gemini-1.5-pro",
+            GoogleModels::Gemini1_5Flash | GoogleModels::Gemini1_5FlashVertex => "gemini-1.5-flash",
+            GoogleModels::Gemini1_0Pro | GoogleModels::Gemini1_0ProVertex => "gemini-1.0-pro",
+
         }
     }
 
@@ -31,6 +41,9 @@ impl LLMModel for GoogleModels {
         //https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models
         match self {
             GoogleModels::GeminiPro | GoogleModels::GeminiProVertex => 32_000,
+            GoogleModels::Gemini1_5Pro | GoogleModels::Gemini1_5ProVertex =>  1_048_576,
+            GoogleModels::Gemini1_5Flash | GoogleModels::Gemini1_5FlashVertex => 1_048_576,
+            GoogleModels::Gemini1_0Pro | GoogleModels::Gemini1_0ProVertex => 32_000,
         }
     }
 
@@ -38,8 +51,14 @@ impl LLMModel for GoogleModels {
         //The URL requires GOOGLE_REGION and GOOGLE_PROJECT_ID env variables defined to work.
         //If not set GOOGLE_REGION will default to 'us-central1' but GOOGLE_PROJECT_ID needs to be defined.
         match self {
-            GoogleModels::GeminiPro => GOOGLE_GEMINI_API_URL.to_string(),
-            GoogleModels::GeminiProVertex => GOOGLE_VERTEX_API_URL.to_string(),
+            GoogleModels::GeminiPro
+            | GoogleModels::Gemini1_5Pro
+            | GoogleModels::Gemini1_5Flash
+            | GoogleModels::Gemini1_0Pro => GOOGLE_GEMINI_API_URL.to_string(),
+            GoogleModels::GeminiProVertex 
+            | GoogleModels::Gemini1_5ProVertex 
+            | GoogleModels::Gemini1_5FlashVertex 
+            | GoogleModels::Gemini1_0ProVertex => GOOGLE_VERTEX_API_URL.to_string(),
         }
     }
 
@@ -102,7 +121,10 @@ impl LLMModel for GoogleModels {
 
         //Send request
         match &self {
-            GoogleModels::GeminiProVertex => {
+            GoogleModels::GeminiProVertex 
+            | GoogleModels::Gemini1_5ProVertex 
+            | GoogleModels::Gemini1_5FlashVertex 
+            | GoogleModels::Gemini1_0ProVertex => {
                 let response = client
                     .post(model_url)
                     .header(header::CONTENT_TYPE, "application/json")
@@ -157,7 +179,7 @@ impl LLMModel for GoogleModels {
                             );
                         }
                     }
-                    Ok(streamed_response)
+                    Ok(sanitize_json_response(&streamed_response))
                 } else {
                     let response_status = response.status();
                     let response_txt = response.text().await?;
@@ -168,7 +190,10 @@ impl LLMModel for GoogleModels {
                     ))
                 }
             }
-            GoogleModels::GeminiPro => {
+            GoogleModels::GeminiPro
+            | GoogleModels::Gemini1_5Pro
+            | GoogleModels::Gemini1_5Flash
+            | GoogleModels::Gemini1_0Pro => {
                 let url_with_key = format!("{}?key={}", model_url, api_key);
                 let response = client
                     .post(url_with_key)
@@ -195,8 +220,14 @@ impl LLMModel for GoogleModels {
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         match self {
             //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
-            GoogleModels::GeminiProVertex => Ok(response_text.to_string()),
-            GoogleModels::GeminiPro => {
+            GoogleModels::GeminiProVertex 
+            | GoogleModels::Gemini1_5ProVertex 
+            | GoogleModels::Gemini1_5FlashVertex 
+            | GoogleModels::Gemini1_0ProVertex => Ok(response_text.to_string()),
+            GoogleModels::GeminiPro
+            | GoogleModels::Gemini1_5Pro
+            | GoogleModels::Gemini1_5Flash
+            | GoogleModels::Gemini1_0Pro => {
                 //Convert response to struct representing expected response format
                 let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(response_text)?;
 

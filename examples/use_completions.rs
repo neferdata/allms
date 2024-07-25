@@ -68,7 +68,7 @@ async fn main() {
     }
 
     // Get answer using Google GeminiPro
-    let model = GoogleModels::GeminiPro;
+    let model = GoogleModels::Gemini1_5Flash;
 
     let google_token_str: String =
         std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");
