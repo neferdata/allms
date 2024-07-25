@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use yup_oauth2::{read_service_account_key, ServiceAccountAuthenticator};
 
-use allms::{llm_models::GoogleModels, Completions};
+use allms::{llm::GoogleModels, Completions};
 
 #[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
 struct TranslationResponse {

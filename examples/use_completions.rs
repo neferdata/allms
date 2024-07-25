@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use allms::{
-    llm_models::{AnthropicModels, GoogleModels, MistralModels, OpenAIModels},
+    llm::{AnthropicModels, GoogleModels, MistralModels, OpenAIModels},
     Completions,
 };
 
