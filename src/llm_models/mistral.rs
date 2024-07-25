@@ -147,7 +147,7 @@ impl LLMModel for MistralModels {
                 message
                     .content
                     .as_ref()
-                    .map(|content| sanitize_json_response(&content))
+                    .map(|content| sanitize_json_response(content))
             })
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }
