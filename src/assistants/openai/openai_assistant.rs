@@ -16,7 +16,8 @@ use tokio::time::timeout;
 use crate::assistants::OpenAIVectorStore;
 use crate::constants::{OPENAI_API_URL, OPENAI_ASSISTANT_INSTRUCTIONS};
 use crate::domain::{
-    OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp, OpenAIThreadResp,
+    AllmsError, OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp,
+    OpenAIThreadResp,
 };
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::llm_models::{LLMModel, OpenAIModels};
@@ -123,11 +124,14 @@ impl OpenAIAssistant {
         //Deserialize the string response into the Assistant object
         let response_deser: OpenAIAssistantResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Assistant API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!("Assistant API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         //Add correct ID to self
@@ -210,17 +214,26 @@ impl OpenAIAssistant {
         let messages = self.get_message_thread().await?;
 
         messages
-            .into_iter()
+            .iter()
             .filter(|message| message.role == OpenAIAssistantRole::Assistant)
             .find_map(|message| {
-                message.content.into_iter().find_map(|content| {
-                    content.text.and_then(|text| {
+                message.content.iter().find_map(|content| {
+                    content.text.as_ref().and_then(|text| {
                         let sanitized_text = sanitize_json_response(&text.value);
                         serde_json::from_str::<T>(&sanitized_text).ok()
                     })
                 })
             })
-            .ok_or(anyhow!("No valid response form OpenAI Assistant found."))
+            .ok_or({
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: "No valid response from OpenAI Assistant found.".to_string(),
+                    error_detail: format!("{:?}", &messages),
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
+            })
     }
 
     ///
@@ -311,11 +324,14 @@ impl OpenAIAssistant {
         //Deserialize the string response into the Thread object
         let response_deser: OpenAIThreadResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Thread API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!("Thread API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         //Add thread_id to self
@@ -366,11 +382,14 @@ impl OpenAIAssistant {
         //Deserialize the string response into the Message object to confirm if there were any errors
         let _response_deser: OpenAIMessageResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Messages API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!("Messages API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         Ok(())
@@ -417,11 +436,14 @@ impl OpenAIAssistant {
         //Deserialize the string response into a vector of OpenAIMessageResp objects
         let response_deser: OpenAIMessageListResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Messages API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!("Messages API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         Ok(response_deser.data)
@@ -477,11 +499,14 @@ impl OpenAIAssistant {
         //Deserialize the string response into the Message object to confirm if there were any errors
         let response_deser: OpenAIRunResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Run API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!("Run API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         //Update run_id
@@ -540,11 +565,14 @@ impl OpenAIAssistant {
         //Deserialize the string response into the Message object to confirm if there were any errors
         let response_deser: OpenAIRunResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Run API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!("Run API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         Ok(response_deser)
@@ -634,14 +662,17 @@ impl OpenAIAssistant {
         //Deserialize the string response into the Assistants object to confirm if there were any errors
         serde_json::from_str::<OpenAIAssistantResp>(&response_text)
             .map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
-                    &error
-                );
-                anyhow!(
-                    "[OpenAIAssistant] Vector Store Attach API response serialization error: {}",
-                    error
-                )
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!(
+                        "Vector Store Attach API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })
             .map(|_| Ok(()))?
     }

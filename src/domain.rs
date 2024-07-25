@@ -290,3 +290,12 @@ pub struct GoogleGeminiProUsageMetadata {
     #[serde(rename = "totalTokenCount")]
     pub total_token_count: i32,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AllmsError {
+    #[serde(rename = "crate")]
+    pub crate_name: String,
+    pub module: String,
+    pub error_message: String,
+    pub error_detail: String,
+}

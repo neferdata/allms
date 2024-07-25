@@ -4,6 +4,8 @@ use reqwest::{header, multipart, Client};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use crate::domain::AllmsError;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIFile {
     pub id: Option<String>,
@@ -118,11 +120,14 @@ impl OpenAIFile {
         //Deserialize the string response into the Message object to confirm if there were any errors
         let response_deser: OpenAIFileResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Files API response serialization error: {}",
-                    &error
-                );
-                anyhow!("Error: {}", error)
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_file".to_string(),
+                    error_message: format!("Files API response serialization error: {}", error),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         self.id = Some(response_deser.id);
@@ -166,14 +171,17 @@ impl OpenAIFile {
         //Check if the file was successfully deleted
         serde_json::from_str::<OpenAIDFileDeleteResp>(&response_text)
             .map_err(|error| {
-                error!(
-                    "[OpenAIAssistant] Files Delete API response serialization error: {}",
-                    &error
-                );
-                anyhow!(
-                    "[OpenAIAssistant] Files Delete API response serialization error: {}",
-                    error
-                )
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_file".to_string(),
+                    error_message: format!(
+                        "Files Delete API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })
             .and_then(|response| match response.deleted {
                 true => Ok(()),
