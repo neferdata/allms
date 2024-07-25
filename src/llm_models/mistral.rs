@@ -6,14 +6,19 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::constants::MISTRAL_API_URL;
-use crate::{
-    domain::{MistralAPICompletionsResponse, RateLimit},
-    llm_models::LLMModel,
-};
+use crate::domain::{MistralAPICompletionsResponse, RateLimit};
+use crate::llm_models::LLMModel;
+use crate::utils::sanitize_json_response;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 //Mistral docs: https://docs.mistral.ai/platform/endpoints
 pub enum MistralModels {
+    MistralLarge,
+    MistralNemo,
+    Mistral7B,
+    Mixtral8x7B,
+    Mixtral8x22B,
+    // Legacy
     MistralTiny,
     MistralSmall,
     MistralMedium,
@@ -23,6 +28,12 @@ pub enum MistralModels {
 impl LLMModel for MistralModels {
     fn as_str(&self) -> &'static str {
         match self {
+            MistralModels::MistralLarge => "mistral-large-latest",
+            MistralModels::MistralNemo => "open-mistral-nemo",
+            MistralModels::Mistral7B => "open-mistral-7b",
+            MistralModels::Mixtral8x7B => "open-mixtral-8x7b",
+            MistralModels::Mixtral8x22B => "open-mixtral-8x22b",
+            // Legacy
             MistralModels::MistralTiny => "mistral-tiny",
             MistralModels::MistralSmall => "mistral-small",
             MistralModels::MistralMedium => "mistral-medium",
@@ -30,8 +41,17 @@ impl LLMModel for MistralModels {
     }
 
     fn default_max_tokens(&self) -> usize {
-        //"All our generative endpoints can reason on contexts up to 32k tokens and follow fine-grained instructions. "
-        32_000
+        match self {
+            MistralModels::MistralLarge => 128_000,
+            MistralModels::MistralNemo => 128_000,
+            MistralModels::Mistral7B => 32_000,
+            MistralModels::Mixtral8x7B => 32_000,
+            MistralModels::Mixtral8x22B => 64_000,
+            // Legacy
+            MistralModels::MistralTiny => 32_000,
+            MistralModels::MistralSmall => 32_000,
+            MistralModels::MistralMedium => 32_000,
+        }
     }
 
     fn get_endpoint(&self) -> String {
@@ -123,7 +143,12 @@ impl LLMModel for MistralModels {
             .iter()
             .filter_map(|choice| choice.message.as_ref())
             .find(|&message| message.role.as_ref() == Some(&"assistant".to_string()))
-            .and_then(|message| message.content.clone())
+            .and_then(|message| {
+                message
+                    .content
+                    .as_ref()
+                    .map(|content| sanitize_json_response(&content))
+            })
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }
 
