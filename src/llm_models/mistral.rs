@@ -142,7 +142,7 @@ impl LLMModel for MistralModels {
             .choices
             .iter()
             .filter_map(|choice| choice.message.as_ref())
-            .find(|&message| message.role.as_ref() == Some(&"assistant".to_string()))
+            .find(|&message| message.role == Some("assistant".to_string()))
             .and_then(|message| {
                 message
                     .content
