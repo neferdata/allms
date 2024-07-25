@@ -55,7 +55,7 @@ async fn main() {
     // Get answer using Mistral
     let mistral_api_key: String =
         std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
-    let model = MistralModels::MistralTiny; // Choose the model
+    let model = MistralModels::MistralLarge; // Choose the model
 
     let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
 
