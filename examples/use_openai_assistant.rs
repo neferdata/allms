@@ -2,7 +2,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 use allms::assistants::{OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIVectorStore};
-use allms::llm_models::OpenAIModels;
+use allms::llm::OpenAIModels;
 
 use anyhow::{anyhow, Result};
 use schemars::JsonSchema;

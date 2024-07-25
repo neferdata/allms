@@ -7,5 +7,6 @@ pub mod openai;
 pub use anthropic::AnthropicModels;
 pub use google::GoogleModels;
 pub use llm_model::LLMModel;
+pub use llm_model::LLMModel as LLM;
 pub use mistral::MistralModels;
 pub use openai::OpenAIModels;

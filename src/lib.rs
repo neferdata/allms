@@ -4,6 +4,7 @@ mod constants;
 mod domain;
 mod enums;
 pub mod llm_models;
+pub use llm_models as llm;
 mod utils;
 
 #[allow(deprecated)]
