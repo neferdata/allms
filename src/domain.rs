@@ -158,6 +158,33 @@ pub struct AnthropicAPICompletionsResponse {
     pub model: String,
 }
 
+//Anthropic API response type format for Messages API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnthropicAPIMessagesResponse {
+    pub id: String,
+    #[serde(rename(deserialize = "type", serialize = "type"))]
+    pub request_type: String,
+    pub role: String,
+    pub content: Vec<AnthropicAPIMessagesContent>,
+    pub model: String,
+    pub stop_reason: Option<String>,
+    pub stop_sequence: Option<String>,
+    pub usage: AnthropicAPIMessagesUsage,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnthropicAPIMessagesContent {
+    #[serde(rename(deserialize = "type", serialize = "type"))]
+    pub content_type: String,
+    pub text: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnthropicAPIMessagesUsage {
+    pub input_tokens: i32,
+    pub output_tokens: i32,
+}
+
 //Mistral API response type format for Chat Completions API
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MistralAPICompletionsResponse {

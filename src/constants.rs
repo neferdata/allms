@@ -8,6 +8,9 @@ lazy_static! {
 lazy_static! {
     pub(crate) static ref ANTHROPIC_API_URL: String = std::env::var("ANTHROPIC_API_URL")
         .unwrap_or("https://api.anthropic.com/v1/complete".to_string());
+    pub(crate) static ref ANTHROPIC_MESSAGES_API_URL: String =
+        std::env::var("ANTHROPIC_MESSAGES_API_URL")
+            .unwrap_or("https://api.anthropic.com/v1/messages".to_string());
 }
 
 lazy_static! {

@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use yup_oauth2::{read_service_account_key, ServiceAccountAuthenticator};
 
-use allms::{llm_models::GoogleModels, Completions};
+use allms::{llm::GoogleModels, Completions};
 
 #[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
 struct TranslationResponse {
@@ -22,7 +22,7 @@ async fn main() {
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     // Get answer using Google GeminiPro via Vertex AI
-    let model = GoogleModels::GeminiProVertex;
+    let model = GoogleModels::Gemini1_5ProVertex;
 
     // To authenticate Google Vertex AI we need to use a key associated with a GCP service account with correct permissions
     // Load your service account key from a file or an environment variable
@@ -41,14 +41,14 @@ async fn main() {
         .unwrap();
     let google_token_str = &google_token.token().unwrap();
 
-    // **Pre-requisite**: GeminiPro request through Vertex AI require `PROJECT_ID` environment variable defined
+    // **Pre-requisite**: GeminiPro request through Vertex AI require `GOOGLE_PROJECT_ID` environment variable defined
     let gemini_completion = Completions::new(model, google_token_str, None, None);
 
     match gemini_completion
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("Gemini response: {:#?}", response),
+        Ok(response) => println!("Vertex Gemini response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }

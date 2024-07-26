@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use allms::{
-    llm_models::{AnthropicModels, GoogleModels, MistralModels, OpenAIModels},
+    llm::{AnthropicModels, GoogleModels, MistralModels, OpenAIModels},
     Completions,
 };
 
@@ -40,7 +40,7 @@ async fn main() {
     // Get answer using Anthropic
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::Claude2; // Choose the model
+    let model = AnthropicModels::Claude3_5Sonnet; // Choose the model
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
 
@@ -55,7 +55,7 @@ async fn main() {
     // Get answer using Mistral
     let mistral_api_key: String =
         std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
-    let model = MistralModels::MistralTiny; // Choose the model
+    let model = MistralModels::MistralLarge; // Choose the model
 
     let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
 
@@ -68,7 +68,7 @@ async fn main() {
     }
 
     // Get answer using Google GeminiPro
-    let model = GoogleModels::GeminiPro;
+    let model = GoogleModels::Gemini1_5Flash;
 
     let google_token_str: String =
         std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");

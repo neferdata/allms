@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::assistants::OpenAIAssistantVersion;
+use crate::domain::AllmsError;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIVectorStore {
@@ -77,14 +78,17 @@ impl OpenAIVectorStore {
         //Deserialize the string response into the Assistant object
         let response_deser: OpenAIVectorStoreResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[allms][OpenAI][VectorStore][debug] VectorStore Create API response serialization error: {}",
-                    &error
-                );
-                anyhow!(
-                    "[allms][OpenAI][VectorStore][debug] VectorStore Create API response serialization error: {}",
-                    error
-                )
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_vector_store".to_string(),
+                    error_message: format!(
+                        "VectorStore Create API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
 
         //Add correct ID & status to self
@@ -153,17 +157,21 @@ impl OpenAIVectorStore {
         }
 
         //Deserialize & validate the string response
-        serde_json::from_str::<OpenAIVectorStoreFileBatchResp>(&response_text).map_err(|error| {
-            error!(
-                "[allms][OpenAI][VectorStore][debug] VectorStore Batch Upload API response serialization error: {}",
-                &error
-            );
-            anyhow!(
-                "[allms][OpenAI][VectorStore][debug] VectorStore Batch Upload API response serialization error: {}",
-                error
-            )
-        })
-        .map(|_| Ok(()))?
+        serde_json::from_str::<OpenAIVectorStoreFileBatchResp>(&response_text)
+            .map_err(|error| {
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_vector_store".to_string(),
+                    error_message: format!(
+                        "VectorStore Batch Upload API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
+            })
+            .map(|_| Ok(()))?
     }
 
     ///
@@ -208,14 +216,17 @@ impl OpenAIVectorStore {
         //Deserialize & validate the string response
         let response_deser: OpenAIVectorStoreResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
-                    &error
-                );
-                anyhow!(
-                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
-                    error
-                )
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_vector_store".to_string(),
+                    error_message: format!(
+                        "VectorStore Status API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
         Ok(response_deser.status)
     }
@@ -262,14 +273,17 @@ impl OpenAIVectorStore {
         //Deserialize & validate the string response
         let response_deser: OpenAIVectorStoreResp =
             serde_json::from_str(&response_text).map_err(|error| {
-                error!(
-                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
-                    &error
-                );
-                anyhow!(
-                    "[allms][OpenAI][VectorStore][debug] VectorStore Status API response serialization error: {}",
-                    error
-                )
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_vector_store".to_string(),
+                    error_message: format!(
+                        "VectorStore Status API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
             })?;
         Ok(response_deser.file_counts)
     }
@@ -314,20 +328,26 @@ impl OpenAIVectorStore {
         }
 
         //Deserialize & validate the string response
-        serde_json::from_str::<OpenAIVectorStoreDeleteResp>(&response_text).map_err(|error| {
-            error!(
-                "[allms][OpenAI][VectorStore][debug] VectorStore Delete API response serialization error: {}",
-                &error
-            );
-            anyhow!(
-                "[allms][OpenAI][VectorStore][debug] VectorStore Delete API response serialization error: {}",
-                error
-            )
-        })
-        .and_then(|response| match response.deleted {
-            true => Ok(()),
-            false => Err(anyhow!("[OpenAIAssistant] VectorStore Delete API failed to delete the store.")),
-        })
+        serde_json::from_str::<OpenAIVectorStoreDeleteResp>(&response_text)
+            .map_err(|error| {
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_vector_store".to_string(),
+                    error_message: format!(
+                        "VectorStore Delete API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
+            })
+            .and_then(|response| match response.deleted {
+                true => Ok(()),
+                false => Err(anyhow!(
+                    "[OpenAIAssistant] VectorStore Delete API failed to delete the store."
+                )),
+            })
     }
 }
 
