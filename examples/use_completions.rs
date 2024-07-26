@@ -40,7 +40,7 @@ async fn main() {
     // Get answer using Anthropic
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::Claude2; // Choose the model
+    let model = AnthropicModels::Claude3_5Sonnet; // Choose the model
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
 
