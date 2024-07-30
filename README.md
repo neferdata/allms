@@ -20,16 +20,16 @@ OpenAI:
 - Models: GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k
 
 Anthropic:
-- APIs: Text Completions
-- Models: Claude 2.0, Claude Instant 1.2 (Claude 3 coming soon)
+- APIs: Messages, Text Completions
+- Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
 Mistral:
 - APIs: Chat Completions
-- Models: Mistral Small, Mistral Medium, Mistral Large (Mistral 7B & Mixtral 8x coming soon)
+- Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 Google Vertex AI / AI Studio:
 - APIs: Chat Completions (including streaming)
-- Models: Gemini 1.0 Pro (Gemini 1.5 Pro coming soon)
+- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro
 
 ### Prerequisites
 - OpenAI: API key (passed in model constructor)
