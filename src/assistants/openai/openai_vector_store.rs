@@ -376,7 +376,7 @@ pub struct OpenAIVectorStoreFileCounts {
     pub total: i32,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIVectorStoreStatus {
     #[serde(rename(deserialize = "expired", serialize = "expired"))]
     Expired,
