@@ -275,7 +275,7 @@ impl OpenAIAssistant {
                         .map(|text| sanitize_json_response(&text.value))
                 })
             })
-            .ok_or({
+            .ok_or_else(|| {
                 let error = AllmsError {
                     crate_name: "allms".to_string(),
                     module: "assistants::openai_assistant".to_string(),
