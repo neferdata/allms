@@ -217,7 +217,7 @@ impl OpenAIAssistant {
 
         // Instruct Assistant to answer with that schema
         if self.model.structured_output_support() {
-            self.set_structured_output(&json_schema).await?;
+            self.set_structured_output(json_schema).await?;
         } else {
             let schema_message = format!(
                 "Response should include only the data portion of a Json formatted as per the following schema: {}. 
