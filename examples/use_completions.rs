@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use allms::{
-    llm::{AnthropicModels, GoogleModels, MistralModels, OpenAIModels},
+    llm::{AnthropicModels, GoogleModels, LLMModel, MistralModels, OpenAIModels},
     Completions,
 };
 
@@ -25,7 +25,8 @@ async fn main() {
 
     // Get answer using OpenAI
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::Gpt4o; // Choose the model
+    let model = OpenAIModels::try_from_str("gpt-4o-mini").unwrap_or(OpenAIModels::Gpt4o); // Choose the model
+    println!("OpenAI model: {:#?}", model.as_str());
 
     let openai_completion = Completions::new(model, &openai_api_key, None, None);
 
@@ -40,7 +41,9 @@ async fn main() {
     // Get answer using Anthropic
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::Claude3_5Sonnet; // Choose the model
+    let model = AnthropicModels::try_from_str("claude-3-5-sonnet-20240620")
+        .unwrap_or(AnthropicModels::Claude3_5Sonnet); // Choose the model
+    println!("Anthropic model: {:#?}", model.as_str());
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
 
@@ -55,7 +58,9 @@ async fn main() {
     // Get answer using Mistral
     let mistral_api_key: String =
         std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
-    let model = MistralModels::MistralLarge; // Choose the model
+    let model =
+        MistralModels::try_from_str("open-mistral-nemo").unwrap_or(MistralModels::MistralLarge); // Choose the model
+    println!("Mistral model: {:#?}", model.as_str());
 
     let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
 
@@ -68,7 +73,9 @@ async fn main() {
     }
 
     // Get answer using Google GeminiPro
-    let model = GoogleModels::Gemini1_5Flash;
+    let model =
+        GoogleModels::try_from_str("gemini-1.5-pro").unwrap_or(GoogleModels::Gemini1_5Flash); // Choose the model
+    println!("Google Gemini model: {:#?}", model.as_str());
 
     let google_token_str: String =
         std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");

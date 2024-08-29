@@ -10,6 +10,10 @@ use crate::domain::RateLimit;
 pub trait LLMModel {
     ///Converts each item in the model enum into its string representation
     fn as_str(&self) -> &'static str;
+    ///Returns an instance of the enum based on the provided string representation of name
+    fn try_from_str(name: &str) -> Option<Self>
+    where
+        Self: Sized;
     ///Returns max supported number of tokens for each of the variants of the enum
     fn default_max_tokens(&self) -> usize;
     ///Returns the url of the endpoint that should be called for each variant of the LLM Model enum
