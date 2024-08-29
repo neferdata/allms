@@ -36,6 +36,20 @@ impl LLMModel for GoogleModels {
         }
     }
 
+    fn try_from_str(name: &str) -> Option<Self> {
+        match name.to_lowercase().as_str() {
+            "gemini-pro" => Some(GoogleModels::GeminiPro),
+            "gemini-pro-vertex" => Some(GoogleModels::GeminiProVertex),
+            "gemini-1.5-pro" => Some(GoogleModels::Gemini1_5Pro),
+            "gemini-1.5-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
+            "gemini-1.5-flash" => Some(GoogleModels::Gemini1_5Flash),
+            "gemini-1.5-flash-vertex" => Some(GoogleModels::Gemini1_5FlashVertex),
+            "gemini-1.0-pro" => Some(GoogleModels::Gemini1_0Pro),
+            "gemini-1.0-pro-vertex" => Some(GoogleModels::Gemini1_0ProVertex),
+            _ => None,
+        }
+    }
+
     fn default_max_tokens(&self) -> usize {
         //https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models
         match self {

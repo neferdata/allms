@@ -40,6 +40,21 @@ impl LLMModel for MistralModels {
         }
     }
 
+    fn try_from_str(name: &str) -> Option<Self> {
+        match name.to_lowercase().as_str() {
+            "mistral-large-latest" => Some(MistralModels::MistralLarge),
+            "open-mistral-nemo" => Some(MistralModels::MistralNemo),
+            "open-mistral-7b" => Some(MistralModels::Mistral7B),
+            "open-mixtral-8x7b" => Some(MistralModels::Mixtral8x7B),
+            "open-mixtral-8x22b" => Some(MistralModels::Mixtral8x22B),
+            // Legacy
+            "mistral-tiny" => Some(MistralModels::MistralTiny),
+            "mistral-small" => Some(MistralModels::MistralSmall),
+            "mistral-medium" => Some(MistralModels::MistralMedium),
+            _ => None,
+        }
+    }
+
     fn default_max_tokens(&self) -> usize {
         match self {
             MistralModels::MistralLarge => 128_000,

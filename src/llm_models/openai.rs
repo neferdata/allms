@@ -22,6 +22,7 @@ pub enum OpenAIModels {
     Gpt4Turbo,
     Gpt4TurboPreview,
     Gpt4o,
+    Gpt4o20240806,
     Gpt4oMini,
 }
 
@@ -29,8 +30,6 @@ pub enum OpenAIModels {
 impl LLMModel for OpenAIModels {
     fn as_str(&self) -> &'static str {
         match self {
-            //In an API call, you can describe functions to gpt-3.5-turbo-0613 and gpt-4-0613
-            //On June 27, 2023 the stable gpt-3.5-turbo will be automatically upgraded to gpt-3.5-turbo-0613
             OpenAIModels::Gpt3_5Turbo => "gpt-3.5-turbo",
             OpenAIModels::Gpt3_5Turbo0613 => "gpt-3.5-turbo-0613",
             OpenAIModels::Gpt3_5Turbo16k => "gpt-3.5-turbo-16k",
@@ -40,7 +39,25 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4Turbo => "gpt-4-turbo",
             OpenAIModels::Gpt4TurboPreview => "gpt-4-turbo-preview",
             OpenAIModels::Gpt4o => "gpt-4o",
+            OpenAIModels::Gpt4o20240806 => "gpt-4o-2024-08-06",
             OpenAIModels::Gpt4oMini => "gpt-4o-mini",
+        }
+    }
+
+    fn try_from_str(name: &str) -> Option<Self> {
+        match name.to_lowercase().as_str() {
+            "gpt-3.5-turbo" => Some(OpenAIModels::Gpt3_5Turbo),
+            "gpt-3.5-turbo-0613" => Some(OpenAIModels::Gpt3_5Turbo0613),
+            "gpt-3.5-turbo-16k" => Some(OpenAIModels::Gpt3_5Turbo16k),
+            "gpt-4" => Some(OpenAIModels::Gpt4),
+            "gpt-4-32k" => Some(OpenAIModels::Gpt4_32k),
+            "text-davinci-003" => Some(OpenAIModels::TextDavinci003),
+            "gpt-4-turbo" => Some(OpenAIModels::Gpt4Turbo),
+            "gpt-4-turbo-preview" => Some(OpenAIModels::Gpt4TurboPreview),
+            "gpt-4o" => Some(OpenAIModels::Gpt4o),
+            "gpt-4o-2024-08-06" => Some(OpenAIModels::Gpt4o20240806),
+            "gpt-4o-mini" => Some(OpenAIModels::Gpt4oMini),
+            _ => None,
         }
     }
 
@@ -57,6 +74,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4Turbo => 128_000,
             OpenAIModels::Gpt4TurboPreview => 128_000,
             OpenAIModels::Gpt4o => 128_000,
+            OpenAIModels::Gpt4o20240806 => 128_000,
             OpenAIModels::Gpt4oMini => 128_000,
         }
     }
@@ -71,6 +89,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k => {
                 format!(
@@ -105,6 +124,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini => true,
         }
     }
@@ -143,6 +163,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
@@ -275,6 +296,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4Turbo
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
+            | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k => {
                 //Convert API response to struct representing expected response format
@@ -338,6 +360,10 @@ impl LLMModel for OpenAIModels {
                 tpm: 2_000_000,
                 rpm: 10_000,
             },
+            OpenAIModels::Gpt4o20240806 => RateLimit {
+                tpm: 2_000_000,
+                rpm: 10_000,
+            },
             OpenAIModels::Gpt4oMini => RateLimit {
                 tpm: 1_000_000,
                 rpm: 10_000,
@@ -359,7 +385,17 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4Turbo
                 | OpenAIModels::Gpt4TurboPreview
                 | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+        )
+    }
+
+    // This function checks if a model supports Structured Outputs
+    // https://openai.com/index/introducing-structured-outputs-in-the-api/
+    pub fn structured_output_support(&self) -> bool {
+        matches!(
+            self,
+            OpenAIModels::Gpt4o | OpenAIModels::Gpt4o20240806 | OpenAIModels::Gpt4oMini
         )
     }
 }

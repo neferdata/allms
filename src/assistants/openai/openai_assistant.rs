@@ -216,14 +216,18 @@ impl OpenAIAssistant {
         }
 
         // Instruct Assistant to answer with that schema
-        let schema_message = format!(
-            "Response should include only the data portion of a Json formatted as per the following schema: {}. 
-            The response should only include well-formatted data, and not the schema itself.
-            Do not include any other words or characters, including the word 'json'. Only respond with the data. 
-            You need to validate the Json before returning.",
-            json_schema
-        );
-        self.add_message(&schema_message, &Vec::new()).await?;
+        if self.model.structured_output_support() {
+            self.set_structured_output(&json_schema).await?;
+        } else {
+            let schema_message = format!(
+                "Response should include only the data portion of a Json formatted as per the following schema: {}. 
+                The response should only include well-formatted data, and not the schema itself.
+                Do not include any other words or characters, including the word 'json'. Only respond with the data. 
+                You need to validate the Json before returning.",
+                json_schema
+            );
+            self.add_message(&schema_message, &Vec::new()).await?;
+        }
 
         //Step 2: Add user message and files to thread
         self.add_message(message, file_ids).await?;
@@ -772,6 +776,86 @@ impl OpenAIAssistant {
             })
             .map(|_| Ok(()))?
     }
+
+    /*
+     * This function modifies an Assistant to use Structured Output
+     */
+    async fn set_structured_output(&mut self, schema: &str) -> Result<()> {
+        // If the assistant and thread are not initialized we do that first
+        if self.id.is_none() {
+            //Call OpenAI API to get an ID for the assistant
+            self.create_assistant().await?;
+
+            //Add first message thus initializing the thread
+            self.add_message(OPENAI_ASSISTANT_INSTRUCTIONS, &Vec::new())
+                .await?;
+        }
+
+        //Get version-specific URL
+        let assistant_url = format!(
+            "{}/assistants/{}",
+            self.version.get_endpoint(),
+            self.id.clone().unwrap_or_default(),
+        );
+
+        //Get version-specific headers
+        let version_headers = self.version.get_headers();
+
+        // Convert schema string to Json and build request body
+        let mut json_schema: Value = serde_json::from_str(schema)?;
+
+        // Ensure json_schema is an object and add/modify "additionalProperties" to false
+        add_additional_properties(&mut json_schema);
+
+        let body = json!({
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response_schema",
+                    "strict": true,
+                    "schema": json_schema,
+                }
+            },
+        });
+
+        //Make the API call
+        let client = Client::new();
+
+        let response = client
+            .post(assistant_url)
+            .headers(version_headers)
+            .bearer_auth(&self.api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if self.debug {
+            info!(
+                "[debug] OpenAI Modify Assistant API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        //Deserialize the string response into the Assistants object to confirm if there were any errors
+        serde_json::from_str::<OpenAIAssistantResp>(&response_text)
+            .map_err(|error| {
+                let error = AllmsError {
+                    crate_name: "allms".to_string(),
+                    module: "assistants::openai_assistant".to_string(),
+                    error_message: format!(
+                        "Vector Store Attach API response serialization error: {}",
+                        error
+                    ),
+                    error_detail: response_text,
+                };
+                error!("{:?}", error);
+                anyhow!("{:?}", error)
+            })
+            .map(|_| Ok(()))?
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -846,5 +930,169 @@ impl OpenAIAssistantVersion {
             }
         }
         message_payload
+    }
+}
+
+// Function to recursively add "additionalProperties": false to all objects
+fn add_additional_properties(value: &mut Value) {
+    match value {
+        Value::Object(obj) => {
+            // Insert "additionalProperties": false at this object level if it's an object type
+            if obj.contains_key("type")
+                && obj.get("type") == Some(&Value::String("object".to_string()))
+            {
+                obj.insert("additionalProperties".to_string(), Value::Bool(false));
+            }
+
+            // Recursively apply to all nested objects and array items
+            for v in obj.values_mut() {
+                add_additional_properties(v);
+            }
+        }
+        Value::Array(arr) => {
+            // Apply recursively to each item in the array
+            for item in arr {
+                add_additional_properties(item);
+            }
+        }
+        _ => (), // Do nothing for non-object/non-array types
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_add_additional_properties_simple_object() {
+        let mut value = json!({
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"}
+            }
+        });
+
+        add_additional_properties(&mut value);
+
+        assert_eq!(
+            value,
+            json!({
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"}
+                },
+                "additionalProperties": false
+            })
+        );
+    }
+
+    #[test]
+    fn test_add_additional_properties_nested_object() {
+        let mut value = json!({
+            "type": "object",
+            "properties": {
+                "person": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "age": {"type": "integer"}
+                    }
+                }
+            }
+        });
+
+        add_additional_properties(&mut value);
+
+        assert_eq!(
+            value,
+            json!({
+                "type": "object",
+                "properties": {
+                    "person": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "age": {"type": "integer"}
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "additionalProperties": false
+            })
+        );
+    }
+
+    #[test]
+    fn test_add_additional_properties_array_of_objects() {
+        let mut value = json!({
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"}
+                }
+            }
+        });
+
+        add_additional_properties(&mut value);
+
+        assert_eq!(
+            value,
+            json!({
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"}
+                    },
+                    "additionalProperties": false
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn test_add_additional_properties_mixed_structure() {
+        let mut value = json!({
+            "type": "object",
+            "properties": {
+                "colors": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "hex": {"type": "string"}
+                        }
+                    }
+                },
+                "isAvailable": {"type": "boolean"}
+            }
+        });
+
+        add_additional_properties(&mut value);
+
+        assert_eq!(
+            value,
+            json!({
+                "type": "object",
+                "properties": {
+                    "colors": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "hex": {"type": "string"}
+                            },
+                            "additionalProperties": false
+                        }
+                    },
+                    "isAvailable": {"type": "boolean"}
+                },
+                "additionalProperties": false
+            })
+        );
     }
 }

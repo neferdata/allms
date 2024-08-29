@@ -34,6 +34,19 @@ impl LLMModel for AnthropicModels {
         }
     }
 
+    fn try_from_str(name: &str) -> Option<Self> {
+        match name.to_lowercase().as_str() {
+            "claude-3-5-sonnet-20240620" => Some(AnthropicModels::Claude3_5Sonnet),
+            "claude-3-opus-20240229" => Some(AnthropicModels::Claude3Opus),
+            "claude-3-sonnet-20240229" => Some(AnthropicModels::Claude3Sonnet),
+            "claude-3-haiku-20240307" => Some(AnthropicModels::Claude3Haiku),
+            // Legacy
+            "claude-2.1" => Some(AnthropicModels::Claude2),
+            "claude-instant-1.2" => Some(AnthropicModels::ClaudeInstant1_2),
+            _ => None,
+        }
+    }
+
     fn default_max_tokens(&self) -> usize {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/claude/reference/input-and-output-sizes
         match self {
