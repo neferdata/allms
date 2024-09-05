@@ -35,6 +35,7 @@ async fn main() -> Result<()> {
 
     let openai_file = OpenAIFile::new(None, &api_key)
         .debug()
+        .version(OpenAIAssistantVersion::V2)
         .upload(&file_name, bytes)
         .await?;
 
@@ -49,23 +50,24 @@ async fn main() -> Result<()> {
     // Create a Vector Store and assign the file to it
     let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
         .debug()
+        .version(OpenAIAssistantVersion::V2)
         .upload(&[openai_file.id.clone().unwrap_or_default()])
         .await?;
 
     let status = openai_vector_store.status().await?;
     println!(
-        "Vector Store: {:?}; Status: {:?}",
+        ">>> Vector Store: {:?}; Status: {:?}",
         &openai_vector_store.id, &status
     );
 
     let file_count = openai_vector_store.file_count().await?;
     println!(
-        "Vector Store: {:?}; File count: {:?}",
+        ">>> Vector Store: {:?}; File count: {:?}",
         &openai_vector_store.id, &file_count
     );
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4Turbo, &api_key)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
         .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
@@ -84,7 +86,7 @@ async fn main() -> Result<()> {
         )
         .await?;
 
-    println!("Concert Info: {:#?}", concert_info);
+    println!(">>> Concert Info: {:#?}", concert_info);
 
     //Remove the file from OpenAI
     openai_file.delete().await?;

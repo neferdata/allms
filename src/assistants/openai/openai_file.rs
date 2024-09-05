@@ -4,6 +4,7 @@ use reqwest::{header, multipart, Client};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion};
 use crate::domain::AllmsError;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -11,6 +12,7 @@ pub struct OpenAIFile {
     pub id: Option<String>,
     debug: bool,
     api_key: String,
+    version: OpenAIAssistantVersion,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -32,6 +34,7 @@ impl OpenAIFile {
             id,
             debug: false,
             api_key: open_ai_key.to_string(),
+            version: OpenAIAssistantVersion::V1, // Default to V1
         }
     }
 
@@ -44,10 +47,28 @@ impl OpenAIFile {
     }
 
     ///
+    /// This method can be used to set the version of Assistants API Beta
+    /// Current default is V1
+    ///
+    pub fn version(mut self, version: OpenAIAssistantVersion) -> Self {
+        // Files endpoint currently requires v1 so if v2 is selected we overwrite
+        let version = match version {
+            OpenAIAssistantVersion::V2 => OpenAIAssistantVersion::V1,
+            _ => version,
+        };
+        self.version = version;
+        self
+    }
+
+    ///
     /// This function uploads a file to OpenAI and assigns it for use with Assistant API
     ///
     pub async fn upload(mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<Self> {
-        let files_url = "https://api.openai.com/v1/files";
+        let files_url = self.version.get_endpoint(&OpenAIAssistantResource::Files);
+
+        // This API sends a form so content type is automatically set by multipart method
+        let mut version_headers = self.version.get_headers(&self.api_key);
+        version_headers.remove(header::CONTENT_TYPE);
 
         // Determine MIME type based on file extension
         // OpenAI documentation: https://platform.openai.com/docs/assistants/tools/supported-files
@@ -100,9 +121,7 @@ impl OpenAIFile {
 
         let response = client
             .post(files_url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .header("OpenAI-Beta", "assistants=v1")
-            .bearer_auth(&self.api_key)
+            .headers(version_headers)
             .multipart(form)
             .send()
             .await?;
@@ -147,14 +166,18 @@ impl OpenAIFile {
             ));
         };
 
-        let files_url = format!("https://api.openai.com/v1/files/{}", file_id);
+        let files_resource = OpenAIAssistantResource::File {
+            file_id: file_id.to_string(),
+        };
+        let files_url = self.version.get_endpoint(&files_resource);
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
 
         let response = client
             .delete(files_url)
-            .bearer_auth(&self.api_key)
+            .headers(version_headers)
             .send()
             .await?;
 

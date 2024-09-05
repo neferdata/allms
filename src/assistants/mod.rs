@@ -1,6 +1,6 @@
 pub mod openai;
 
 pub use openai::{
-    OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIVectorStore,
-    OpenAIVectorStoreFileCounts, OpenAIVectorStoreStatus,
+    OpenAIAssistant, OpenAIAssistantResource, OpenAIAssistantVersion, OpenAIFile,
+    OpenAIVectorStore, OpenAIVectorStoreFileCounts, OpenAIVectorStoreStatus,
 };
