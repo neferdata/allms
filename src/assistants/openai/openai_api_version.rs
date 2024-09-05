@@ -90,7 +90,7 @@ impl OpenAIAssistantVersion {
             }
             OpenAIAssistantVersion::Azure => {
                 // Try to create the header value from the bearer token
-                if let Ok(api_key_header) = HeaderValue::from_str(&api_key) {
+                if let Ok(api_key_header) = HeaderValue::from_str(api_key) {
                     headers.insert("api-key", api_key_header);
                 } else {
                     headers.insert(
