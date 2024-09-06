@@ -1,6 +1,8 @@
+use anyhow::{anyhow, Result};
 use reqwest::header::{self, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::str::FromStr;
 
 use crate::constants::OPENAI_API_URL;
 
@@ -141,6 +143,19 @@ impl OpenAIAssistantVersion {
             }
         }
         message_payload
+    }
+}
+
+impl FromStr for OpenAIAssistantVersion {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "v1" => Ok(OpenAIAssistantVersion::V1),
+            "v2" => Ok(OpenAIAssistantVersion::V2),
+            "azure" => Ok(OpenAIAssistantVersion::Azure),
+            _ => Err(anyhow!("Invalid version: {}", s)),
+        }
     }
 }
 
