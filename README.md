@@ -19,6 +19,10 @@ OpenAI:
 - APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
 - Models: GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k
 
+Azure OpenAI
+- APIs: Assistants, Files, Vector Stores, Tools
+- Models: as per model deployments in Azure OpenAI Studio
+
 Anthropic:
 - APIs: Messages, Text Completions
 - Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
@@ -33,6 +37,7 @@ Google Vertex AI / AI Studio:
 
 ### Prerequisites
 - OpenAI: API key (passed in model constructor)
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Model deployment names in Azure OpenAI Stuido need to match `OpenAIModels::as_str()`
 - Anthropic: API key (passed in model constructor)
 - Mistral: API key (passed in model constructor)
 - Google AI Studio: API key (passed in model constructor)
