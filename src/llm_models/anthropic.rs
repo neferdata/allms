@@ -9,7 +9,7 @@ use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::LLMModel;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
     Claude3_5Sonnet,
     Claude3Opus,
@@ -22,7 +22,7 @@ pub enum AnthropicModels {
 
 #[async_trait(?Send)]
 impl LLMModel for AnthropicModels {
-    fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &str {
         match self {
             AnthropicModels::Claude3_5Sonnet => "claude-3-5-sonnet-20240620",
             AnthropicModels::Claude3Opus => "claude-3-opus-20240229",

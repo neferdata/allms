@@ -9,7 +9,7 @@ use crate::domain::RateLimit;
 #[async_trait(?Send)]
 pub trait LLMModel {
     ///Converts each item in the model enum into its string representation
-    fn as_str(&self) -> &'static str;
+    fn as_str(&self) -> &str;
     ///Returns an instance of the enum based on the provided string representation of name
     fn try_from_str(name: &str) -> Option<Self>
     where

@@ -10,7 +10,7 @@ use crate::domain::{MistralAPICompletionsResponse, RateLimit};
 use crate::llm_models::LLMModel;
 use crate::utils::sanitize_json_response;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Mistral docs: https://docs.mistral.ai/platform/endpoints
 pub enum MistralModels {
     MistralLarge,
@@ -26,7 +26,7 @@ pub enum MistralModels {
 
 #[async_trait(?Send)]
 impl LLMModel for MistralModels {
-    fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &str {
         match self {
             MistralModels::MistralLarge => "mistral-large-latest",
             MistralModels::MistralNemo => "open-mistral-nemo",
