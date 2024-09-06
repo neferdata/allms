@@ -17,7 +17,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 ### Foundational Models
 OpenAI:
 - APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
-- Models: GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k
+- Models: GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 
 Anthropic:
 - APIs: Messages, Text Completions
