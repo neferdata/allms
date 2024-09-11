@@ -23,6 +23,7 @@ pub struct ConcertInfo {
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
+    // Ensure `OPENAI_API_URL` is set to your Azure OpenAI resource endpoint
     let api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
     // Read concert file
     let path = Path::new("metallica.pdf");
@@ -33,9 +34,10 @@ async fn main() -> Result<()> {
         .map(|s| s.to_string())
         .ok_or_else(|| anyhow!("Failed to extract file name"))?;
 
+    // Set API version to Azure
     let openai_file = OpenAIFile::new(None, &api_key)
         .debug()
-        .version(OpenAIAssistantVersion::V2)
+        .version(OpenAIAssistantVersion::Azure)
         .upload(&file_name, bytes)
         .await?;
 
@@ -50,7 +52,7 @@ async fn main() -> Result<()> {
     // Create a Vector Store and assign the file to it
     let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
         .debug()
-        .version(OpenAIAssistantVersion::V2)
+        .version(OpenAIAssistantVersion::Azure)
         .upload(&[openai_file.id.clone().unwrap_or_default()])
         .await?;
 
@@ -66,11 +68,11 @@ async fn main() -> Result<()> {
         &openai_vector_store.id, &file_count
     );
 
-    // Extract concert information using Assistant API
+    // Ensure model deployment name in Azure OpenAI Studio matches that of the used model `as_str` representation
     let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
         .debug()
         // Constructor defaults to V1
-        .version(OpenAIAssistantVersion::V2)
+        .version(OpenAIAssistantVersion::Azure)
         .vector_store(openai_vector_store.clone())
         .await?
         .set_context(

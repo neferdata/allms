@@ -4,7 +4,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
-use crate::assistants::OpenAIAssistantVersion;
+use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion};
 use crate::domain::AllmsError;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -16,8 +16,6 @@ pub struct OpenAIVectorStore {
     debug: bool,
     version: OpenAIAssistantVersion,
 }
-
-const VECTOR_STORE_API: &str = "https://api.openai.com/v1/vector_stores";
 
 impl OpenAIVectorStore {
     /// Constructor
@@ -40,15 +38,33 @@ impl OpenAIVectorStore {
         self
     }
 
+    ///
+    /// This method can be used to set the version of Assistants API Beta
+    /// Current default is V2
+    ///
+    pub fn version(mut self, version: OpenAIAssistantVersion) -> Self {
+        // VectorStores endpoint is only available for v2 so if v1 is selected we overwrite
+        let version = match version {
+            OpenAIAssistantVersion::V1 => OpenAIAssistantVersion::V2,
+            _ => version,
+        };
+        self.version = version;
+        self
+    }
+
     /*
      * This function creates a new Vector Store and updates the ID of the struct
      */
     async fn create(&mut self, file_ids: Option<Vec<String>>) -> Result<()> {
+        let vector_store_url = self
+            .version
+            .get_endpoint(&OpenAIAssistantResource::VectorStores);
+
         //Make the API call
         let client = Client::new();
 
         //Get the version-specific header
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         let mut body = json!({
             "name": self.name.clone(),
@@ -58,9 +74,8 @@ impl OpenAIVectorStore {
         }
 
         let response = client
-            .post(VECTOR_STORE_API)
+            .post(vector_store_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -126,10 +141,13 @@ impl OpenAIVectorStore {
         };
 
         // Construct the API url
-        let url = format!("{}/{}/file_batches", VECTOR_STORE_API, &vs_id,);
+        let vector_store_resource = OpenAIAssistantResource::VectorStoreFileBatches {
+            vector_store_id: vs_id.to_string(),
+        };
+        let url = self.version.get_endpoint(&vector_store_resource);
 
         //Get the version-specific header
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
@@ -141,7 +159,6 @@ impl OpenAIVectorStore {
         let response = client
             .post(&url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -188,20 +205,18 @@ impl OpenAIVectorStore {
         };
 
         // Construct the API url
-        let url = format!("{}/{}", VECTOR_STORE_API, &vs_id,);
+        let vector_store_resource = OpenAIAssistantResource::VectorStore {
+            vector_store_id: vs_id.to_string(),
+        };
+        let url = self.version.get_endpoint(&vector_store_resource);
 
         //Get the version-specific header
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
 
-        let response = client
-            .get(&url)
-            .headers(version_headers)
-            .bearer_auth(&self.api_key)
-            .send()
-            .await?;
+        let response = client.get(&url).headers(version_headers).send().await?;
 
         let response_status = response.status();
         let response_text = response.text().await?;
@@ -245,20 +260,18 @@ impl OpenAIVectorStore {
         };
 
         // Construct the API url
-        let url = format!("{}/{}", VECTOR_STORE_API, &vs_id,);
+        let vector_store_resource = OpenAIAssistantResource::VectorStore {
+            vector_store_id: vs_id.to_string(),
+        };
+        let url = self.version.get_endpoint(&vector_store_resource);
 
         //Get the version-specific header
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
 
-        let response = client
-            .get(&url)
-            .headers(version_headers)
-            .bearer_auth(&self.api_key)
-            .send()
-            .await?;
+        let response = client.get(&url).headers(version_headers).send().await?;
 
         let response_status = response.status();
         let response_text = response.text().await?;
@@ -302,20 +315,18 @@ impl OpenAIVectorStore {
         };
 
         // Construct the API url
-        let url = format!("{}/{}", VECTOR_STORE_API, &vs_id,);
+        let vector_store_resource = OpenAIAssistantResource::VectorStore {
+            vector_store_id: vs_id.to_string(),
+        };
+        let url = self.version.get_endpoint(&vector_store_resource);
 
         //Get the version-specific header
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
 
-        let response = client
-            .delete(&url)
-            .headers(version_headers)
-            .bearer_auth(&self.api_key)
-            .send()
-            .await?;
+        let response = client.delete(&url).headers(version_headers).send().await?;
 
         let response_status = response.status();
         let response_text = response.text().await?;

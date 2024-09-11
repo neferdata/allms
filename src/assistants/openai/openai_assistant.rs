@@ -2,10 +2,7 @@ use anyhow::{anyhow, Result};
 use jsonschema::JSONSchema;
 use log::error;
 use log::info;
-use reqwest::{
-    header::{self, HeaderMap, HeaderValue},
-    Client,
-};
+use reqwest::Client;
 use schemars::{schema_for, JsonSchema};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -14,8 +11,8 @@ use std::time::Duration;
 use tokio::time;
 use tokio::time::timeout;
 
-use crate::assistants::OpenAIVectorStore;
-use crate::constants::{OPENAI_API_URL, OPENAI_ASSISTANT_INSTRUCTIONS};
+use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion, OpenAIVectorStore};
+use crate::constants::OPENAI_ASSISTANT_INSTRUCTIONS;
 use crate::domain::{
     AllmsError, OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp,
     OpenAIThreadResp,
@@ -83,10 +80,12 @@ impl OpenAIAssistant {
      */
     async fn create_assistant(&mut self) -> Result<()> {
         //Get the assistant API url
-        let assistant_url = format!("{}/assistants", self.version.get_endpoint());
+        let assistant_url = self
+            .version
+            .get_endpoint(&OpenAIAssistantResource::Assistants);
 
         //Get the version-specific header
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         let mut assistant_body = json!({
             "instructions": self.instructions.clone(),
@@ -107,7 +106,6 @@ impl OpenAIAssistant {
         let response = client
             .post(assistant_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&assistant_body)
             .send()
             .await?;
@@ -391,10 +389,10 @@ impl OpenAIAssistant {
      */
     async fn create_thread(&mut self, body: &serde_json::Value) -> Result<()> {
         //Get version-specific URL
-        let thread_url = format!("{}/threads", self.version.get_endpoint());
+        let thread_url = self.version.get_endpoint(&OpenAIAssistantResource::Threads);
 
         //Get version-specific headers
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
@@ -402,7 +400,6 @@ impl OpenAIAssistant {
         let response = client
             .post(thread_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -445,14 +442,13 @@ impl OpenAIAssistant {
         }
 
         //Get version-specific URL
-        let message_url = format!(
-            "{}/threads/{}/messages",
-            self.version.get_endpoint(),
-            self.thread_id.clone().unwrap_or_default(),
-        );
+        let messages_resource = OpenAIAssistantResource::Messages {
+            thread_id: self.thread_id.clone().unwrap_or_default(),
+        };
+        let message_url = self.version.get_endpoint(&messages_resource);
 
         //Get version-specific headers
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
@@ -460,7 +456,6 @@ impl OpenAIAssistant {
         let response = client
             .post(message_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -500,14 +495,13 @@ impl OpenAIAssistant {
         }
 
         //Get version-specific URL
-        let message_url = format!(
-            "{}/threads/{}/messages",
-            self.version.get_endpoint(),
-            self.thread_id.clone().unwrap_or_default(),
-        );
+        let message_resource = OpenAIAssistantResource::Messages {
+            thread_id: self.thread_id.clone().unwrap_or_default(),
+        };
+        let message_url = self.version.get_endpoint(&message_resource);
 
         //Get version-specific headers
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
@@ -515,7 +509,6 @@ impl OpenAIAssistant {
         let response = client
             .get(message_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .send()
             .await?;
 
@@ -562,10 +555,11 @@ impl OpenAIAssistant {
         };
 
         //Get version-specific URL
-        let run_url = format!("{}/threads/{}/runs", self.version.get_endpoint(), thread_id,);
+        let run_resource = OpenAIAssistantResource::Runs { thread_id };
+        let run_url = self.version.get_endpoint(&run_resource);
 
         //Get version-specific headers
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         let body = json!({
             "assistant_id": assistant_id,
@@ -577,7 +571,6 @@ impl OpenAIAssistant {
         let response = client
             .post(run_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -628,25 +621,16 @@ impl OpenAIAssistant {
         };
 
         //Get version-specific URL
-        let run_url = format!(
-            "{}/threads/{}/runs/{}",
-            self.version.get_endpoint(),
-            thread_id,
-            run_id,
-        );
+        let run_resource = OpenAIAssistantResource::Run { thread_id, run_id };
+        let run_url = self.version.get_endpoint(&run_resource);
 
         //Get version-specific headers
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         //Make the API call
         let client = Client::new();
 
-        let response = client
-            .get(run_url)
-            .headers(version_headers)
-            .bearer_auth(&self.api_key)
-            .send()
-            .await?;
+        let response = client.get(run_url).headers(version_headers).send().await?;
 
         let response_status = response.status();
         let response_text = response.text().await?;
@@ -678,9 +662,9 @@ impl OpenAIAssistant {
     /// This method can be used to attach a Vector Store object to an Assistant
     ///
     pub async fn vector_store(&mut self, vector_store: OpenAIVectorStore) -> Result<Self> {
-        if self.version != OpenAIAssistantVersion::V2 {
+        if self.version == OpenAIAssistantVersion::V1 {
             return Err(anyhow!(
-                "[OpenAI][Assistants] Vector Store only supported for v2 API."
+                "[OpenAI][Assistants] OpenAI Assistants API v1 does not support Vector Store."
             ));
         }
         if vector_store.id.is_none() {
@@ -717,14 +701,13 @@ impl OpenAIAssistant {
         };
 
         //Get version-specific URL
-        let run_url = format!(
-            "{}/assistants/{}",
-            self.version.get_endpoint(),
-            &self.id.clone().unwrap_or_default(),
-        );
+        let assistant_resource = OpenAIAssistantResource::Assistant {
+            assistant_id: self.id.clone().unwrap_or_default(),
+        };
+        let assistant_url = self.version.get_endpoint(&assistant_resource);
 
         //Get version-specific headers
-        let version_headers = self.version.get_headers();
+        let version_headers = self.version.get_headers(&self.api_key);
 
         let body = json!({
             "tool_resources": {
@@ -738,9 +721,8 @@ impl OpenAIAssistant {
         let client = Client::new();
 
         let response = client
-            .post(run_url)
+            .post(assistant_url)
             .headers(version_headers)
-            .bearer_auth(&self.api_key)
             .json(&body)
             .send()
             .await?;
@@ -771,80 +753,5 @@ impl OpenAIAssistant {
                 anyhow!("{:?}", error)
             })
             .map(|_| Ok(()))?
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-pub enum OpenAIAssistantVersion {
-    V1,
-    V2,
-}
-
-impl OpenAIAssistantVersion {
-    pub(crate) fn get_endpoint(&self) -> String {
-        //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
-        match self {
-            OpenAIAssistantVersion::V1 | OpenAIAssistantVersion::V2 => {
-                format!("{OPENAI_API_URL}/v1", OPENAI_API_URL = *OPENAI_API_URL)
-            }
-        }
-    }
-
-    pub(crate) fn get_headers(&self) -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static("application/json"),
-        );
-
-        match self {
-            OpenAIAssistantVersion::V1 => {
-                headers.insert("OpenAI-Beta", HeaderValue::from_static("assistants=v1"))
-            }
-            OpenAIAssistantVersion::V2 => {
-                headers.insert("OpenAI-Beta", HeaderValue::from_static("assistants=v2"))
-            }
-        };
-        headers
-    }
-
-    pub(crate) fn get_tools_payload(&self) -> Value {
-        match self {
-            OpenAIAssistantVersion::V1 => json!([{
-                "type": "retrieval"
-            }]),
-            OpenAIAssistantVersion::V2 => json!([{
-                "type": "file_search"
-            }]),
-        }
-    }
-
-    pub(crate) fn add_message_attachments(
-        &self,
-        message_payload: &Value,
-        file_ids: &[String],
-    ) -> Value {
-        let mut message_payload = message_payload.clone();
-        match self {
-            OpenAIAssistantVersion::V1 => {
-                message_payload["file_ids"] = json!(file_ids);
-            }
-            OpenAIAssistantVersion::V2 => {
-                let file_search_json = json!({
-                    "type": "file_search"
-                });
-                let attachments_vec: Vec<Value> = file_ids
-                    .iter()
-                    .map(|file_id| {
-                        json!({
-                            "file_id": file_id.to_string(),
-                            "tools": [file_search_json.clone()]
-                        })
-                    })
-                    .collect();
-                message_payload["attachments"] = json!(attachments_vec);
-            }
-        }
-        message_payload
     }
 }
