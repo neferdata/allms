@@ -11,7 +11,7 @@ use crate::domain::{GoogleGeminiProApiResp, RateLimit};
 use crate::llm_models::LLMModel;
 use crate::utils::sanitize_json_response;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Google docs: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 pub enum GoogleModels {
     GeminiPro,
@@ -27,7 +27,7 @@ pub enum GoogleModels {
 
 #[async_trait(?Send)]
 impl LLMModel for GoogleModels {
-    fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &str {
         match self {
             GoogleModels::GeminiPro | GoogleModels::GeminiProVertex => "gemini-pro",
             GoogleModels::Gemini1_5Pro | GoogleModels::Gemini1_5ProVertex => "gemini-1.5-pro",

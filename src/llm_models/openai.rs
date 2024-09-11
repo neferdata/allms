@@ -11,7 +11,7 @@ use crate::{
     llm_models::LLMModel,
 };
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIModels {
     Gpt3_5Turbo,
     Gpt3_5Turbo0613,
@@ -24,11 +24,12 @@ pub enum OpenAIModels {
     Gpt4o,
     Gpt4o20240806,
     Gpt4oMini,
+    Custom { name: String },
 }
 
 #[async_trait(?Send)]
 impl LLMModel for OpenAIModels {
-    fn as_str(&self) -> &'static str {
+    fn as_str(&self) -> &str {
         match self {
             OpenAIModels::Gpt3_5Turbo => "gpt-3.5-turbo",
             OpenAIModels::Gpt3_5Turbo0613 => "gpt-3.5-turbo-0613",
@@ -41,6 +42,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => "gpt-4o",
             OpenAIModels::Gpt4o20240806 => "gpt-4o-2024-08-06",
             OpenAIModels::Gpt4oMini => "gpt-4o-mini",
+            OpenAIModels::Custom { name } => name.as_str(),
         }
     }
 
@@ -57,7 +59,9 @@ impl LLMModel for OpenAIModels {
             "gpt-4o" => Some(OpenAIModels::Gpt4o),
             "gpt-4o-2024-08-06" => Some(OpenAIModels::Gpt4o20240806),
             "gpt-4o-mini" => Some(OpenAIModels::Gpt4oMini),
-            _ => None,
+            _ => Some(OpenAIModels::Custom {
+                name: name.to_string(),
+            }),
         }
     }
 
@@ -76,6 +80,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => 128_000,
             OpenAIModels::Gpt4o20240806 => 128_000,
             OpenAIModels::Gpt4oMini => 128_000,
+            OpenAIModels::Custom { .. } => 128_000,
         }
     }
 
@@ -91,7 +96,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
-            | OpenAIModels::Gpt4_32k => {
+            | OpenAIModels::Gpt4_32k
+            | OpenAIModels::Custom { .. } => {
                 format!(
                     "{OPENAI_API_URL}/v1/chat/completions",
                     OPENAI_API_URL = *OPENAI_API_URL
@@ -125,7 +131,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4TurboPreview
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
-            | OpenAIModels::Gpt4oMini => true,
+            | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Custom { .. } => true,
         }
     }
 
@@ -165,7 +172,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
-            | OpenAIModels::Gpt4_32k => {
+            | OpenAIModels::Gpt4_32k
+            | OpenAIModels::Custom { .. } => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
                 let system_message = json!({
                     "role": "system",
@@ -298,7 +306,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
-            | OpenAIModels::Gpt4_32k => {
+            | OpenAIModels::Gpt4_32k
+            | OpenAIModels::Custom { .. } => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
 
@@ -323,7 +332,8 @@ impl LLMModel for OpenAIModels {
         }
     }
 
-    //This function allows to check the rate limits for different models
+    /// This function allows to check the rate limits for different models
+    /// Rate limit for `Custom` model is assumed based on `GPT-4o` limits
     fn get_rate_limit(&self) -> RateLimit {
         //OpenAI documentation: https://platform.openai.com/account/rate-limits
         //This is the max tokens allowed between prompt & response
@@ -356,7 +366,7 @@ impl LLMModel for OpenAIModels {
                 tpm: 300_000,
                 rpm: 10_000,
             },
-            OpenAIModels::Gpt4o => RateLimit {
+            OpenAIModels::Gpt4o | OpenAIModels::Custom { .. } => RateLimit {
                 tpm: 2_000_000,
                 rpm: 10_000,
             },
@@ -387,6 +397,7 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Custom { .. }
         )
     }
 
@@ -395,7 +406,10 @@ impl OpenAIModels {
     pub fn structured_output_support(&self) -> bool {
         matches!(
             self,
-            OpenAIModels::Gpt4o | OpenAIModels::Gpt4o20240806 | OpenAIModels::Gpt4oMini
+            OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Custom { .. }
         )
     }
 }
@@ -436,5 +450,82 @@ mod tests {
         let max_requests = model.get_max_requests();
         let expected_max = std::cmp::min(10_000, 300_000 / ((8192_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
+    }
+
+    // Tests of model creation
+    #[test]
+    fn test_try_from_str_standard_models() {
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-3.5-turbo"),
+            Some(OpenAIModels::Gpt3_5Turbo)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-3.5-turbo-0613"),
+            Some(OpenAIModels::Gpt3_5Turbo0613)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-3.5-turbo-16k"),
+            Some(OpenAIModels::Gpt3_5Turbo16k)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4"),
+            Some(OpenAIModels::Gpt4)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4-32k"),
+            Some(OpenAIModels::Gpt4_32k)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("text-davinci-003"),
+            Some(OpenAIModels::TextDavinci003)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4-turbo"),
+            Some(OpenAIModels::Gpt4Turbo)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4-turbo-preview"),
+            Some(OpenAIModels::Gpt4TurboPreview)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4o"),
+            Some(OpenAIModels::Gpt4o)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4o-2024-08-06"),
+            Some(OpenAIModels::Gpt4o20240806)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4o-mini"),
+            Some(OpenAIModels::Gpt4oMini)
+        );
+    }
+
+    #[test]
+    fn test_try_from_str_case_insensitivity() {
+        assert_eq!(
+            OpenAIModels::try_from_str("GPT-4"),
+            Some(OpenAIModels::Gpt4)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("GPT-4o-MiNI"),
+            Some(OpenAIModels::Gpt4oMini)
+        );
+    }
+
+    #[test]
+    fn test_try_from_str_custom_model() {
+        assert_eq!(
+            OpenAIModels::try_from_str("my-custom-model"),
+            Some(OpenAIModels::Custom {
+                name: "my-custom-model".to_string()
+            })
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("AnotherModel"),
+            Some(OpenAIModels::Custom {
+                name: "AnotherModel".to_string()
+            })
+        );
     }
 }
