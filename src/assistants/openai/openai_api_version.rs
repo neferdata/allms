@@ -173,3 +173,63 @@ pub enum OpenAIAssistantResource {
     VectorStore { vector_store_id: String },
     VectorStoreFileBatches { vector_store_id: String },
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const OPENAI_API_URL: &str = "https://api.openai.com";
+
+    #[test]
+    fn test_v1_assistants_endpoint() {
+        let version = OpenAIAssistantVersion::V1;
+        let resource = OpenAIAssistantResource::Assistants;
+        let expected_url = format!("{}/v1/assistants", OPENAI_API_URL);
+        assert_eq!(version.get_endpoint(&resource), expected_url);
+    }
+
+    #[test]
+    fn test_azure_assistant_endpoint() {
+        let version = OpenAIAssistantVersion::Azure;
+        let resource = OpenAIAssistantResource::Assistant {
+            assistant_id: "123".to_string(),
+        };
+        let expected_url = format!(
+            "{}/openai/assistants/123?api-version=2024-05-01-preview",
+            OPENAI_API_URL
+        );
+        assert_eq!(version.get_endpoint(&resource), expected_url);
+    }
+
+    #[test]
+    fn test_v2_threads_endpoint() {
+        let version = OpenAIAssistantVersion::V2;
+        let resource = OpenAIAssistantResource::Threads;
+        let expected_url = format!("{}/v1/threads", OPENAI_API_URL);
+        assert_eq!(version.get_endpoint(&resource), expected_url);
+    }
+
+    #[test]
+    fn test_azure_file_batches_endpoint() {
+        let version = OpenAIAssistantVersion::Azure;
+        let resource = OpenAIAssistantResource::VectorStoreFileBatches {
+            vector_store_id: "abc".to_string(),
+        };
+        let expected_url = format!(
+            "{}/openai/vector_stores/abc/file_batches?api-version=2024-05-01-preview",
+            OPENAI_API_URL
+        );
+        assert_eq!(version.get_endpoint(&resource), expected_url);
+    }
+
+    #[test]
+    fn test_v1_run_endpoint() {
+        let version = OpenAIAssistantVersion::V1;
+        let resource = OpenAIAssistantResource::Run {
+            thread_id: "xyz".to_string(),
+            run_id: "456".to_string(),
+        };
+        let expected_url = format!("{}/v1/threads/xyz/runs/456", OPENAI_API_URL);
+        assert_eq!(version.get_endpoint(&resource), expected_url);
+    }
+}
