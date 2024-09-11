@@ -232,4 +232,31 @@ mod tests {
         let expected_url = format!("{}/v1/threads/xyz/runs/456", OPENAI_API_URL);
         assert_eq!(version.get_endpoint(&resource), expected_url);
     }
+
+    #[test]
+    fn test_v1_tools_payload() {
+        let version = OpenAIAssistantVersion::V1;
+        let expected_payload: Value = json!([{
+            "type": "retrieval"
+        }]);
+        assert_eq!(version.get_tools_payload(), expected_payload);
+    }
+
+    #[test]
+    fn test_v2_tools_payload() {
+        let version = OpenAIAssistantVersion::V2;
+        let expected_payload: Value = json!([{
+            "type": "file_search"
+        }]);
+        assert_eq!(version.get_tools_payload(), expected_payload);
+    }
+
+    #[test]
+    fn test_azure_tools_payload() {
+        let version = OpenAIAssistantVersion::Azure;
+        let expected_payload: Value = json!([{
+            "type": "file_search"
+        }]);
+        assert_eq!(version.get_tools_payload(), expected_payload);
+    }
 }
