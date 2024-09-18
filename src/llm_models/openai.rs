@@ -9,6 +9,7 @@ use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
     llm_models::LLMModel,
+    utils::sanitize_json_response,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -24,6 +25,8 @@ pub enum OpenAIModels {
     Gpt4o,
     Gpt4o20240806,
     Gpt4oMini,
+    O1Preview,
+    O1Mini,
     Custom { name: String },
 }
 
@@ -42,6 +45,8 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => "gpt-4o",
             OpenAIModels::Gpt4o20240806 => "gpt-4o-2024-08-06",
             OpenAIModels::Gpt4oMini => "gpt-4o-mini",
+            OpenAIModels::O1Preview => "o1-preview",
+            OpenAIModels::O1Mini => "o1-mini",
             OpenAIModels::Custom { name } => name.as_str(),
         }
     }
@@ -59,6 +64,8 @@ impl LLMModel for OpenAIModels {
             "gpt-4o" => Some(OpenAIModels::Gpt4o),
             "gpt-4o-2024-08-06" => Some(OpenAIModels::Gpt4o20240806),
             "gpt-4o-mini" => Some(OpenAIModels::Gpt4oMini),
+            "o1-preview" => Some(OpenAIModels::O1Preview),
+            "o1-mini" => Some(OpenAIModels::O1Mini),
             _ => Some(OpenAIModels::Custom {
                 name: name.to_string(),
             }),
@@ -80,6 +87,8 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => 128_000,
             OpenAIModels::Gpt4o20240806 => 128_000,
             OpenAIModels::Gpt4oMini => 128_000,
+            OpenAIModels::O1Preview => 128_000,
+            OpenAIModels::O1Mini => 128_000,
             OpenAIModels::Custom { .. } => 128_000,
         }
     }
@@ -97,6 +106,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k
+            | OpenAIModels::O1Preview
+            | OpenAIModels::O1Mini
             | OpenAIModels::Custom { .. } => {
                 format!(
                     "{OPENAI_API_URL}/v1/chat/completions",
@@ -121,9 +132,11 @@ impl LLMModel for OpenAIModels {
     fn function_call_default(&self) -> bool {
         //OpenAI documentation: https://platform.openai.com/docs/guides/gpt/function-calling
         match self {
-            OpenAIModels::TextDavinci003 | OpenAIModels::Gpt3_5Turbo | OpenAIModels::Gpt4_32k => {
-                false
-            }
+            OpenAIModels::TextDavinci003
+            | OpenAIModels::Gpt3_5Turbo
+            | OpenAIModels::Gpt4_32k
+            | OpenAIModels::O1Preview
+            | OpenAIModels::O1Mini => false,
             OpenAIModels::Gpt3_5Turbo0613
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
@@ -238,6 +251,36 @@ impl LLMModel for OpenAIModels {
                     }
                 }
             }
+            // Review https://platform.openai.com/docs/guides/reasoning for beta limitations:
+            // - Message types: user and assistant messages only, system messages are not supported.
+            // - Tools: tools, function calling, and response format parameters are not supported.
+            // - Other: temperature, top_p and n are fixed at 1, while presence_penalty and frequency_penalty are fixed at 0.
+            // - Assistants and Batch: these models are not supported in the Assistants API or Batch API.
+            OpenAIModels::O1Preview | OpenAIModels::O1Mini => {
+                let base_instructions = self.get_base_instructions(Some(function_call));
+                let system_message = json!({
+                    "role": "user",
+                    "content": base_instructions,
+                });
+
+                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
+
+                let user_message = json!({
+                    "role": "user",
+                    "content": format!(
+                        "Output Json schema:\n
+                        {schema_string}\n\n
+                        {instructions}"
+                    ),
+                });
+                json!({
+                    "model": self.as_str(),
+                    "messages": vec![
+                        system_message,
+                        user_message,
+                    ],
+                })
+            }
         }
     }
     /*
@@ -307,6 +350,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
             | OpenAIModels::Gpt4_32k
+            | OpenAIModels::O1Preview
+            | OpenAIModels::O1Mini
             | OpenAIModels::Custom { .. } => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
@@ -318,11 +363,13 @@ impl LLMModel for OpenAIModels {
                         .filter_map(|item| {
                             //For function_call the response is in arguments, and for regular call in content
                             match function_call {
-                                true => item
+                                true => item.message.function_call.map(|function_call| {
+                                    sanitize_json_response(&function_call.arguments)
+                                }),
+                                false => item
                                     .message
-                                    .function_call
-                                    .map(|function_call| function_call.arguments),
-                                false => item.message.content,
+                                    .content
+                                    .map(|content| sanitize_json_response(&content)),
                             }
                         })
                         .collect()),
@@ -377,6 +424,15 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4oMini => RateLimit {
                 tpm: 1_000_000,
                 rpm: 10_000,
+            },
+            // https://help.openai.com/en/articles/9824962-openai-o1-preview-and-o1-mini-usage-limits-on-chatgpt-and-the-api
+            OpenAIModels::O1Preview => RateLimit {
+                tpm: 30_000_000,
+                rpm: 100,
+            },
+            OpenAIModels::O1Mini => RateLimit {
+                tpm: 150_000_000,
+                rpm: 250,
             },
             OpenAIModels::TextDavinci003 => RateLimit {
                 tpm: 250_000,
