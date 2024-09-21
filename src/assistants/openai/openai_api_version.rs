@@ -16,12 +16,13 @@ pub enum OpenAIAssistantVersion {
 impl OpenAIAssistantVersion {
     pub(crate) fn get_endpoint(&self, resource: &OpenAIAssistantResource) -> String {
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
+        let trimmed_api_url = (*OPENAI_API_URL).trim_end_matches('/');
         let base_url = match self {
             OpenAIAssistantVersion::V1 | OpenAIAssistantVersion::V2 => {
-                format!("{OPENAI_API_URL}/v1", OPENAI_API_URL = *OPENAI_API_URL)
+                format!("{trimmed_api_url}/v1")
             }
             OpenAIAssistantVersion::Azure => {
-                format!("{OPENAI_API_URL}/openai", OPENAI_API_URL = *OPENAI_API_URL)
+                format!("{trimmed_api_url}/openai")
             }
         };
 
