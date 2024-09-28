@@ -58,3 +58,5 @@ pub(crate) const OPENAI_ASSISTANT_INSTRUCTIONS: &str = r#"You are a computer fun
 3: Prepare response using your language model based on the user messages and provided files.
 4: Respond ONLY with properly formatted data portion of a Json. No other words or text, only valid Json in your answers. 
 "#;
+
+pub(crate) const DEFAULT_AZURE_VERSION: &str = "2024-06-01";

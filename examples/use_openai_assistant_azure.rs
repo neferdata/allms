@@ -37,7 +37,9 @@ async fn main() -> Result<()> {
     // Set API version to Azure
     let openai_file = OpenAIFile::new(None, &api_key)
         .debug()
-        .version(OpenAIAssistantVersion::Azure)
+        .version(OpenAIAssistantVersion::AzureVersion {
+            version: "2024-06-01".to_string(),
+        })
         .upload(&file_name, bytes)
         .await?;
 
@@ -52,7 +54,9 @@ async fn main() -> Result<()> {
     // Create a Vector Store and assign the file to it
     let openai_vector_store = OpenAIVectorStore::new(None, "Concerts", &api_key)
         .debug()
-        .version(OpenAIAssistantVersion::Azure)
+        .version(OpenAIAssistantVersion::AzureVersion {
+            version: "2024-06-01".to_string(),
+        })
         .upload(&[openai_file.id.clone().unwrap_or_default()])
         .await?;
 
@@ -72,7 +76,7 @@ async fn main() -> Result<()> {
     let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
         .debug()
         // Constructor defaults to V1
-        .version(OpenAIAssistantVersion::Azure)
+        .version(OpenAIAssistantVersion::AzureVersion  { version: "2024-06-01".to_string(), })
         .vector_store(openai_vector_store.clone())
         .await?
         .set_context(
