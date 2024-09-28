@@ -19,8 +19,9 @@ OpenAI:
 - APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
 - Models: o1 Preview, o1 Mini (Chat Completions only), GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 
-Azure OpenAI
+Azure OpenAI:
 - APIs: Assistants, Files, Vector Stores, Tools
+    - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
 
 Anthropic:
@@ -37,7 +38,7 @@ Google Vertex AI / AI Studio:
 
 ### Prerequisites
 - OpenAI: API key (passed in model constructor)
-- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Model deployment names in Azure OpenAI Stuido need to match `OpenAIModels::as_str()`
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. If using custom model deployment names in Azure OpenAI Studio please use the `Custom` variant of `OpenAIModels`
 - Anthropic: API key (passed in model constructor)
 - Mistral: API key (passed in model constructor)
 - Google AI Studio: API key (passed in model constructor)
