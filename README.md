@@ -23,6 +23,7 @@ Azure OpenAI:
 - APIs: Assistants, Files, Vector Stores, Tools
     - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
+    - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
 
 Anthropic:
 - APIs: Messages, Text Completions
@@ -38,7 +39,7 @@ Google Vertex AI / AI Studio:
 
 ### Prerequisites
 - OpenAI: API key (passed in model constructor)
-- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. If using custom model deployment names in Azure OpenAI Studio please use the `Custom` variant of `OpenAIModels`
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - Anthropic: API key (passed in model constructor)
 - Mistral: API key (passed in model constructor)
 - Google AI Studio: API key (passed in model constructor)
