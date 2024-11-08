@@ -4,13 +4,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::str::FromStr;
 
-use crate::constants::OPENAI_API_URL;
+use crate::constants::{DEFAULT_AZURE_VERSION, OPENAI_API_URL};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIAssistantVersion {
     V1,
     V2,
     Azure,
+    AzureVersion { version: String },
 }
 
 impl OpenAIAssistantVersion {
@@ -21,7 +22,7 @@ impl OpenAIAssistantVersion {
             OpenAIAssistantVersion::V1 | OpenAIAssistantVersion::V2 => {
                 format!("{trimmed_api_url}/v1")
             }
-            OpenAIAssistantVersion::Azure => {
+            OpenAIAssistantVersion::Azure | OpenAIAssistantVersion::AzureVersion { .. } => {
                 format!("{trimmed_api_url}/openai")
             }
         };
@@ -52,9 +53,14 @@ impl OpenAIAssistantVersion {
             }
         };
 
-        // Add suffix if needed
+        // Add Azure version suffix if needed
         match self {
-            OpenAIAssistantVersion::Azure => format!("{path}?api-version=2024-05-01-preview"),
+            OpenAIAssistantVersion::Azure => {
+                format!("{path}?api-version={}", DEFAULT_AZURE_VERSION)
+            }
+            OpenAIAssistantVersion::AzureVersion { version } => {
+                format!("{path}?api-version={version}")
+            }
             _ => path,
         }
     }
@@ -91,7 +97,7 @@ impl OpenAIAssistantVersion {
                 };
                 headers.insert("OpenAI-Beta", HeaderValue::from_static("assistants=v2"));
             }
-            OpenAIAssistantVersion::Azure => {
+            OpenAIAssistantVersion::Azure | OpenAIAssistantVersion::AzureVersion { .. } => {
                 // Try to create the header value from the bearer token
                 if let Ok(api_key_header) = HeaderValue::from_str(api_key) {
                     headers.insert("api-key", api_key_header);
@@ -111,7 +117,9 @@ impl OpenAIAssistantVersion {
             OpenAIAssistantVersion::V1 => json!([{
                 "type": "retrieval"
             }]),
-            OpenAIAssistantVersion::V2 | OpenAIAssistantVersion::Azure => json!([{
+            OpenAIAssistantVersion::V2
+            | OpenAIAssistantVersion::Azure
+            | OpenAIAssistantVersion::AzureVersion { .. } => json!([{
                 "type": "file_search"
             }]),
         }
@@ -127,7 +135,9 @@ impl OpenAIAssistantVersion {
             OpenAIAssistantVersion::V1 => {
                 message_payload["file_ids"] = json!(file_ids);
             }
-            OpenAIAssistantVersion::V2 | OpenAIAssistantVersion::Azure => {
+            OpenAIAssistantVersion::V2
+            | OpenAIAssistantVersion::Azure
+            | OpenAIAssistantVersion::AzureVersion { .. } => {
                 let file_search_json = json!({
                     "type": "file_search"
                 });
@@ -150,11 +160,31 @@ impl OpenAIAssistantVersion {
 impl FromStr for OpenAIAssistantVersion {
     type Err = anyhow::Error;
 
+    /// Parses a string into `OpenAIAssistantVersion`.
+    ///
+    /// Supported formats (case-insensitive):
+    /// - `"v1"` -> `OpenAIAssistantVersion::V1`
+    /// - `"v2"` -> `OpenAIAssistantVersion::V2`
+    /// - `"azure"` -> `OpenAIAssistantVersion::Azure`
+    /// - `"azure:<version>"` -> `OpenAIAssistantVersion::AzureVersion { version }`
+    ///
+    /// Returns an error for unrecognized formats.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
+        let s_lower = s.to_lowercase();
+        match s_lower.as_str() {
             "v1" => Ok(OpenAIAssistantVersion::V1),
             "v2" => Ok(OpenAIAssistantVersion::V2),
-            "azure" => Ok(OpenAIAssistantVersion::Azure),
+            _ if s_lower.starts_with("azure") => {
+                // Check if the string contains a version after "azure:"
+                if let Some(version) = s_lower.strip_prefix("azure:") {
+                    Ok(OpenAIAssistantVersion::AzureVersion {
+                        version: version.trim().to_string(),
+                    })
+                } else {
+                    // Backward compatibility: if it's just "azure", use a default version
+                    Ok(OpenAIAssistantVersion::Azure)
+                }
+            }
             _ => Err(anyhow!("Invalid version: {}", s)),
         }
     }
@@ -180,6 +210,7 @@ mod tests {
     use super::*;
 
     const OPENAI_API_URL: &str = "https://api.openai.com";
+    const DEFAULT_AZURE_VERSION: &str = "2024-06-01";
 
     #[test]
     fn test_v1_assistants_endpoint() {
@@ -191,13 +222,28 @@ mod tests {
 
     #[test]
     fn test_azure_assistant_endpoint() {
-        let version = OpenAIAssistantVersion::Azure;
+        let version = OpenAIAssistantVersion::AzureVersion {
+            version: "2024-05-01-preview".to_string(),
+        };
         let resource = OpenAIAssistantResource::Assistant {
             assistant_id: "123".to_string(),
         };
         let expected_url = format!(
             "{}/openai/assistants/123?api-version=2024-05-01-preview",
             OPENAI_API_URL
+        );
+        assert_eq!(version.get_endpoint(&resource), expected_url);
+    }
+
+    #[test]
+    fn test_default_azure_assistant_endpoint() {
+        let version = OpenAIAssistantVersion::from_str("azure").unwrap();
+        let resource = OpenAIAssistantResource::Assistant {
+            assistant_id: "123".to_string(),
+        };
+        let expected_url = format!(
+            "{}/openai/assistants/123?api-version={}",
+            OPENAI_API_URL, DEFAULT_AZURE_VERSION
         );
         assert_eq!(version.get_endpoint(&resource), expected_url);
     }
@@ -212,7 +258,9 @@ mod tests {
 
     #[test]
     fn test_azure_file_batches_endpoint() {
-        let version = OpenAIAssistantVersion::Azure;
+        let version = OpenAIAssistantVersion::AzureVersion {
+            version: "2024-05-01-preview".to_string(),
+        };
         let resource = OpenAIAssistantResource::VectorStoreFileBatches {
             vector_store_id: "abc".to_string(),
         };
@@ -254,10 +302,63 @@ mod tests {
 
     #[test]
     fn test_azure_tools_payload() {
-        let version = OpenAIAssistantVersion::Azure;
+        let version = OpenAIAssistantVersion::AzureVersion {
+            version: "2024-05-01-preview".to_string(),
+        };
         let expected_payload: Value = json!([{
             "type": "file_search"
         }]);
         assert_eq!(version.get_tools_payload(), expected_payload);
+    }
+
+    // Deserializing from string
+    #[test]
+    fn test_v1_version() {
+        let result = OpenAIAssistantVersion::from_str("v1");
+        assert_eq!(result.unwrap(), OpenAIAssistantVersion::V1);
+    }
+
+    #[test]
+    fn test_v2_version() {
+        let result = OpenAIAssistantVersion::from_str("v2");
+        assert_eq!(result.unwrap(), OpenAIAssistantVersion::V2);
+    }
+
+    #[test]
+    fn test_azure_with_version() {
+        let result = OpenAIAssistantVersion::from_str("azure:2024-09-01");
+        assert_eq!(
+            result.unwrap(),
+            OpenAIAssistantVersion::AzureVersion {
+                version: "2024-09-01".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn test_azure_with_spaces_in_version() {
+        let result = OpenAIAssistantVersion::from_str("azure: 2024-09-01 ");
+        assert_eq!(
+            result.unwrap(),
+            OpenAIAssistantVersion::AzureVersion {
+                version: "2024-09-01".to_string(), // Spaces trimmed
+            }
+        );
+    }
+
+    #[test]
+    fn test_azure_default_version() {
+        let result = OpenAIAssistantVersion::from_str("azure");
+        assert_eq!(result.unwrap(), OpenAIAssistantVersion::Azure);
+    }
+
+    #[test]
+    fn test_invalid_version() {
+        let result = OpenAIAssistantVersion::from_str("invalid_version");
+        assert!(result.is_err());
+        assert_eq!(
+            format!("{}", result.unwrap_err()),
+            "Invalid version: invalid_version"
+        );
     }
 }
