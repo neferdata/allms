@@ -428,11 +428,11 @@ impl LLMModel for OpenAIModels {
             // https://help.openai.com/en/articles/9824962-openai-o1-preview-and-o1-mini-usage-limits-on-chatgpt-and-the-api
             OpenAIModels::O1Preview => RateLimit {
                 tpm: 30_000_000,
-                rpm: 100,
+                rpm: 10_000,
             },
             OpenAIModels::O1Mini => RateLimit {
                 tpm: 150_000_000,
-                rpm: 250,
+                rpm: 30_000,
             },
             OpenAIModels::TextDavinci003 => RateLimit {
                 tpm: 250_000,
