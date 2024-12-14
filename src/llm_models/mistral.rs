@@ -80,7 +80,7 @@ impl LLMModel for MistralModels {
         json_schema: &Value,
         function_call: bool,
         max_tokens: &usize,
-        temperature: &u32,
+        temperature: &f32,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions = self.get_base_instructions(Some(function_call));

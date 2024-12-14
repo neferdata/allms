@@ -80,7 +80,7 @@ impl LLMModel for AnthropicModels {
         json_schema: &Value,
         function_call: bool,
         max_tokens: &usize,
-        temperature: &u32,
+        temperature: &f32,
     ) -> serde_json::Value {
         let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
         let base_instructions = self.get_base_instructions(Some(function_call));

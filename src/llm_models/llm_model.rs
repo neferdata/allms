@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::constants::OPENAI_BASE_INSTRUCTIONS;
 use crate::domain::RateLimit;
+use crate::utils::map_to_range;
 
 ///This trait defines functions that need to be implemented for an enum that represents an LLM Model from any of the API providers
 #[async_trait(?Send)]
@@ -33,7 +34,7 @@ pub trait LLMModel {
         json_schema: &Value,
         function_call: bool,
         max_tokens: &usize,
-        temperature: &u32,
+        temperature: &f32,
     ) -> serde_json::Value;
     ///Makes the call to the correct API for the selected model
     async fn call_api(
@@ -68,5 +69,17 @@ pub trait LLMModel {
 
         //To be safe we go with smaller of the numbers
         std::cmp::min(max_requests_from_rpm, max_requests_from_tpm)
+    }
+    ///Returns the default temperature to be used by the model
+    fn get_default_temperature(&self) -> f32 {
+        0f32
+    }
+    ///Returns the normalized temperature for the model
+    //Input should be a 0-100 number representing the percentage of max temp for the model
+    fn get_normalized_temperature(&self, relative_temp: u32) -> f32 {
+        //Assuming 0-1 range for most models. Different ranges require model-specific implementations.
+        let min = 0u32;
+        let max = 1u32;
+        map_to_range(min, max, relative_temp)
     }
 }

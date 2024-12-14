@@ -15,7 +15,7 @@ pub struct Completions<T: LLMModel> {
     model: T,
     //For prompt & response
     max_tokens: usize,
-    temperature: u32,
+    temperature: f32,
     input_json: Option<String>,
     debug: bool,
     function_call: bool,
@@ -30,12 +30,15 @@ impl<T: LLMModel> Completions<T> {
         max_tokens: Option<usize>,
         temperature: Option<u32>,
     ) -> Self {
+        let temperature = temperature
+            .map(|temp| model.get_normalized_temperature(temp))
+            .unwrap_or(model.get_default_temperature());
         Completions {
             //If no max tokens limit is provided we default to max allowed for the model
             max_tokens: max_tokens.unwrap_or_else(|| model.default_max_tokens()),
             function_call: model.function_call_default(),
             model,
-            temperature: temperature.unwrap_or(0u32), //Low number makes the output less random and more deterministic
+            temperature,
             input_json: None,
             debug: false,
             api_key: api_key.to_string(),
