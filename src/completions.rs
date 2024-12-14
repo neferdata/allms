@@ -23,7 +23,7 @@ pub struct Completions<T: LLMModel> {
 }
 
 impl<T: LLMModel> Completions<T> {
-    ///
+    /// Constructor for the Completions API
     pub fn new(
         model: T,
         api_key: &str,

@@ -440,6 +440,14 @@ impl LLMModel for OpenAIModels {
             },
         }
     }
+
+    // Accepts a [0-100] percentage range and returns the target temperature based on model ranges
+    fn get_normalized_temperature(&self, relative_temp: u32) -> f32 {
+        // Temperature range documentation: https://platform.openai.com/docs/api-reference/chat/create
+        let min = 0u32;
+        let max = 2u32;
+        map_to_range(min, max, relative_temp)
+    }
 }
 
 impl OpenAIModels {
@@ -467,14 +475,6 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4oMini
                 | OpenAIModels::Custom { .. }
         )
-    }
-
-    // Accepts a [0-100] percentage range and returns the target temperature based on model ranges
-    fn get_normalized_temperature(&self, relative_temp: u32) -> f32 {
-        // Temperature range documentation: https://platform.openai.com/docs/api-reference/chat/create
-        let min = 0u32;
-        let max = 2u32;
-        map_to_range(min, max, relative_temp)
     }
 }
 
