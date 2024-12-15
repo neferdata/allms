@@ -39,6 +39,7 @@ pub struct OpenAIAssistant {
     api_key: String,
     version: OpenAIAssistantVersion,
     vector_store: Option<OpenAIVectorStore>,
+    temperature: f32,
 }
 
 impl OpenAIAssistant {
@@ -48,6 +49,7 @@ impl OpenAIAssistant {
             id: None,
             thread_id: None,
             run_id: None,
+            temperature: model.get_default_temperature(),
             model,
             instructions: OPENAI_ASSISTANT_INSTRUCTIONS.to_string(),
             debug: false,
@@ -75,6 +77,25 @@ impl OpenAIAssistant {
         self
     }
 
+    ///
+    /// This method can be used to define the model temperature used by the Assistant
+    /// This method accepts % target of the acceptable range for the model
+    ///
+    pub fn temperature(mut self, temp_target: u32) -> Self {
+        self.temperature = self.model.get_normalized_temperature(temp_target);
+        self
+    }
+
+    ///
+    /// This method can be used to define the model temperature used by the Assistant
+    /// Using this method the temperature can be set directly without any validation of the range accepted by the model
+    /// For a range-safe implementation please consider using `OpenAIAssistant::temperature` method
+    ///
+    pub fn temperature_unchecked(mut self, temp: f32) -> Self {
+        self.temperature = temp;
+        self
+    }
+
     /*
      * This function creates an Assistant and updates the ID of the OpenAIAssistant struct
      */
@@ -90,6 +111,7 @@ impl OpenAIAssistant {
         let mut assistant_body = json!({
             "instructions": self.instructions.clone(),
             "model": self.model.as_str(),
+            "temperature": self.temperature,
         });
 
         //Get the retrieval / file_search part of the payload (if supported)
