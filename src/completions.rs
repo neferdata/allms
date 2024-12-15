@@ -1,12 +1,11 @@
 use anyhow::{anyhow, Result};
 use log::{error, info, warn};
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
 
 use crate::domain::{AllmsError, OpenAIDataResponse};
 use crate::llm_models::LLMModel;
-use crate::utils::get_tokenizer;
+use crate::utils::{get_tokenizer, get_type_schema};
 
 /// Completions APIs take a list of messages as input and return a model-generated message as output.
 /// Although the Completions format is designed to make multi-turn conversations easy,
@@ -93,8 +92,7 @@ impl<T: LLMModel> Completions<T> {
         instructions: &str,
     ) -> Result<usize> {
         //Output schema is extracted from the type parameter
-        let schema = schema_for!(U);
-        let json_value: Value = serde_json::to_value(&schema)?;
+        let schema = get_type_schema::<U>()?;
 
         let prompt = format!(
             "Instructions:
@@ -115,7 +113,7 @@ impl<T: LLMModel> Completions<T> {
             //Instructions & context data
             prompt,
             //Output schema
-            serde_json::to_string(&json_value).unwrap_or_default()
+            schema
         );
 
         //Check how many tokens are required for prompt
@@ -136,8 +134,8 @@ impl<T: LLMModel> Completions<T> {
         instructions: &str,
     ) -> Result<U> {
         //Output schema is extracted from the type parameter
-        let schema = schema_for!(U);
-        let json_value: Value = serde_json::to_value(&schema)?;
+        let schema = get_type_schema::<U>()?;
+        let json_schema = serde_json::from_str(&schema)?;
 
         let prompt = format!(
             "Instructions:
@@ -177,7 +175,7 @@ impl<T: LLMModel> Completions<T> {
         //Build the API body depending on the used model
         let model_body = self.model.get_body(
             &prompt,
-            &json_value,
+            &json_schema,
             self.function_call,
             &response_tokens,
             &self.temperature,
