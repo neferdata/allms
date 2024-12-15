@@ -250,7 +250,7 @@ mod tests {
 
         // Verify pretty-printed formatting by checking indentation
         assert!(
-            schema_json.contains("\n"),
+            schema_json.contains('\n'),
             "Expected pretty-printed JSON with line breaks"
         );
         assert!(
