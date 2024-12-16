@@ -3,7 +3,7 @@ use jsonschema::JSONSchema;
 use log::error;
 use log::info;
 use reqwest::Client;
-use schemars::{schema_for, JsonSchema};
+use schemars::JsonSchema;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -19,7 +19,7 @@ use crate::domain::{
 };
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::llm_models::{LLMModel, OpenAIModels};
-use crate::utils::sanitize_json_response;
+use crate::utils::{get_type_schema, sanitize_json_response};
 
 /// [OpenAI Docs](https://platform.openai.com/docs/assistants/overview)
 ///
@@ -171,19 +171,7 @@ impl OpenAIAssistant {
     ) -> Result<T> {
         // Instruct the Assistant to answer with the right Json format
         // Output schema is extracted from the type parameter
-        let schema = schema_for!(T);
-
-        // Convert the schema to a JSON value
-        let mut schema_json: Value = serde_json::to_value(&schema)?;
-
-        // Remove '$schema' and 'title' elements that are added by schema_for macro but are not needed
-        if let Some(obj) = schema_json.as_object_mut() {
-            obj.remove("$schema");
-            obj.remove("title");
-        }
-
-        // Convert the modified JSON value back to a pretty-printed JSON string
-        let schema_string = serde_json::to_string_pretty(&schema_json)?;
+        let schema_string = get_type_schema::<T>()?;
 
         // Call assistant
         let assistant_response = self
