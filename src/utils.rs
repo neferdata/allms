@@ -81,6 +81,17 @@ fn fix_value_schema(schema: &mut schemars::schema::RootSchema) {
     }
 }
 
+//Used internally to pick a number from range based on its % representation
+pub(crate) fn map_to_range(min: u32, max: u32, target: u32) -> f32 {
+    // Cap the target to the percentage range [0, 100]
+    let capped_target = target.min(100);
+
+    // Calculate the target value in the range [min, max]
+    let range = max as f32 - min as f32;
+    let percentage = capped_target as f32 / 100.0;
+    min as f32 + (range * percentage)
+}
+
 #[cfg(test)]
 mod tests {
     use schemars::schema::{InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject};
@@ -89,7 +100,7 @@ mod tests {
     use serde_json::Value;
 
     use crate::llm_models::OpenAIModels;
-    use crate::utils::{fix_value_schema, get_tokenizer, get_type_schema};
+    use crate::utils::{fix_value_schema, get_tokenizer, get_type_schema, map_to_range};
 
     #[derive(JsonSchema, Serialize, Deserialize)]
     struct SimpleStruct {
@@ -108,6 +119,7 @@ mod tests {
         optional_field: Option<String>,
     }
 
+    // Tokenizer tests
     #[test]
     fn it_computes_gpt3_5_tokenization() {
         let bpe = get_tokenizer(&OpenAIModels::Gpt4_32k).unwrap();
@@ -368,5 +380,44 @@ mod tests {
 
         // Assert that the schema's object field is still None
         assert!(schema.schema.object.is_none());
+    }
+
+    // Mapping % target to temperature range
+    #[test]
+    fn test_target_at_min() {
+        assert_eq!(map_to_range(0, 100, 0), 0.0);
+        assert_eq!(map_to_range(10, 20, 0), 10.0);
+    }
+
+    #[test]
+    fn test_target_at_max() {
+        assert_eq!(map_to_range(0, 100, 100), 100.0);
+        assert_eq!(map_to_range(10, 20, 100), 20.0);
+    }
+
+    #[test]
+    fn test_target_in_middle() {
+        assert_eq!(map_to_range(0, 100, 50), 50.0);
+        assert_eq!(map_to_range(10, 20, 50), 15.0);
+        assert_eq!(map_to_range(0, 1, 50), 0.5);
+    }
+
+    #[test]
+    fn test_target_out_of_bounds() {
+        assert_eq!(map_to_range(0, 100, 3000), 100.0); // Cap to 100
+        assert_eq!(map_to_range(0, 100, 200), 100.0); // Cap to 100
+        assert_eq!(map_to_range(10, 20, 200), 20.0); // Cap to 100
+    }
+
+    #[test]
+    fn test_zero_range() {
+        assert_eq!(map_to_range(10, 10, 50), 10.0); // Always return min if min == max
+        assert_eq!(map_to_range(5, 5, 100), 5.0); // Even at max target
+    }
+
+    #[test]
+    fn test_negative_behavior_not_applicable() {
+        // Not applicable for unsigned inputs but could test edge cases:
+        assert_eq!(map_to_range(0, 100, 0), 0.0);
     }
 }
