@@ -9,7 +9,7 @@ use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
     llm_models::LLMModel,
-    utils::sanitize_json_response,
+    utils::{map_to_range, sanitize_json_response},
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -156,7 +156,7 @@ impl LLMModel for OpenAIModels {
         json_schema: &Value,
         function_call: bool,
         max_tokens: &usize,
-        temperature: &u32,
+        temperature: &f32,
     ) -> serde_json::Value {
         match self {
             //https://platform.openai.com/docs/api-reference/completions/create
@@ -439,6 +439,14 @@ impl LLMModel for OpenAIModels {
                 rpm: 3_000,
             },
         }
+    }
+
+    // Accepts a [0-100] percentage range and returns the target temperature based on model ranges
+    fn get_normalized_temperature(&self, relative_temp: u32) -> f32 {
+        // Temperature range documentation: https://platform.openai.com/docs/api-reference/chat/create
+        let min = 0u32;
+        let max = 2u32;
+        map_to_range(min, max, relative_temp)
     }
 }
 

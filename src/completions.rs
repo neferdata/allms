@@ -15,7 +15,7 @@ pub struct Completions<T: LLMModel> {
     model: T,
     //For prompt & response
     max_tokens: usize,
-    temperature: u32,
+    temperature: f32,
     input_json: Option<String>,
     debug: bool,
     function_call: bool,
@@ -23,46 +23,68 @@ pub struct Completions<T: LLMModel> {
 }
 
 impl<T: LLMModel> Completions<T> {
-    ///
+    /// Constructor for the Completions API
     pub fn new(
         model: T,
         api_key: &str,
         max_tokens: Option<usize>,
         temperature: Option<u32>,
     ) -> Self {
+        let temperature = temperature
+            .map(|temp| model.get_normalized_temperature(temp))
+            .unwrap_or(model.get_default_temperature());
         Completions {
             //If no max tokens limit is provided we default to max allowed for the model
             max_tokens: max_tokens.unwrap_or_else(|| model.default_max_tokens()),
             function_call: model.function_call_default(),
             model,
-            temperature: temperature.unwrap_or(0u32), //Low number makes the output less random and more deterministic
+            temperature,
             input_json: None,
             debug: false,
             api_key: api_key.to_string(),
         }
     }
 
-    /*
-     * This function turns on debug mode which will info! the prompt to log when executing it.
-     */
+    ///
+    /// This function turns on debug mode which will info! the prompt to log when executing it.
+    ///
     pub fn debug(mut self) -> Self {
         self.debug = true;
         self
     }
 
-    /*
-     * This function turns on/off function calling mode when interacting with OpenAI API.
-     */
+    ///
+    /// This function turns on/off function calling mode when interacting with OpenAI API.
+    ///
     pub fn function_calling(mut self, function_call: bool) -> Self {
         self.function_call = function_call;
         self
     }
 
-    /*
-     * This method can be used to provide values that will be used as context for the prompt.
-     * Using this function you can provide multiple input values by calling it multiple times. New values will be appended with the category name
-     * It accepts any instance that implements the Serialize trait.
-     */
+    ///
+    /// This method can be used to define the model temperature used by the Assistant
+    /// This method accepts % target of the acceptable range for the model
+    ///
+    pub fn temperature(mut self, temp_target: u32) -> Self {
+        self.temperature = self.model.get_normalized_temperature(temp_target);
+        self
+    }
+
+    ///
+    /// This method can be used to define the model temperature used by the Assistant
+    /// Using this method the temperature can be set directly without any validation of the range accepted by the model
+    /// For a range-safe implementation please consider using `OpenAIAssistant::temperature` method
+    ///
+    pub fn temperature_unchecked(mut self, temp: f32) -> Self {
+        self.temperature = temp;
+        self
+    }
+
+    ///
+    /// This method can be used to provide values that will be used as context for the prompt.
+    /// Using this function you can provide multiple input values by calling it multiple times. New values will be appended with the category name
+    /// It accepts any instance that implements the Serialize trait.
+    ///
     pub fn set_context<U: Serialize>(mut self, input_name: &str, input_data: &U) -> Result<Self> {
         let input_json = if let Ok(json) = serde_json::to_string(&input_data) {
             json
@@ -84,10 +106,10 @@ impl<T: LLMModel> Completions<T> {
         Ok(self)
     }
 
-    /*
-     * This method is used to check how many tokens would most likely remain for the response
-     * This is accomplished by estimating number of tokens needed for system/base instructions, user prompt, and function components including schema definition.
-     */
+    ///
+    /// This method is used to check how many tokens would most likely remain for the response
+    /// This is accomplished by estimating number of tokens needed for system/base instructions, user prompt, and function components including schema definition.
+    ///
     pub fn check_prompt_tokens<U: JsonSchema + DeserializeOwned>(
         &self,
         instructions: &str,
@@ -126,11 +148,11 @@ impl<T: LLMModel> Completions<T> {
         Ok((prompt_tokens as f64 * 1.05) as usize)
     }
 
-    /*
-     * This method is used to submit a prompt to OpenAI and process the response.
-     * When calling the function you need to specify the type parameter as the response will match the schema of that type.
-     * The prompt in this function is written in a way to instruct OpenAI to behave like a computer function that calculates an output based on provided input and its language model.
-     */
+    ///
+    /// This method is used to submit a prompt to OpenAI and process the response.
+    /// When calling the function you need to specify the type parameter as the response will match the schema of that type.
+    /// The prompt in this function is written in a way to instruct OpenAI to behave like a computer function that calculates an output based on provided input and its language model.
+    ///
     pub async fn get_answer<U: JsonSchema + DeserializeOwned>(
         self,
         instructions: &str,
