@@ -37,7 +37,7 @@ impl LLMModel for PerplexityModels {
         }
     }
 
-    // TODO: https://docs.perplexity.ai/guides/rate-limits
+    // https://docs.perplexity.ai/guides/model-cards
     fn default_max_tokens(&self) -> usize {
         127_072
     }
