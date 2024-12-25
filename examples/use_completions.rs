@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use allms::{
-    llm::{AnthropicModels, GoogleModels, LLMModel, MistralModels, OpenAIModels},
+    llm::{AnthropicModels, GoogleModels, LLMModel, MistralModels, OpenAIModels, PerplexityModels},
     Completions,
 };
 
@@ -25,7 +25,7 @@ async fn main() {
 
     // Get answer using OpenAI
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::try_from_str("o1-preview").unwrap_or(OpenAIModels::O1Preview); // Choose the model
+    let model = OpenAIModels::try_from_str("gpt-4o-mini").unwrap_or(OpenAIModels::Gpt4oMini); // Choose the model
     println!("OpenAI model: {:#?}", model.as_str());
 
     let openai_completion = Completions::new(model, &openai_api_key, None, None);
@@ -87,6 +87,24 @@ async fn main() {
         .await
     {
         Ok(response) => println!("Gemini response: {:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Get answer using Perplexity
+    let model = PerplexityModels::try_from_str("llama-3.1-sonar-small-128k-online")
+        .unwrap_or(PerplexityModels::Llama3_1SonarSmall); // Choose the model
+    println!("Perplexity model: {:#?}", model.as_str());
+
+    let perplexity_token_str: String =
+        std::env::var("PERPLEXITY_API_KEY").expect("PERPLEXITY_API_KEY not set");
+
+    let perplexity_completion = Completions::new(model, &perplexity_token_str, None, None);
+
+    match perplexity_completion
+        .get_answer::<TranslationResponse>(instructions)
+        .await
+    {
+        Ok(response) => println!("Perplexity response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }

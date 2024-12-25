@@ -299,3 +299,39 @@ pub struct AllmsError {
     pub error_message: String,
     pub error_detail: String,
 }
+
+// Perplexity API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PerplexityAPICompletionsResponse {
+    pub id: Option<String>,
+    pub model: Option<String>,
+    pub object: Option<String>,
+    pub created: Option<usize>,
+    pub choices: Vec<PerplexityAPICompletionsChoices>,
+    pub citations: Option<Vec<String>>,
+    pub usage: Option<PerplexityAPICompletionsUsage>,
+}
+
+// Perplexity API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PerplexityAPICompletionsChoices {
+    pub index: usize,
+    pub message: Option<PerplexityAPICompletionsMessage>,
+    pub delta: Option<PerplexityAPICompletionsMessage>,
+    pub finish_reason: String,
+}
+
+// Perplexity API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PerplexityAPICompletionsMessage {
+    pub role: Option<String>,
+    pub content: Option<String>,
+}
+
+// Perplexity API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PerplexityAPICompletionsUsage {
+    pub prompt_tokens: usize,
+    pub completion_tokens: usize,
+    pub total_tokens: usize,
+}

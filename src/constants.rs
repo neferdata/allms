@@ -33,6 +33,11 @@ lazy_static! {
         );
 }
 
+lazy_static! {
+    pub(crate) static ref PERPLEXITY_API_URL: String = std::env::var("PERPLEXITY_API_URL")
+        .unwrap_or("https://api.perplexity.ai/chat/completions".to_string());
+}
+
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
 Step 1: Review and understand the 'instructions' from the *Instructions* section.
