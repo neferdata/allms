@@ -2,11 +2,11 @@
 [![crates.io](https://img.shields.io/crates/v/allms.svg)](https://crates.io/crates/allms)
 [![docs.rs](https://docs.rs/allms/badge.svg)](https://docs.rs/allms)
 
-This Rust library is specialized in providing type-safe interactions with APIs of the following LLM providers: OpenAI, Anthropic, Mistral, Google Gemini. (More providers to be added in the future.) It's designed to simplify the process of experimenting with different models. It de-risks the process of migrating between providers reducing vendor lock-in issues. It also standardizes serialization of sending requests to LLM APIs and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. With allms you can focus on creating effective prompts and providing LLM with the right context, instead of worrying about differences in API implementations.
+This Rust library is specialized in providing type-safe interactions with APIs of the following LLM providers: OpenAI, Anthropic, Mistral, Google Gemini, Perplexity. (More providers to be added in the future.) It's designed to simplify the process of experimenting with different models. It de-risks the process of migrating between providers reducing vendor lock-in issues. It also standardizes serialization of sending requests to LLM APIs and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. With allms you can focus on creating effective prompts and providing LLM with the right context, instead of worrying about differences in API implementations.
 
 ## Features
 
-- Support for various LLM models including OpenAI (GPT-3.5, GPT-4), Anthropic (Claude, Claude Instant), Mistral, or Google GeminiPro.
+- Support for various LLM models including OpenAI (GPT-3.5, GPT-4), Anthropic (Claude, Claude Instant), Mistral, Google GeminiPro, and Perplexity.
 - Easy-to-use functions for chat/text completions and assistants. Use the same struct and methods regardless of which model you choose.
 - Automated response deserialization to custom types.
 - Standardized approach to providing context with support of function calling, tools, and file uploads.
@@ -37,6 +37,10 @@ Google Vertex AI / AI Studio:
 - APIs: Chat Completions (including streaming)
 - Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro
 
+Perplexity:
+- APIs: Chat Completions
+- Models: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
+
 ### Prerequisites
 - OpenAI: API key (passed in model constructor)
 - Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
@@ -44,6 +48,7 @@ Google Vertex AI / AI Studio:
 - Mistral: API key (passed in model constructor)
 - Google AI Studio: API key (passed in model constructor)
 - Google Vertex AI: GCP service account key (used to obtain access token) + GCP project ID (set as environment variable)
+- Perplexity: API key (passed in model constructor)
 
 ### Examples
 Explore the `examples` directory to see more use cases and how to use different LLM providers and endpoint types.
@@ -63,6 +68,10 @@ let mistral_answer = Completions::new(MistralModels::MistralSmall, &API_KEY, Non
     .await?
 
 let google_answer = Completions::new(GoogleModels::GeminiPro, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let perplexity_answer = Completions::new(PerplexityModels::Llama3_1SonarSmall, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 ```
