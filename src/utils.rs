@@ -92,6 +92,17 @@ pub(crate) fn map_to_range(min: u32, max: u32, target: u32) -> f32 {
     min as f32 + (range * percentage)
 }
 
+//Used internally to pick a number from range based on its % representation
+pub(crate) fn map_to_range_f32(min: f32, max: f32, target: u32) -> f32 {
+    // Cap the target to the percentage range [0, 100]
+    let capped_target = target.min(100);
+
+    // Calculate the target value in the range [min, max]
+    let range = max - min;
+    let percentage = capped_target as f32 / 100.0;
+    min + (range * percentage)
+}
+
 #[cfg(test)]
 mod tests {
     use schemars::schema::{InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject};
@@ -100,7 +111,9 @@ mod tests {
     use serde_json::Value;
 
     use crate::llm_models::OpenAIModels;
-    use crate::utils::{fix_value_schema, get_tokenizer, get_type_schema, map_to_range};
+    use crate::utils::{
+        fix_value_schema, get_tokenizer, get_type_schema, map_to_range, map_to_range_f32,
+    };
 
     #[derive(JsonSchema, Serialize, Deserialize)]
     struct SimpleStruct {
@@ -419,5 +432,51 @@ mod tests {
     fn test_negative_behavior_not_applicable() {
         // Not applicable for unsigned inputs but could test edge cases:
         assert_eq!(map_to_range(0, 100, 0), 0.0);
+    }
+
+    #[test]
+    fn test_target_at_min_f32() {
+        assert_eq!(map_to_range_f32(0.0, 100.0, 0), 0.0);
+        assert_eq!(map_to_range_f32(10.0, 20.0, 0), 10.0);
+    }
+
+    #[test]
+    fn test_target_at_max_f32() {
+        assert_eq!(map_to_range_f32(0.0, 100.0, 100), 100.0);
+        assert_eq!(map_to_range_f32(10.0, 20.0, 100), 20.0);
+    }
+
+    #[test]
+    fn test_target_in_middle_f32() {
+        assert_eq!(map_to_range_f32(0.0, 100.0, 50), 50.0);
+        assert_eq!(map_to_range_f32(10.0, 20.0, 50), 15.0);
+        assert_eq!(map_to_range_f32(0.0, 1.0, 50), 0.5);
+    }
+
+    #[test]
+    fn test_target_out_of_bounds_f32() {
+        assert_eq!(map_to_range_f32(0.0, 100.0, 3000), 100.0); // Cap to 100
+        assert_eq!(map_to_range_f32(0.0, 100.0, 200), 100.0); // Cap to 100
+        assert_eq!(map_to_range_f32(10.0, 20.0, 200), 20.0); // Cap to 100
+    }
+
+    #[test]
+    fn test_zero_range_f32() {
+        assert_eq!(map_to_range_f32(10.0, 10.0, 50), 10.0); // Always return min if min == max
+        assert_eq!(map_to_range_f32(5.0, 5.0, 100), 5.0); // Even at max target
+    }
+
+    #[test]
+    fn test_fractional_range_f32() {
+        assert_eq!(map_to_range_f32(0.0, 0.5, 50), 0.25);
+        assert_eq!(map_to_range_f32(1.5, 3.0, 25), 1.875);
+        assert_eq!(map_to_range_f32(-1.0, 1.0, 75), 0.5);
+    }
+
+    #[test]
+    fn test_large_range_f32() {
+        assert_eq!(map_to_range_f32(-1000.0, 1000.0, 50), 0.0); // Midpoint of the range
+        assert_eq!(map_to_range_f32(-500.0, 500.0, 25), -250.0); // Quarter point
+        assert_eq!(map_to_range_f32(-2000.0, 0.0, 75), -500.0); // Three-quarters
     }
 }
