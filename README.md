@@ -6,7 +6,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 
 ## Features
 
-- Support for various LLM models including OpenAI (GPT-3.5, GPT-4), Anthropic (Claude, Claude Instant), Mistral, Google GeminiPro, and Perplexity.
+- Support for various foundational LLM providers including Anthropic, AWS Bedrock, Azure, Google Gemini, OpenAI, Mistral, and Perplexity.
 - Easy-to-use functions for chat/text completions and assistants. Use the same struct and methods regardless of which model you choose.
 - Automated response deserialization to custom types.
 - Standardized approach to providing context with support of function calling, tools, and file uploads.
@@ -15,9 +15,9 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 - Asynchronous support using Tokio.
 
 ### Foundational Models
-OpenAI:
-- APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
-- Models: o1 Preview, o1 Mini (Chat Completions only), GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
+Anthropic:
+- APIs: Messages, Text Completions
+- Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
 Azure OpenAI:
 - APIs: Assistants, Files, Vector Stores, Tools
@@ -25,29 +25,34 @@ Azure OpenAI:
 - Models: as per model deployments in Azure OpenAI Studio
     - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
 
-Anthropic:
-- APIs: Messages, Text Completions
-- Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
+AWS Bedrock:
+- APIs: Converse
+- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
+
+Google Vertex AI / AI Studio:
+- APIs: Chat Completions (including streaming)
+- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro
 
 Mistral:
 - APIs: Chat Completions
 - Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
-Google Vertex AI / AI Studio:
-- APIs: Chat Completions (including streaming)
-- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro
+OpenAI:
+- APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
+- Models: o1 Preview, o1 Mini (Chat Completions only), GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 
 Perplexity:
 - APIs: Chat Completions
 - Models: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 ### Prerequisites
-- OpenAI: API key (passed in model constructor)
-- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - Anthropic: API key (passed in model constructor)
-- Mistral: API key (passed in model constructor)
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
+- AWS Bedrock: environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION` set as per AWS settings.
 - Google AI Studio: API key (passed in model constructor)
 - Google Vertex AI: GCP service account key (used to obtain access token) + GCP project ID (set as environment variable)
+- Mistral: API key (passed in model constructor)
+- OpenAI: API key (passed in model constructor)
 - Perplexity: API key (passed in model constructor)
 
 ### Examples
@@ -55,11 +60,15 @@ Explore the `examples` directory to see more use cases and how to use different 
 
 Using `Completions` API with different foundational models:
 ```
-let openai_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+let anthropic_answer = Completions::new(AnthropicModels::Claude2, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
-let anthropic_answer = Completions::new(AnthropicModels::Claude2, &API_KEY, None, None)
+let aws_bedrock_answer = Completions::new(AwsBedrockModels::NovaLite, "", None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let google_answer = Completions::new(GoogleModels::GeminiPro, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
@@ -67,7 +76,7 @@ let mistral_answer = Completions::new(MistralModels::MistralSmall, &API_KEY, Non
     .get_answer::<T>(instructions)
     .await?
 
-let google_answer = Completions::new(GoogleModels::GeminiPro, &API_KEY, None, None)
+let openai_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
