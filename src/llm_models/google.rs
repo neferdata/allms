@@ -146,7 +146,7 @@ impl LLMModel for GoogleModels {
                     .send()
                     .await?;
 
-                //For Vertex we are streaming that data spo we need to deserialize each chunk separately
+                //For Vertex we are streaming that data so we need to deserialize each chunk separately
                 // Check if the API uses streaming
                 if response.status().is_success() {
                     let mut stream = response.bytes_stream();
