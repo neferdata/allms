@@ -1,3 +1,4 @@
+use crate::utils::sanitize_json_response;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use aws_config::BehaviorVersion;
@@ -8,7 +9,6 @@ use aws_sdk_bedrockruntime::{
 use log::info;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::utils::sanitize_json_response;
 
 use crate::constants::{AWS_BEDROCK_API_URL, AWS_REGION};
 use crate::domain::RateLimit;
@@ -27,7 +27,7 @@ struct AwsBedrockRequestBody {
 pub enum AwsBedrockModels {
     NovaPro,
     NovaLite,
-    NovaMicro
+    NovaMicro,
 }
 
 #[async_trait(?Send)]
@@ -97,16 +97,20 @@ impl LLMModel for AwsBedrockModels {
         let client = Client::new(&sdk_config);
 
         // Get request info from body
-        let request_body_opt: Option<AwsBedrockRequestBody> = serde_json::from_value(body.clone()).ok();
-        let (instructions_opt, json_schema_opt, max_tokens_opt, temperature_opt) = request_body_opt.map_or_else(
-            || (None, None, None, None),
-            |request_body| (
-                Some(request_body.instructions),
-                Some(request_body.json_schema),
-                Some(request_body.max_tokens),
-                Some(request_body.temperature),
-            ),
-        );
+        let request_body_opt: Option<AwsBedrockRequestBody> =
+            serde_json::from_value(body.clone()).ok();
+        let (instructions_opt, json_schema_opt, max_tokens_opt, temperature_opt) = request_body_opt
+            .map_or_else(
+                || (None, None, None, None),
+                |request_body| {
+                    (
+                        Some(request_body.instructions),
+                        Some(request_body.json_schema),
+                        Some(request_body.max_tokens),
+                        Some(request_body.temperature),
+                    )
+                },
+            );
 
         // Get base instructions
         let base_instructions = self.get_base_instructions(None);
@@ -115,25 +119,26 @@ impl LLMModel for AwsBedrockModels {
             .converse()
             .model_id(self.as_str())
             .system(SystemContentBlock::Text(base_instructions));
-        
+
         // Add user instructions including the expected output schema if specifed
         let instructions = instructions_opt.unwrap_or_default();
         let user_instructions = json_schema_opt
-            .map(|schema| format!(
-                "Output Json schema:\n
+            .map(|schema| {
+                format!(
+                    "Output Json schema:\n
                 {schema}\n\n
                 {instructions}"
-            ))
+                )
+            })
             .unwrap_or(instructions);
-        let converse_builder = converse_builder
-            .messages(
-                Message::builder()
-                    .role(ConversationRole::User)
-                    .content(ContentBlock::Text(user_instructions))
-                    .build()
-                    .map_err(|_| anyhow!("failed to build message"))?,
-            );
-        
+        let converse_builder = converse_builder.messages(
+            Message::builder()
+                .role(ConversationRole::User)
+                .content(ContentBlock::Text(user_instructions))
+                .build()
+                .map_err(|_| anyhow!("failed to build message"))?,
+        );
+
         // If specified add inference config
         let converse_builder = if max_tokens_opt.is_some() || temperature_opt.is_some() {
             let inference_config = InferenceConfiguration::builder()
@@ -146,9 +151,7 @@ impl LLMModel for AwsBedrockModels {
         };
 
         // Send request
-        let converse_response = converse_builder
-            .send()
-            .await?;
+        let converse_response = converse_builder.send().await?;
 
         if debug {
             info!(
@@ -156,7 +159,7 @@ impl LLMModel for AwsBedrockModels {
                 &converse_response
             );
         }
-    
+
         //Parse the response and return the assistant content
         let text = converse_response
             .output()
@@ -170,7 +173,6 @@ impl LLMModel for AwsBedrockModels {
             .map_err(|_| anyhow!("content is not text"))?
             .to_string();
         Ok(sanitize_json_response(&text))
-
     }
 
     /// AWS Bedrock implementation leverages AWS Bedrock SDK, therefore data extraction is implemented directly in `call_api` method and this method only passes the data on
@@ -180,14 +182,13 @@ impl LLMModel for AwsBedrockModels {
 
     //This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
-        // Docs: https://docs.aws.amazon.com/general/latest/gr/bedrock.html 
+        // Docs: https://docs.aws.amazon.com/general/latest/gr/bedrock.html
         match self {
             AwsBedrockModels::NovaPro => RateLimit {
                 tpm: 400_000,
                 rpm: 100,
             },
-            AwsBedrockModels::NovaLite 
-            | AwsBedrockModels::NovaMicro => RateLimit {
+            AwsBedrockModels::NovaLite | AwsBedrockModels::NovaMicro => RateLimit {
                 tpm: 2_000_000,
                 rpm: 1_000,
             },

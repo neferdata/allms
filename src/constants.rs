@@ -47,8 +47,10 @@ lazy_static! {
 }
 
 lazy_static! {
-    pub(crate) static ref AWS_ACCESS_KEY_ID: String = std::env::var("AWS_ACCESS_KEY_ID").expect("AWS_ACCESS_KEY_ID not set");
-    pub(crate) static ref AWS_SECRET_ACCESS_KEY: String = std::env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY not set");
+    pub(crate) static ref AWS_ACCESS_KEY_ID: String =
+        std::env::var("AWS_ACCESS_KEY_ID").expect("AWS_ACCESS_KEY_ID not set");
+    pub(crate) static ref AWS_SECRET_ACCESS_KEY: String =
+        std::env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY not set");
 }
 
 //Generic OpenAI instructions

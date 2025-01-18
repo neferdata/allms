@@ -3,7 +3,10 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use allms::{
-    llm::{AnthropicModels, AwsBedrockModels, GoogleModels, LLMModel, MistralModels, OpenAIModels, PerplexityModels},
+    llm::{
+        AnthropicModels, AwsBedrockModels, GoogleModels, LLMModel, MistralModels, OpenAIModels,
+        PerplexityModels,
+    },
     Completions,
 };
 
@@ -25,7 +28,8 @@ async fn main() {
 
     // Get answer using AWS Bedrock Converse
     // AWS Bedrock SDK requires `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables to be defined and matching your AWS account
-    let model = AwsBedrockModels::try_from_str("amazon.nova-lite-v1:0").unwrap_or(AwsBedrockModels::NovaLite); // Choose the model
+    let model = AwsBedrockModels::try_from_str("amazon.nova-lite-v1:0")
+        .unwrap_or(AwsBedrockModels::NovaLite); // Choose the model
     println!("AWS Bedrock model: {:#?}", model.as_str());
 
     let aws_completion = Completions::new(model, "", None, None);
