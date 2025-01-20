@@ -23,7 +23,7 @@ struct AwsBedrockRequestBody {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-//Mistral docs: https://docs.mistral.ai/platform/endpoints
+// AWS Bedrock docs: https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html
 pub enum AwsBedrockModels {
     NovaPro,
     NovaLite,
