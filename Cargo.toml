@@ -1,6 +1,6 @@
 [package]
 name = "allms"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
@@ -16,6 +16,8 @@ categories = ["api-bindings", "development-tools", "parsing", "science", "text-p
 
 [dependencies]
 anyhow = "1.0.60"
+aws-config = "1.5.4"
+aws-sdk-bedrockruntime = "1.40.0"
 env_logger = "0.9.0"
 jsonschema = "=0.15.2"
 log = "0.4.0"

@@ -12,3 +12,4 @@ target/
 .idea
 examples/secrets
 examples/data
+.env

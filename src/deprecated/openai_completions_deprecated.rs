@@ -376,7 +376,6 @@ pub struct OpenAI {
 }
 
 impl OpenAI {
-    ///
     pub fn new(
         open_ai_key: &str,
         model: OpenAIModels,

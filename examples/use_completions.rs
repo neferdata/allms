@@ -3,7 +3,10 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use allms::{
-    llm::{AnthropicModels, GoogleModels, LLMModel, MistralModels, OpenAIModels, PerplexityModels},
+    llm::{
+        AnthropicModels, AwsBedrockModels, GoogleModels, LLMModel, MistralModels, OpenAIModels,
+        PerplexityModels,
+    },
     Completions,
 };
 
@@ -22,6 +25,22 @@ async fn main() {
     // Example context and instructions
     let instructions =
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
+
+    // Get answer using AWS Bedrock Converse
+    // AWS Bedrock SDK requires `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables to be defined and matching your AWS account
+    let model = AwsBedrockModels::try_from_str("amazon.nova-lite-v1:0")
+        .unwrap_or(AwsBedrockModels::NovaLite); // Choose the model
+    println!("AWS Bedrock model: {:#?}", model.as_str());
+
+    let aws_completion = Completions::new(model, "", None, None);
+
+    match aws_completion
+        .get_answer::<TranslationResponse>(instructions)
+        .await
+    {
+        Ok(response) => println!("AWS Bedrock response: {:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
 
     // Get answer using OpenAI
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");

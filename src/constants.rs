@@ -38,6 +38,21 @@ lazy_static! {
         .unwrap_or("https://api.perplexity.ai/chat/completions".to_string());
 }
 
+lazy_static! {
+    /// Docs: https://docs.aws.amazon.com/general/latest/gr/bedrock.html
+    pub(crate) static ref AWS_REGION: String = std::env::var("AWS_REGION").unwrap_or("us-east-1".to_string());
+    pub(crate) static ref AWS_BEDROCK_API_URL: String = {
+        format!("https://bedrock.{}.amazonaws.com", &*AWS_REGION)
+    };
+}
+
+lazy_static! {
+    pub(crate) static ref AWS_ACCESS_KEY_ID: String =
+        std::env::var("AWS_ACCESS_KEY_ID").expect("AWS_ACCESS_KEY_ID not set");
+    pub(crate) static ref AWS_SECRET_ACCESS_KEY: String =
+        std::env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY not set");
+}
+
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
 Step 1: Review and understand the 'instructions' from the *Instructions* section.
