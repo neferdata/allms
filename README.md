@@ -47,8 +47,8 @@ Perplexity:
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)
-- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - AWS Bedrock: environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION` set as per AWS settings.
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - Google AI Studio: API key (passed in model constructor)
 - Google Vertex AI: GCP service account key (used to obtain access token) + GCP project ID (set as environment variable)
 - Mistral: API key (passed in model constructor)
