@@ -19,18 +19,18 @@ pub enum PerplexityModels {
     Sonar,
     // Legacy models
     #[deprecated(
-        since = "February 22, 2025",
-        note = "Llama3_1SonarSmall is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
+        since = "0.12.0",
+        note = "`Llama3_1SonarSmall` is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
     )]
     Llama3_1SonarSmall,
     #[deprecated(
-        since = "February 22, 2025",
-        note = "Llama3_1SonarLarge is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
+        since = "0.12.0",
+        note = "`Llama3_1SonarLarge` is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
     )]
     Llama3_1SonarLarge,
     #[deprecated(
-        since = "February 22, 2025",
-        note = "Llama3_1SonarHuge is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
+        since = "0.12.0",
+        note = "`Llama3_1SonarHuge` is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
     )]
     Llama3_1SonarHuge,
 }
