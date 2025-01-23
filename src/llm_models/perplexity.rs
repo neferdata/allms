@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use log::info;
@@ -10,11 +12,26 @@ use crate::domain::{PerplexityAPICompletionsResponse, RateLimit};
 use crate::llm_models::LLMModel;
 use crate::utils::{map_to_range_f32, sanitize_json_response};
 
+// Perplexity API Docs: https://docs.perplexity.ai/api-reference/chat-completions
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-//Mistral docs: https://docs.mistral.ai/platform/endpoints
 pub enum PerplexityModels {
+    SonarPro,
+    Sonar,
+    // Legacy models
+    #[deprecated(
+        since = "February 22, 2025",
+        note = "Llama3_1SonarSmall is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
+    )]
     Llama3_1SonarSmall,
+    #[deprecated(
+        since = "February 22, 2025",
+        note = "Llama3_1SonarLarge is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
+    )]
     Llama3_1SonarLarge,
+    #[deprecated(
+        since = "February 22, 2025",
+        note = "Llama3_1SonarHuge is deprecated starting February 22, 2025, please use `Sonar` or `SonarPro` instead."
+    )]
     Llama3_1SonarHuge,
 }
 
@@ -22,16 +39,28 @@ pub enum PerplexityModels {
 impl LLMModel for PerplexityModels {
     fn as_str(&self) -> &str {
         match self {
+            PerplexityModels::SonarPro => "sonar-pro",
+            PerplexityModels::Sonar => "sonar",
+            // Legacy models
+            #[allow(deprecated)]
             PerplexityModels::Llama3_1SonarSmall => "llama-3.1-sonar-small-128k-online",
+            #[allow(deprecated)]
             PerplexityModels::Llama3_1SonarLarge => "llama-3.1-sonar-large-128k-online",
+            #[allow(deprecated)]
             PerplexityModels::Llama3_1SonarHuge => "llama-3.1-sonar-huge-128k-online",
         }
     }
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "sonar-pro" => Some(PerplexityModels::SonarPro),
+            "sonar" => Some(PerplexityModels::Sonar),
+            // Legacy models
+            #[allow(deprecated)]
             "llama-3.1-sonar-small-128k-online" => Some(PerplexityModels::Llama3_1SonarSmall),
+            #[allow(deprecated)]
             "llama-3.1-sonar-large-128k-online" => Some(PerplexityModels::Llama3_1SonarLarge),
+            #[allow(deprecated)]
             "llama-3.1-sonar-huge-128k-online" => Some(PerplexityModels::Llama3_1SonarHuge),
             _ => None,
         }
@@ -39,7 +68,17 @@ impl LLMModel for PerplexityModels {
 
     // https://docs.perplexity.ai/guides/model-cards
     fn default_max_tokens(&self) -> usize {
-        127_072
+        match self {
+            // Docs: https://docs.perplexity.ai/guides/model-cards
+            // FYI: sonar-pro has a max output token limit of 8k
+            PerplexityModels::SonarPro => 200_000,
+            PerplexityModels::Sonar => 127_072,
+            // Legacy models
+            #[allow(deprecated)]
+            PerplexityModels::Llama3_1SonarSmall
+            | PerplexityModels::Llama3_1SonarLarge
+            | PerplexityModels::Llama3_1SonarHuge => 127_072,
+        }
     }
 
     fn get_endpoint(&self) -> String {

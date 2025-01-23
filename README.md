@@ -19,15 +19,15 @@ Anthropic:
 - APIs: Messages, Text Completions
 - Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
+AWS Bedrock:
+- APIs: Converse
+- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
+
 Azure OpenAI:
 - APIs: Assistants, Files, Vector Stores, Tools
     - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
     - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
-
-AWS Bedrock:
-- APIs: Converse
-- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
 
 Google Vertex AI / AI Studio:
 - APIs: Chat Completions (including streaming)
@@ -43,7 +43,7 @@ OpenAI:
 
 Perplexity:
 - APIs: Chat Completions
-- Models: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
+- Models: Sonar, Sonar Pro. The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)

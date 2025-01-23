@@ -110,8 +110,7 @@ async fn main() {
     }
 
     // Get answer using Perplexity
-    let model = PerplexityModels::try_from_str("llama-3.1-sonar-small-128k-online")
-        .unwrap_or(PerplexityModels::Llama3_1SonarSmall); // Choose the model
+    let model = PerplexityModels::try_from_str("sonar-pro").unwrap_or(PerplexityModels::Sonar); // Choose the model
     println!("Perplexity model: {:#?}", model.as_str());
 
     let perplexity_token_str: String =
