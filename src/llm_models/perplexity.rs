@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use log::info;
@@ -11,7 +13,6 @@ use crate::llm_models::LLMModel;
 use crate::utils::{map_to_range_f32, sanitize_json_response};
 
 // Perplexity API Docs: https://docs.perplexity.ai/api-reference/chat-completions
-#[allow(deprecated)]
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum PerplexityModels {
     SonarPro,
