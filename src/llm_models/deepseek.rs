@@ -11,7 +11,7 @@ use crate::llm_models::LLMModel;
 use crate::utils::{map_to_range_f32, sanitize_json_response};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-//Deep Seek docs: https://api-docs.deepseek.com/quick_start/pricing
+//DeepSeek docs: https://api-docs.deepseek.com/quick_start/pricing
 pub enum DeepSeekModels {
     DeepSeekChat,
     DeepSeekReasoner,
@@ -45,7 +45,7 @@ impl LLMModel for DeepSeekModels {
         DEEPSEEK_API_URL.to_string()
     }
 
-    //This method prepares the body of the API call for different models
+    /// This method prepares the body of the API call for different models
     fn get_body(
         &self,
         instructions: &str,
@@ -79,11 +79,11 @@ impl LLMModel for DeepSeekModels {
             ],
         })
     }
-    /*
-     * This function leverages Mistral API to perform any query as per the provided body.
-     *
-     * It returns a String the Response object that needs to be parsed based on the self.model.
-     */
+    ///
+    /// This function leverages DeepSeek API to perform any query as per the provided body.
+    ///
+    /// It returns a String the Response object that needs to be parsed based on the self.model.
+    ///
     async fn call_api(
         &self,
         api_key: &str,
@@ -118,7 +118,9 @@ impl LLMModel for DeepSeekModels {
         Ok(response_text)
     }
 
-    //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
+    ///
+    /// This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
+    ///
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
         let completions_response: DeepSeekAPICompletionsResponse =
