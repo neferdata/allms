@@ -53,6 +53,11 @@ lazy_static! {
         std::env::var("AWS_SECRET_ACCESS_KEY").expect("AWS_SECRET_ACCESS_KEY not set");
 }
 
+lazy_static! {
+    pub(crate) static ref DEEPSEEK_API_URL: String = std::env::var("DEEPSEEK_API_URL")
+        .unwrap_or("https://api.deepseek.com/chat/completions".to_string());
+}
+
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
 Step 1: Review and understand the 'instructions' from the *Instructions* section.
