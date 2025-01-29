@@ -17,6 +17,7 @@ use crate::utils::{map_to_range_f32, sanitize_json_response};
 pub enum PerplexityModels {
     SonarPro,
     Sonar,
+    SonarReasoning,
     // Legacy models
     #[deprecated(
         since = "0.12.0",
@@ -41,6 +42,7 @@ impl LLMModel for PerplexityModels {
         match self {
             PerplexityModels::SonarPro => "sonar-pro",
             PerplexityModels::Sonar => "sonar",
+            PerplexityModels::SonarReasoning => "sonar-reasoning",
             // Legacy models
             #[allow(deprecated)]
             PerplexityModels::Llama3_1SonarSmall => "llama-3.1-sonar-small-128k-online",
@@ -55,6 +57,7 @@ impl LLMModel for PerplexityModels {
         match name.to_lowercase().as_str() {
             "sonar-pro" => Some(PerplexityModels::SonarPro),
             "sonar" => Some(PerplexityModels::Sonar),
+            "sonar-reasoning" => Some(PerplexityModels::SonarReasoning),
             // Legacy models
             #[allow(deprecated)]
             "llama-3.1-sonar-small-128k-online" => Some(PerplexityModels::Llama3_1SonarSmall),
@@ -73,6 +76,7 @@ impl LLMModel for PerplexityModels {
             // FYI: sonar-pro has a max output token limit of 8k
             PerplexityModels::SonarPro => 200_000,
             PerplexityModels::Sonar => 127_072,
+            PerplexityModels::SonarReasoning => 127_072,
             // Legacy models
             #[allow(deprecated)]
             PerplexityModels::Llama3_1SonarSmall

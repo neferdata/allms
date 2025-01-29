@@ -47,7 +47,7 @@ OpenAI:
 
 Perplexity:
 - APIs: Chat Completions
-- Models: Sonar, Sonar Pro. The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
+- Models: Sonar, Sonar Pro, Sonar Reasoning. The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)
