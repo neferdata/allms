@@ -4,8 +4,8 @@ use serde::Serialize;
 
 use allms::{
     llm::{
-        AnthropicModels, AwsBedrockModels, GoogleModels, LLMModel, MistralModels, OpenAIModels,
-        PerplexityModels,
+        AnthropicModels, AwsBedrockModels, DeepSeekModels, GoogleModels, LLMModel, MistralModels,
+        OpenAIModels, PerplexityModels,
     },
     Completions,
 };
@@ -123,6 +123,24 @@ async fn main() {
         .await
     {
         Ok(response) => println!("Perplexity response: {:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Get answer using DeepSeek
+    let model =
+        DeepSeekModels::try_from_str("deepseek-chat").unwrap_or(DeepSeekModels::DeepSeekChat); // Choose the model
+    println!("DeepSeek model: {:#?}", model.as_str());
+
+    let deepseek_token_str: String =
+        std::env::var("DEEPSEEK_API_KEY").expect("DEEPSEEK_API_KEY not set");
+
+    let deepseek_completion = Completions::new(model, &deepseek_token_str, None, None);
+
+    match deepseek_completion
+        .get_answer::<TranslationResponse>(instructions)
+        .await
+    {
+        Ok(response) => println!("DeepSeek response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }
