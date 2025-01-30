@@ -1,4 +1,5 @@
 use anyhow::Result;
+use regex::Regex;
 use schemars::{schema_for, JsonSchema};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -35,11 +36,17 @@ pub(crate) fn get_tokenizer<T: LLMModel>(model: &T) -> anyhow::Result<CoreBPE> {
     }
 }
 
-//OpenAI has a tendency to wrap response Json in ```json{}```
-//TODO: This function might need to become more sophisticated or handled with better prompt eng
-pub(crate) fn sanitize_json_response(json_response: &str) -> String {
+/// LLMs have a tendency to wrap response Json in ```json{}```. This function sanitizes
+pub(crate) fn remove_json_wrapper(json_response: &str) -> String {
     let text_no_json = json_response.replace("json\n", "");
     text_no_json.replace("```", "")
+}
+
+/// Reasoning model may include <think></think> portion explaining step-by-step reasoning
+pub(crate) fn remove_think_reasoner_wrapper(json_response: &str) -> String {
+    // TODO: We may want to make this more model-specific in the future
+    let re = Regex::new(r"(?s)<think>.*?</think>").unwrap();
+    re.replace_all(json_response, "").to_string()
 }
 
 // This function generates a Json schema for the provided type
@@ -113,6 +120,7 @@ mod tests {
     use crate::llm_models::OpenAIModels;
     use crate::utils::{
         fix_value_schema, get_tokenizer, get_type_schema, map_to_range, map_to_range_f32,
+        remove_think_reasoner_wrapper,
     };
 
     #[derive(JsonSchema, Serialize, Deserialize)]
@@ -478,5 +486,28 @@ mod tests {
         assert_eq!(map_to_range_f32(-1000.0, 1000.0, 50), 0.0); // Midpoint of the range
         assert_eq!(map_to_range_f32(-500.0, 500.0, 25), -250.0); // Quarter point
         assert_eq!(map_to_range_f32(-2000.0, 0.0, 75), -500.0); // Three-quarters
+    }
+
+    // Removing <think></think> wrapper
+    #[test]
+    fn test_remove_think_text() {
+        assert_eq!(
+            remove_think_reasoner_wrapper("Hello <think>ignore this</think> World"),
+            "Hello  World"
+        );
+        assert_eq!(
+            remove_think_reasoner_wrapper("<think>Only this</think>"),
+            ""
+        );
+        assert_eq!(
+            remove_think_reasoner_wrapper("No markers here"),
+            "No markers here"
+        );
+        assert_eq!(
+            remove_think_reasoner_wrapper(
+                "Multiple <think>first</think> parts <think>second</think> remain"
+            ),
+            "Multiple  parts  remain"
+        );
     }
 }

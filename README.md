@@ -19,15 +19,15 @@ Anthropic:
 - APIs: Messages, Text Completions
 - Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
+AWS Bedrock:
+- APIs: Converse
+- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
+
 Azure OpenAI:
 - APIs: Assistants, Files, Vector Stores, Tools
     - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
     - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
-
-AWS Bedrock:
-- APIs: Converse
-- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
 
 DeepSeek:
 - APIs: Chat Completion
@@ -47,12 +47,12 @@ OpenAI:
 
 Perplexity:
 - APIs: Chat Completions
-- Models: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
+- Models: Sonar, Sonar Pro, Sonar Reasoning. The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)
-- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - AWS Bedrock: environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION` set as per AWS settings.
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - DeepSeek: API key (passed in model constructor)
 - Google AI Studio: API key (passed in model constructor)
 - Google Vertex AI: GCP service account key (used to obtain access token) + GCP project ID (set as environment variable)

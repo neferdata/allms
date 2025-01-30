@@ -110,8 +110,8 @@ async fn main() {
     }
 
     // Get answer using Perplexity
-    let model = PerplexityModels::try_from_str("llama-3.1-sonar-small-128k-online")
-        .unwrap_or(PerplexityModels::Llama3_1SonarSmall); // Choose the model
+    let model =
+        PerplexityModels::try_from_str("sonar-reasoning").unwrap_or(PerplexityModels::Sonar); // Choose the model
     println!("Perplexity model: {:#?}", model.as_str());
 
     let perplexity_token_str: String =
@@ -129,7 +129,7 @@ async fn main() {
 
     // Get answer using DeepSeek
     let model =
-        DeepSeekModels::try_from_str("deepseek-chat").unwrap_or(DeepSeekModels::DeepSeekChat); // Choose the model
+        DeepSeekModels::try_from_str("deepseek-reasoner").unwrap_or(DeepSeekModels::DeepSeekChat); // Choose the model
     println!("DeepSeek model: {:#?}", model.as_str());
 
     let deepseek_token_str: String =

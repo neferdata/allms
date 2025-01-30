@@ -1,6 +1,6 @@
 [package]
 name = "allms"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
@@ -23,6 +23,7 @@ jsonschema = "=0.15.2"
 log = "0.4.0"
 r2d2 = "0.8.10"
 r2d2_postgres = "0.18.1"
+regex = "1.11.1"
 serde = "1.0.140"
 serde_json = "1.0.82"
 tiktoken-rs = "0.4.4"
