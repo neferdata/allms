@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 use crate::constants::DEEPSEEK_API_URL;
 use crate::domain::{DeepSeekAPICompletionsResponse, RateLimit};
 use crate::llm_models::LLMModel;
-use crate::utils::{map_to_range_f32, sanitize_json_response};
+use crate::utils::map_to_range_f32;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //DeepSeek docs: https://api-docs.deepseek.com/quick_start/pricing
@@ -136,7 +136,7 @@ impl LLMModel for DeepSeekModels {
                 message
                     .content
                     .as_ref()
-                    .map(|content| sanitize_json_response(content))
+                    .map(|content| self.sanitize_json_response(content))
             })
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }

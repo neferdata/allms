@@ -8,7 +8,6 @@ use serde_json::{json, Value};
 use crate::constants::MISTRAL_API_URL;
 use crate::domain::{MistralAPICompletionsResponse, RateLimit};
 use crate::llm_models::LLMModel;
-use crate::utils::sanitize_json_response;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Mistral docs: https://docs.mistral.ai/platform/endpoints
@@ -162,7 +161,7 @@ impl LLMModel for MistralModels {
                 message
                     .content
                     .as_ref()
-                    .map(|content| sanitize_json_response(content))
+                    .map(|content| self.sanitize_json_response(content))
             })
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }

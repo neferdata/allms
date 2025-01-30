@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use crate::constants::PERPLEXITY_API_URL;
 use crate::domain::{PerplexityAPICompletionsResponse, RateLimit};
 use crate::llm_models::LLMModel;
-use crate::utils::{map_to_range_f32, sanitize_json_response};
+use crate::utils::{map_to_range_f32, remove_json_wrapper, remove_think_reasoner_wrapper};
 
 // Perplexity API Docs: https://docs.perplexity.ai/api-reference/chat-completions
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -179,12 +179,25 @@ impl LLMModel for PerplexityModels {
                 message
                     .content
                     .as_ref()
-                    .map(|content| sanitize_json_response(content))
+                    .map(|content| self.sanitize_json_response(content))
             })
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }
 
-    //This function allows to check the rate limits for different models
+    /// This function sanitizes the text response from Perplexity models to clean up common formatting issues.
+    /// Currently the function checks:
+    /// * ```json{}``` wrapper around response
+    /// * <think></think> wrapper (for SonarReasoning model only)
+    fn sanitize_json_response(&self, json_response: &str) -> String {
+        let no_json_text = remove_json_wrapper(json_response);
+        if self == &PerplexityModels::SonarReasoning {
+            remove_think_reasoner_wrapper(&no_json_text)
+        } else {
+            no_json_text
+        }
+    }
+
+    // This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
         //Perplexity documentation: https://docs.perplexity.ai/guides/rate-limits
         RateLimit {

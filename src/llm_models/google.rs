@@ -9,7 +9,6 @@ use serde_json::{json, Value};
 use crate::constants::{GOOGLE_GEMINI_API_URL, GOOGLE_VERTEX_API_URL};
 use crate::domain::{GoogleGeminiProApiResp, RateLimit};
 use crate::llm_models::LLMModel;
-use crate::utils::sanitize_json_response;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Google docs: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
@@ -192,7 +191,7 @@ impl LLMModel for GoogleModels {
                             );
                         }
                     }
-                    Ok(sanitize_json_response(&streamed_response))
+                    Ok(self.sanitize_json_response(&streamed_response))
                 } else {
                     let response_status = response.status();
                     let response_txt = response.text().await?;

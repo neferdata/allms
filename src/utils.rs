@@ -36,23 +36,14 @@ pub(crate) fn get_tokenizer<T: LLMModel>(model: &T) -> anyhow::Result<CoreBPE> {
     }
 }
 
-/// This function sanitizes the text response from LLMs to clean up common formatting issues.
-/// Currently the function checks:
-/// * ```json{}``` wrapper around response
-/// * <think></think> wrapper for reasoning models
-pub(crate) fn sanitize_json_response(json_response: &str) -> String {
-    let text_no_json = remove_json_wrapper(json_response);
-    remove_think_reasoner_wrapper(&text_no_json)
-}
-
 /// LLMs have a tendency to wrap response Json in ```json{}```. This function sanitizes
-fn remove_json_wrapper(json_response: &str) -> String {
+pub(crate) fn remove_json_wrapper(json_response: &str) -> String {
     let text_no_json = json_response.replace("json\n", "");
     text_no_json.replace("```", "")
 }
 
 /// Reasoning model may include <think></think> portion explaining step-by-step reasoning
-fn remove_think_reasoner_wrapper(json_response: &str) -> String {
+pub(crate) fn remove_think_reasoner_wrapper(json_response: &str) -> String {
     // TODO: We may want to make this more model-specific in the future
     let re = Regex::new(r"(?s)<think>.*?</think>").unwrap();
     re.replace_all(json_response, "").to_string()
