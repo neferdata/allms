@@ -9,7 +9,7 @@ use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
     llm_models::LLMModel,
-    utils::{map_to_range, sanitize_json_response},
+    utils::map_to_range,
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -383,12 +383,12 @@ impl LLMModel for OpenAIModels {
                             //For function_call the response is in arguments, and for regular call in content
                             match function_call {
                                 true => item.message.function_call.map(|function_call| {
-                                    sanitize_json_response(&function_call.arguments)
+                                    self.sanitize_json_response(&function_call.arguments)
                                 }),
                                 false => item
                                     .message
                                     .content
-                                    .map(|content| sanitize_json_response(&content)),
+                                    .map(|content| self.sanitize_json_response(&content)),
                             }
                         })
                         .collect()),

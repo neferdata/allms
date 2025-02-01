@@ -1,4 +1,3 @@
-use crate::utils::sanitize_json_response;
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use aws_config::BehaviorVersion;
@@ -172,7 +171,7 @@ impl LLMModel for AwsBedrockModels {
             .as_text()
             .map_err(|_| anyhow!("content is not text"))?
             .to_string();
-        Ok(sanitize_json_response(&text))
+        Ok(self.sanitize_json_response(&text))
     }
 
     /// AWS Bedrock implementation leverages AWS Bedrock SDK, therefore data extraction is implemented directly in `call_api` method and this method only passes the data on

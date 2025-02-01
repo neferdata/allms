@@ -4,8 +4,8 @@ use serde::Serialize;
 
 use allms::{
     llm::{
-        AnthropicModels, AwsBedrockModels, GoogleModels, LLMModel, MistralModels, OpenAIModels,
-        PerplexityModels,
+        AnthropicModels, AwsBedrockModels, DeepSeekModels, GoogleModels, LLMModel, MistralModels,
+        OpenAIModels, PerplexityModels,
     },
     Completions,
 };
@@ -110,8 +110,8 @@ async fn main() {
     }
 
     // Get answer using Perplexity
-    let model = PerplexityModels::try_from_str("llama-3.1-sonar-small-128k-online")
-        .unwrap_or(PerplexityModels::Llama3_1SonarSmall); // Choose the model
+    let model =
+        PerplexityModels::try_from_str("sonar-reasoning").unwrap_or(PerplexityModels::Sonar); // Choose the model
     println!("Perplexity model: {:#?}", model.as_str());
 
     let perplexity_token_str: String =
@@ -124,6 +124,24 @@ async fn main() {
         .await
     {
         Ok(response) => println!("Perplexity response: {:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Get answer using DeepSeek
+    let model =
+        DeepSeekModels::try_from_str("deepseek-reasoner").unwrap_or(DeepSeekModels::DeepSeekChat); // Choose the model
+    println!("DeepSeek model: {:#?}", model.as_str());
+
+    let deepseek_token_str: String =
+        std::env::var("DEEPSEEK_API_KEY").expect("DEEPSEEK_API_KEY not set");
+
+    let deepseek_completion = Completions::new(model, &deepseek_token_str, None, None);
+
+    match deepseek_completion
+        .get_answer::<TranslationResponse>(instructions)
+        .await
+    {
+        Ok(response) => println!("DeepSeek response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }

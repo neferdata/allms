@@ -6,7 +6,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 
 ## Features
 
-- Support for various foundational LLM providers including Anthropic, AWS Bedrock, Azure, Google Gemini, OpenAI, Mistral, and Perplexity.
+- Support for various foundational LLM providers including Anthropic, AWS Bedrock, Azure, DeepSeek, Google Gemini, OpenAI, Mistral, and Perplexity.
 - Easy-to-use functions for chat/text completions and assistants. Use the same struct and methods regardless of which model you choose.
 - Automated response deserialization to custom types.
 - Standardized approach to providing context with support of function calling, tools, and file uploads.
@@ -19,15 +19,19 @@ Anthropic:
 - APIs: Messages, Text Completions
 - Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
+AWS Bedrock:
+- APIs: Converse
+- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
+
 Azure OpenAI:
 - APIs: Assistants, Files, Vector Stores, Tools
     - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
     - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
 
-AWS Bedrock:
-- APIs: Converse
-- Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
+DeepSeek:
+- APIs: Chat Completion
+- Models: DeepSeek-V3, DeepSeek-R1
 
 Google Vertex AI / AI Studio:
 - APIs: Chat Completions (including streaming)
@@ -45,12 +49,13 @@ OpenAI:
 
 Perplexity:
 - APIs: Chat Completions
-- Models: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
+- Models: Sonar, Sonar Pro, Sonar Reasoning. The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)
-- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
 - AWS Bedrock: environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION` set as per AWS settings.
+- Azure OpenAI: environment variable `OPENAI_API_URL` set to your Azure OpenAI resource endpoint. Endpoint key passed in constructor
+- DeepSeek: API key (passed in model constructor)
 - Google AI Studio: API key (passed in model constructor)
 - Google Vertex AI: GCP service account key (used to obtain access token) + GCP project ID (set as environment variable)
 - Mistral: API key (passed in model constructor)
@@ -67,6 +72,10 @@ let anthropic_answer = Completions::new(AnthropicModels::Claude2, &API_KEY, None
     .await?
 
 let aws_bedrock_answer = Completions::new(AwsBedrockModels::NovaLite, "", None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let deepseek_answer = Completions::new(DeepSeekModels::DeepSeekReasoner, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 

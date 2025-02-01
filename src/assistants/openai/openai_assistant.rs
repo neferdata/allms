@@ -19,7 +19,7 @@ use crate::domain::{
 };
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
 use crate::llm_models::{LLMModel, OpenAIModels};
-use crate::utils::{get_type_schema, sanitize_json_response};
+use crate::utils::get_type_schema;
 
 /// [OpenAI Docs](https://platform.openai.com/docs/assistants/overview)
 ///
@@ -289,7 +289,7 @@ impl OpenAIAssistant {
                     content
                         .text
                         .as_ref()
-                        .map(|text| sanitize_json_response(&text.value))
+                        .map(|text| self.model.sanitize_json_response(&text.value))
                 })
             })
             .ok_or_else(|| {

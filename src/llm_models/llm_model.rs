@@ -4,7 +4,7 @@ use serde_json::Value;
 
 use crate::constants::OPENAI_BASE_INSTRUCTIONS;
 use crate::domain::RateLimit;
-use crate::utils::map_to_range;
+use crate::utils::{map_to_range, remove_json_wrapper};
 
 ///This trait defines functions that need to be implemented for an enum that represents an LLM Model from any of the API providers
 #[async_trait(?Send)]
@@ -45,6 +45,11 @@ pub trait LLMModel {
     ) -> Result<String>;
     ///Based on the model type extracts the data portion of the API response
     fn get_data(&self, response_text: &str, function_call: bool) -> Result<String>;
+    /// This function sanitizes the text response from LLMs to clean up common formatting issues.
+    /// The default implementation of the function removes the common ```json{}``` wrapper returned by most models
+    fn sanitize_json_response(&self, json_response: &str) -> String {
+        remove_json_wrapper(json_response)
+    }
     ///Returns the rate limit accepted by the API depending on the used model
     ///If not explicitly defined it will assume 1B tokens or 100k transactions a minute
     fn get_rate_limit(&self) -> RateLimit {

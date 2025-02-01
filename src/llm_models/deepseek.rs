@@ -5,74 +5,47 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::constants::MISTRAL_API_URL;
-use crate::domain::{MistralAPICompletionsResponse, RateLimit};
+use crate::constants::DEEPSEEK_API_URL;
+use crate::domain::{DeepSeekAPICompletionsResponse, RateLimit};
 use crate::llm_models::LLMModel;
+use crate::utils::map_to_range_f32;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-//Mistral docs: https://docs.mistral.ai/platform/endpoints
-pub enum MistralModels {
-    MistralLarge,
-    MistralNemo,
-    Mistral7B,
-    Mixtral8x7B,
-    Mixtral8x22B,
-    // Legacy
-    MistralTiny,
-    MistralSmall,
-    MistralMedium,
+//DeepSeek docs: https://api-docs.deepseek.com/quick_start/pricing
+pub enum DeepSeekModels {
+    DeepSeekChat,
+    DeepSeekReasoner,
 }
 
 #[async_trait(?Send)]
-impl LLMModel for MistralModels {
+impl LLMModel for DeepSeekModels {
     fn as_str(&self) -> &str {
         match self {
-            MistralModels::MistralLarge => "mistral-large-latest",
-            MistralModels::MistralNemo => "open-mistral-nemo",
-            MistralModels::Mistral7B => "open-mistral-7b",
-            MistralModels::Mixtral8x7B => "open-mixtral-8x7b",
-            MistralModels::Mixtral8x22B => "open-mixtral-8x22b",
-            // Legacy
-            MistralModels::MistralTiny => "mistral-tiny",
-            MistralModels::MistralSmall => "mistral-small",
-            MistralModels::MistralMedium => "mistral-medium",
+            DeepSeekModels::DeepSeekChat => "deepseek-chat",
+            DeepSeekModels::DeepSeekReasoner => "deepseek-reasoner",
         }
     }
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
-            "mistral-large-latest" => Some(MistralModels::MistralLarge),
-            "open-mistral-nemo" => Some(MistralModels::MistralNemo),
-            "open-mistral-7b" => Some(MistralModels::Mistral7B),
-            "open-mixtral-8x7b" => Some(MistralModels::Mixtral8x7B),
-            "open-mixtral-8x22b" => Some(MistralModels::Mixtral8x22B),
-            // Legacy
-            "mistral-tiny" => Some(MistralModels::MistralTiny),
-            "mistral-small" => Some(MistralModels::MistralSmall),
-            "mistral-medium" => Some(MistralModels::MistralMedium),
+            "deepseek-chat" => Some(DeepSeekModels::DeepSeekChat),
+            "deepseek-reasoner" => Some(DeepSeekModels::DeepSeekReasoner),
             _ => None,
         }
     }
 
     fn default_max_tokens(&self) -> usize {
         match self {
-            MistralModels::MistralLarge => 128_000,
-            MistralModels::MistralNemo => 128_000,
-            MistralModels::Mistral7B => 32_000,
-            MistralModels::Mixtral8x7B => 32_000,
-            MistralModels::Mixtral8x22B => 64_000,
-            // Legacy
-            MistralModels::MistralTiny => 32_000,
-            MistralModels::MistralSmall => 32_000,
-            MistralModels::MistralMedium => 32_000,
+            DeepSeekModels::DeepSeekChat => 8_192,
+            DeepSeekModels::DeepSeekReasoner => 8_192,
         }
     }
 
     fn get_endpoint(&self) -> String {
-        MISTRAL_API_URL.to_string()
+        DEEPSEEK_API_URL.to_string()
     }
 
-    //This method prepares the body of the API call for different models
+    /// This method prepares the body of the API call for different models
     fn get_body(
         &self,
         instructions: &str,
@@ -106,11 +79,11 @@ impl LLMModel for MistralModels {
             ],
         })
     }
-    /*
-     * This function leverages Mistral API to perform any query as per the provided body.
-     *
-     * It returns a String the Response object that needs to be parsed based on the self.model.
-     */
+    ///
+    /// This function leverages DeepSeek API to perform any query as per the provided body.
+    ///
+    /// It returns a String the Response object that needs to be parsed based on the self.model.
+    ///
     async fn call_api(
         &self,
         api_key: &str,
@@ -137,7 +110,7 @@ impl LLMModel for MistralModels {
 
         if debug {
             info!(
-                "[debug] Mistral API response: [{}] {:#?}",
+                "[debug] DeepSeek API response: [{}] {:#?}",
                 &response_status, &response_text
             );
         }
@@ -145,10 +118,12 @@ impl LLMModel for MistralModels {
         Ok(response_text)
     }
 
-    //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
+    ///
+    /// This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
+    ///
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
-        let completions_response: MistralAPICompletionsResponse =
+        let completions_response: DeepSeekAPICompletionsResponse =
             serde_json::from_str(response_text)?;
 
         //Parse the response and return the assistant content
@@ -166,12 +141,21 @@ impl LLMModel for MistralModels {
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }
 
-    //This function allows to check the rate limits for different models
+    // This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
-        //Mistral documentation: https://docs.mistral.ai/platform/pricing#rate-limits
+        // DeepSeek documentation: https://api-docs.deepseek.com/quick_start/rate_limit
+        // "DeepSeek API does NOT constrain user's rate limit. We will try out best to serve every request."
         RateLimit {
-            tpm: 2_000_000,
-            rpm: 120, // 2 request per second
+            tpm: 100_000_000, // i.e. very large number
+            rpm: 100_000_000,
         }
+    }
+
+    // Accepts a [0-100] percentage range and returns the target temperature based on model ranges
+    fn get_normalized_temperature(&self, relative_temp: u32) -> f32 {
+        // Temperature range documentation: https://api-docs.deepseek.com/quick_start/parameter_settings
+        let min = 0.0f32;
+        let max = 1.5f32;
+        map_to_range_f32(min, max, relative_temp)
     }
 }

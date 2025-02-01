@@ -335,3 +335,43 @@ pub struct PerplexityAPICompletionsUsage {
     pub completion_tokens: usize,
     pub total_tokens: usize,
 }
+
+// DeepSeek API response type format for Chat Completions API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DeepSeekAPICompletionsResponse {
+    pub id: Option<String>,
+    pub choices: Vec<DeepSeekAPICompletionsChoices>,
+    pub created: Option<usize>,
+    pub model: Option<String>,
+    pub system_fingerprint: Option<String>,
+    pub object: Option<String>,
+    pub usage: Option<DeepSeekAPICompletionsUsage>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DeepSeekAPICompletionsChoices {
+    pub index: usize,
+    pub finish_reason: String,
+    pub message: Option<DeepSeekAPICompletionsMessage>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DeepSeekAPICompletionsMessage {
+    pub role: Option<String>,
+    pub content: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DeepSeekAPICompletionsUsage {
+    pub completion_tokens: usize,
+    pub prompt_tokens: usize,
+    pub prompt_cache_hit_tokens: usize,
+    pub prompt_cache_miss_tokens: usize,
+    pub total_tokens: usize,
+    pub completion_tokens_details: Option<DeepSeekAPICompletionsReasoningUsage>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DeepSeekAPICompletionsReasoningUsage {
+    pub reasoning_tokens: usize,
+}

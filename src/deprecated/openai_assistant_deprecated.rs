@@ -19,7 +19,7 @@ use crate::domain::{
     OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp, OpenAIThreadResp,
 };
 use crate::enums::{OpenAIAssistantRole, OpenAIRunStatus};
-use crate::utils::sanitize_json_response;
+use crate::utils::remove_json_wrapper;
 
 /// This is a DEPRECATED implementation of OpenAI Assistants API that will not be maintained going forward (after May 2024).
 /// For current implementation, including support for Assistants API v2 and GPT-4o, refer to `assistants` module.
@@ -207,7 +207,7 @@ impl OpenAIAssistant {
             .find_map(|message| {
                 message.content.into_iter().find_map(|content| {
                     content.text.and_then(|text| {
-                        let sanitized_text = sanitize_json_response(&text.value);
+                        let sanitized_text = remove_json_wrapper(&text.value);
                         serde_json::from_str::<T>(&sanitized_text).ok()
                     })
                 })
