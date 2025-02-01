@@ -43,9 +43,9 @@ pub struct OpenAIAssistant {
 }
 
 impl OpenAIAssistant {
-    //Constructor
+    /// Constructor
     pub fn new(model: OpenAIModels, open_ai_key: &str) -> Self {
-        // Reasoning models are not currently supported in Assistants API. If requested defaulting to `Gpt4o`
+        /// Reasoning models are not currently supported in Assistants API. If requested defaulting to `Gpt4o`
         let model = match model {
             OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
