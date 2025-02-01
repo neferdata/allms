@@ -29,6 +29,7 @@ pub enum OpenAIModels {
     O1Preview,
     O1Mini,
     O1,
+    O3Mini,
     // Custom models
     Custom { name: String },
 }
@@ -51,6 +52,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::O1Preview => "o1-preview",
             OpenAIModels::O1Mini => "o1-mini",
             OpenAIModels::O1 => "o1",
+            OpenAIModels::O3Mini => "o3-mini",
             OpenAIModels::Custom { name } => name.as_str(),
         }
     }
@@ -71,6 +73,7 @@ impl LLMModel for OpenAIModels {
             "o1-preview" => Some(OpenAIModels::O1Preview),
             "o1-mini" => Some(OpenAIModels::O1Mini),
             "o1" => Some(OpenAIModels::O1),
+            "o3-mini" => Some(OpenAIModels::O3Mini),
             _ => Some(OpenAIModels::Custom {
                 name: name.to_string(),
             }),
@@ -95,6 +98,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::O1Preview => 128_000,
             OpenAIModels::O1Mini => 128_000,
             OpenAIModels::O1 => 200_000,
+            OpenAIModels::O3Mini => 200_000,
             OpenAIModels::Custom { .. } => 128_000,
         }
     }
@@ -115,6 +119,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
             | OpenAIModels::O1
+            | OpenAIModels::O3Mini
             | OpenAIModels::Custom { .. } => {
                 format!(
                     "{OPENAI_API_URL}/v1/chat/completions",
@@ -144,7 +149,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4_32k
             | OpenAIModels::O1Preview
             | OpenAIModels::O1
-            | OpenAIModels::O1Mini => false,
+            | OpenAIModels::O1Mini
+            | OpenAIModels::O3Mini => false,
             OpenAIModels::Gpt3_5Turbo0613
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
@@ -264,7 +270,10 @@ impl LLMModel for OpenAIModels {
             // - Tools: tools, function calling, and response format parameters are not supported.
             // - Other: temperature, top_p and n are fixed at 1, while presence_penalty and frequency_penalty are fixed at 0.
             // - Assistants and Batch: these models are not supported in the Assistants API or Batch API.
-            OpenAIModels::O1Preview | OpenAIModels::O1Mini | OpenAIModels::O1 => {
+            OpenAIModels::O1Preview
+            | OpenAIModels::O1Mini
+            | OpenAIModels::O1
+            | OpenAIModels::O3Mini => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
                 let system_message = json!({
                     "role": "user",
@@ -361,6 +370,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
             | OpenAIModels::O1
+            | OpenAIModels::O3Mini
             | OpenAIModels::Custom { .. } => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
@@ -445,6 +455,10 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::O1 => RateLimit {
                 tpm: 30_000_000,
                 rpm: 1_000,
+            },
+            OpenAIModels::O3Mini => RateLimit {
+                tpm: 150_000_000,
+                rpm: 30_000,
             },
             OpenAIModels::TextDavinci003 => RateLimit {
                 tpm: 250_000,
