@@ -502,6 +502,18 @@ impl OpenAIModels {
                 | OpenAIModels::Custom { .. }
         )
     }
+
+    // This function checks if a model supports use in Assistants API
+    // Reasoning models are NOT currently supported
+    pub fn assistants_support(&self) -> bool {
+        !matches!(
+            self,
+            OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+        )
+    }
 }
 
 #[cfg(test)]
