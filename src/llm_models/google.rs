@@ -97,15 +97,14 @@ impl LLMModel for GoogleModels {
     }
 
     fn default_max_tokens(&self) -> usize {
-        //https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models
+        // Docs: https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models
         match self {
             GoogleModels::Gemini1_5Pro | GoogleModels::Gemini1_5ProVertex => 2_097_152,
             GoogleModels::Gemini1_5Flash | GoogleModels::Gemini1_5FlashVertex => 1_048_576,
             GoogleModels::Gemini1_5Flash8B | GoogleModels::Gemini1_5Flash8BVertex => 1_048_576,
             GoogleModels::Gemini2_0Flash => 1_048_576,
             GoogleModels::Gemini2_0FlashLite => 1_048_576,
-            // TODO: Max tokens not yet documented for experimental models. Using defaults from others
-            GoogleModels::Gemini2_0ProExp => 1_048_576,
+            GoogleModels::Gemini2_0ProExp => 2_097_152,
             GoogleModels::Gemini2_0FlashThinkingExp => 1_048_576,
             // Legacy
             #[allow(deprecated)]
@@ -118,6 +117,12 @@ impl LLMModel for GoogleModels {
     fn get_endpoint(&self) -> String {
         //The URL requires GOOGLE_REGION and GOOGLE_PROJECT_ID env variables defined to work.
         //If not set GOOGLE_REGION will default to 'us-central1' but GOOGLE_PROJECT_ID needs to be defined.
+        let vertex_url = format!(
+            "{}/{}:streamGenerateContent?alt=sse",
+            &*GOOGLE_VERTEX_API_URL,
+            self.as_str()
+        );
+
         match self {
             GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
@@ -128,16 +133,14 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0FlashThinkingExp => GOOGLE_GEMINI_API_URL.to_string(),
             GoogleModels::Gemini1_5ProVertex
             | GoogleModels::Gemini1_5FlashVertex
-            | GoogleModels::Gemini1_5Flash8BVertex => GOOGLE_VERTEX_API_URL.to_string(),
+            | GoogleModels::Gemini1_5Flash8BVertex => vertex_url,
             // Legacy
             #[allow(deprecated)]
             GoogleModels::GeminiPro | GoogleModels::Gemini1_0Pro => {
                 GOOGLE_GEMINI_API_URL.to_string()
             }
             #[allow(deprecated)]
-            GoogleModels::GeminiProVertex | GoogleModels::Gemini1_0ProVertex => {
-                GOOGLE_VERTEX_API_URL.to_string()
-            }
+            GoogleModels::GeminiProVertex | GoogleModels::Gemini1_0ProVertex => vertex_url,
         }
     }
 

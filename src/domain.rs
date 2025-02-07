@@ -284,11 +284,11 @@ pub struct GoogleGeminiProDate {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleGeminiProUsageMetadata {
     #[serde(rename = "promptTokenCount")]
-    pub prompt_token_count: i32,
+    pub prompt_token_count: Option<i32>,
     #[serde(rename = "candidatesTokenCount")]
-    pub candidates_token_count: i32,
+    pub candidates_token_count: Option<i32>,
     #[serde(rename = "totalTokenCount")]
-    pub total_token_count: i32,
+    pub total_token_count: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
