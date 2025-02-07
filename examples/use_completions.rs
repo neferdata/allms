@@ -92,7 +92,7 @@ async fn main() {
     }
 
     // Get answer using Google GeminiPro
-    let model = GoogleModels::try_from_str("gemini-2.0-flash-thinking")
+    let model = GoogleModels::try_from_str("gemini-1.5-flash-8b")
         .unwrap_or(GoogleModels::Gemini1_5Flash); // Choose the model
     println!("Google Gemini model: {:#?}", model.as_str());
 
