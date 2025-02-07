@@ -17,6 +17,10 @@ pub enum GoogleModels {
     Gemini1_5Flash,
     Gemini1_5Pro,
     Gemini1_0Pro,
+    Gemini2_0Flash,
+    Gemini2_0FlashLite,
+    Gemini2_0ProExp,
+    Gemini2_0FlashThinkingExp,
     // Vertex
     GeminiProVertex,
     Gemini1_5FlashVertex,
@@ -32,6 +36,10 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini1_5Pro | GoogleModels::Gemini1_5ProVertex => "gemini-1.5-pro",
             GoogleModels::Gemini1_5Flash | GoogleModels::Gemini1_5FlashVertex => "gemini-1.5-flash",
             GoogleModels::Gemini1_0Pro | GoogleModels::Gemini1_0ProVertex => "gemini-1.0-pro",
+            GoogleModels::Gemini2_0Flash => "gemini-2.0-flash-001",
+            GoogleModels::Gemini2_0FlashLite => "gemini-2.0-flash-lite-preview-02-05",
+            GoogleModels::Gemini2_0ProExp => "gemini-2.0-pro-exp-02-05",
+            GoogleModels::Gemini2_0FlashThinkingExp => "gemini-2.0-flash-thinking-exp-01-21",
         }
     }
 
@@ -45,6 +53,12 @@ impl LLMModel for GoogleModels {
             "gemini-1.5-flash-vertex" => Some(GoogleModels::Gemini1_5FlashVertex),
             "gemini-1.0-pro" => Some(GoogleModels::Gemini1_0Pro),
             "gemini-1.0-pro-vertex" => Some(GoogleModels::Gemini1_0ProVertex),
+            "gemini-2.0-flash" => Some(GoogleModels::Gemini2_0Flash),
+            "gemini-2.0-flash-lite" => Some(GoogleModels::Gemini2_0FlashLite),
+            "gemini-2.0-pro" => Some(GoogleModels::Gemini2_0ProExp),
+            "gemini-2.0-pro-exp" => Some(GoogleModels::Gemini2_0ProExp),
+            "gemini-2.0-flash-thinking" => Some(GoogleModels::Gemini2_0FlashThinkingExp),
+            "gemini-2.0-flash-thinking-exp" => Some(GoogleModels::Gemini2_0FlashThinkingExp),
             _ => None,
         }
     }
@@ -56,6 +70,11 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini1_5Pro | GoogleModels::Gemini1_5ProVertex => 1_048_576,
             GoogleModels::Gemini1_5Flash | GoogleModels::Gemini1_5FlashVertex => 1_048_576,
             GoogleModels::Gemini1_0Pro | GoogleModels::Gemini1_0ProVertex => 32_000,
+            GoogleModels::Gemini2_0Flash => 1_048_576,
+            GoogleModels::Gemini2_0FlashLite => 1_048_576,
+            // TODO: Max tokens not yet documented for experimental models. Using defaults from others
+            GoogleModels::Gemini2_0ProExp => 1_048_576,
+            GoogleModels::Gemini2_0FlashThinkingExp => 1_048_576,
         }
     }
 
@@ -66,7 +85,11 @@ impl LLMModel for GoogleModels {
             GoogleModels::GeminiPro
             | GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_0Pro => GOOGLE_GEMINI_API_URL.to_string(),
+            | GoogleModels::Gemini1_0Pro 
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini2_0FlashLite
+            | GoogleModels::Gemini2_0ProExp
+            | GoogleModels::Gemini2_0FlashThinkingExp => GOOGLE_GEMINI_API_URL.to_string(),
             GoogleModels::GeminiProVertex
             | GoogleModels::Gemini1_5ProVertex
             | GoogleModels::Gemini1_5FlashVertex
@@ -205,7 +228,11 @@ impl LLMModel for GoogleModels {
             GoogleModels::GeminiPro
             | GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_0Pro => {
+            | GoogleModels::Gemini1_0Pro
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini2_0FlashLite
+            | GoogleModels::Gemini2_0ProExp
+            | GoogleModels::Gemini2_0FlashThinkingExp => {
                 let url_with_key = format!("{}?key={}", model_url, api_key);
                 let response = client
                     .post(url_with_key)
@@ -239,7 +266,11 @@ impl LLMModel for GoogleModels {
             GoogleModels::GeminiPro
             | GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_0Pro => {
+            | GoogleModels::Gemini1_0Pro 
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini2_0FlashLite
+            | GoogleModels::Gemini2_0ProExp
+            | GoogleModels::Gemini2_0FlashThinkingExp => {
                 //Convert response to struct representing expected response format
                 let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(response_text)?;
 
@@ -260,10 +291,22 @@ impl LLMModel for GoogleModels {
 
     //This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
-        //https://ai.google.dev/models/gemini
-        RateLimit {
-            tpm: 60 * 32_000, // Google only specifies RPM. TPM is calculated from that
-            rpm: 60,
+        //Docs: https://ai.google.dev/gemini-api/docs/models/gemini
+        match self {
+            GoogleModels::Gemini2_0Flash => RateLimit {
+                tpm: 4_000_000, 
+                rpm: 2_000,
+            },
+            GoogleModels::Gemini2_0FlashLite => RateLimit {
+                tpm: 4_000_000, 
+                rpm: 10,
+            },
+            // TODO: Update others
+            _ => RateLimit {
+                tpm: 60 * 32_000, 
+                rpm: 60,
+            }
         }
+        
     }
 }
