@@ -35,7 +35,9 @@ DeepSeek:
 
 Google Vertex AI / AI Studio:
 - APIs: Chat Completions (including streaming)
-- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.0 Pro
+- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite
+    - The following legacy models will be supported until February 15, 2025: Gemini 1.0 Pro
+- Experimental models: Gemini 2.0 Pro, Gemini 2.0 Flash-Thinking
 
 Mistral:
 - APIs: Chat Completions
@@ -49,7 +51,8 @@ OpenAI:
 
 Perplexity:
 - APIs: Chat Completions
-- Models: Sonar, Sonar Pro, Sonar Reasoning. The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
+- Models: Sonar, Sonar Pro, Sonar Reasoning 
+    - The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)

@@ -23,7 +23,7 @@ lazy_static! {
         let region = std::env::var("GOOGLE_REGION").unwrap_or("us-central1".to_string());
         let project_id = std::env::var("GOOGLE_PROJECT_ID").expect("PROJECT_ID not set");
 
-        format!("https://{}-aiplatform.googleapis.com/v1/projects/{}/locations/{}/publishers/google/models/gemini-pro:streamGenerateContent?alt=sse",
+        format!("https://{}-aiplatform.googleapis.com/v1/projects/{}/locations/{}/publishers/google/models",
                 region, project_id, region)
     };
     pub(crate) static ref GOOGLE_GEMINI_API_URL: String = std::env::var("GOOGLE_GEMINI_API_URL")

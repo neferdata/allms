@@ -22,7 +22,7 @@ async fn main() {
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     // Get answer using Google GeminiPro via Vertex AI
-    let model = GoogleModels::Gemini1_5ProVertex;
+    let model = GoogleModels::Gemini2_0ProExpVertex;
 
     // To authenticate Google Vertex AI we need to use a key associated with a GCP service account with correct permissions
     // Load your service account key from a file or an environment variable
