@@ -4,6 +4,7 @@ use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::str::FromStr;
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
@@ -103,33 +104,67 @@ impl LLMModel for OpenAIModels {
         }
     }
 
-    fn get_endpoint(&self) -> String {
+    fn get_version_endpoint(&self, version: Option<String>) -> String {
+        // If no version provided default to Open
+        let version = version
+            .map(|version| OpenAICompletionsAPIs::from_str(&version))
+            .unwrap_or(OpenAICompletionsAPIs::default());
+
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
-        match self {
-            OpenAIModels::Gpt3_5Turbo
-            | OpenAIModels::Gpt3_5Turbo0613
-            | OpenAIModels::Gpt3_5Turbo16k
-            | OpenAIModels::Gpt4
-            | OpenAIModels::Gpt4Turbo
-            | OpenAIModels::Gpt4TurboPreview
-            | OpenAIModels::Gpt4o
-            | OpenAIModels::Gpt4o20240806
-            | OpenAIModels::Gpt4oMini
-            | OpenAIModels::Gpt4_32k
-            | OpenAIModels::O1Preview
-            | OpenAIModels::O1Mini
-            | OpenAIModels::O1
-            | OpenAIModels::O3Mini
-            | OpenAIModels::Custom { .. } => {
+        match (version, self) {
+            (
+                OpenAICompletionsAPIs::OpenAI,
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
                 format!(
                     "{OPENAI_API_URL}/v1/chat/completions",
                     OPENAI_API_URL = *OPENAI_API_URL
                 )
             }
-            OpenAIModels::TextDavinci003 => format!(
+            (OpenAICompletionsAPIs::OpenAI, OpenAIModels::TextDavinci003) => format!(
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
+            (
+                OpenAICompletionsAPIs::Azure { version },
+                OpenAIModels::TextDavinci003
+                | OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
+                format!(
+                    "{}/openai/deployments/{}/chat/completions?api-version={}",
+                    &*OPENAI_API_URL,
+                    self.as_str(),
+                    version
+                )
+            }
         }
     }
 
@@ -308,11 +343,12 @@ impl LLMModel for OpenAIModels {
     async fn call_api(
         &self,
         api_key: &str,
+        version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String> {
         //Get the API url
-        let model_url = self.get_endpoint();
+        let model_url = self.get_version_endpoint(version);
 
         //Make the API call
         let client = Client::new();
@@ -513,6 +549,59 @@ impl OpenAIModels {
                 | OpenAIModels::O1
                 | OpenAIModels::O3Mini
         )
+    }
+}
+
+// Enum of supported Completions APIs
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub enum OpenAICompletionsAPIs {
+    OpenAI,
+    Azure { version: String },
+}
+
+impl OpenAICompletionsAPIs {
+    /// Defaulting to OpenAI
+    fn default() -> Self {
+        OpenAICompletionsAPIs::OpenAI
+    }
+
+    /// Default version of Azure set to `2024-08-01-preview` as of 2/12/2025
+    fn default_azure() -> Self {
+        OpenAICompletionsAPIs::Azure {
+            version: "2024-08-01-preview".to_string(),
+        }
+    }
+
+    /// Parses a string into `OpenAICompletionsAPIs`.
+    ///
+    /// Supported formats (case-insensitive):
+    /// - `"OpenAI"` -> `OpenAICompletionsAPIs::OpenAI`
+    /// - `"azure:<version>"` -> `OpenAICompletionsAPIs::Azure { version }`
+    ///
+    /// Returns default for others.
+    fn from_str(s: &str) -> Self {
+        let s_lower = s.to_lowercase();
+        match s_lower.as_str() {
+            "openai" => OpenAICompletionsAPIs::OpenAI,
+            _ if s_lower.starts_with("azure") => {
+                // Check if the string contains a version after "azure:"
+                if let Some(version) = s_lower.strip_prefix("azure:") {
+                    OpenAICompletionsAPIs::Azure {
+                        version: version.trim().to_string(),
+                    }
+                } else {
+                    OpenAICompletionsAPIs::default_azure()
+                }
+            }
+            _ => OpenAICompletionsAPIs::default(),
+        }
+    }
+
+    fn get_version(&self) -> Option<String> {
+        match self {
+            OpenAICompletionsAPIs::OpenAI => None,
+            OpenAICompletionsAPIs::Azure { version } => Some(version.to_string()),
+        }
     }
 }
 

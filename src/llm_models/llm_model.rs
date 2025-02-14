@@ -18,7 +18,14 @@ pub trait LLMModel {
     ///Returns max supported number of tokens for each of the variants of the enum
     fn default_max_tokens(&self) -> usize;
     ///Returns the url of the endpoint that should be called for each variant of the LLM Model enum
-    fn get_endpoint(&self) -> String;
+    fn get_endpoint(&self) -> String {
+        self.get_version_endpoint(None)
+    }
+    ///Returns the url of the endpoint that should be called for each variant of the LLM Model enum
+    ///It allows to specify which version of the endpoint to use
+    fn get_version_endpoint(&self, _version: Option<String>) -> String {
+        self.get_endpoint()
+    }
     ///Provides a list of base instructions that should be added to each prompt when using each of the models
     fn get_base_instructions(&self, _function_call: Option<bool>) -> String {
         OPENAI_BASE_INSTRUCTIONS.to_string()
@@ -40,6 +47,7 @@ pub trait LLMModel {
     async fn call_api(
         &self,
         api_key: &str,
+        version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String>;
