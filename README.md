@@ -17,7 +17,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 ### Foundational Models
 Anthropic:
 - APIs: Messages, Text Completions
-- Models: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
+- Models: Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
 AWS Bedrock:
 - APIs: Converse
@@ -70,7 +70,7 @@ Explore the `examples` directory to see more use cases and how to use different 
 
 Using `Completions` API with different foundational models:
 ```
-let anthropic_answer = Completions::new(AnthropicModels::Claude2, &API_KEY, None, None)
+let anthropic_answer = Completions::new(AnthropicModels::Claude3_7Sonnet, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
