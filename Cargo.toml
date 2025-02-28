@@ -1,6 +1,6 @@
 [package]
 name = "allms"
-version = "0.15.0"
+version = "0.16.0"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
