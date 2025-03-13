@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
     );
 
     // Ensure model deployment name in Azure OpenAI Studio matches that of the used model `as_str` representation
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4o, &api_key)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4oMini, &api_key)
         .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::AzureVersion  { version: "2024-06-01".to_string(), })
