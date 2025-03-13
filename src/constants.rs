@@ -84,4 +84,6 @@ pub(crate) const OPENAI_ASSISTANT_INSTRUCTIONS: &str = r#"You are a computer fun
 4: Respond ONLY with properly formatted data portion of a Json. No other words or text, only valid Json in your answers. 
 "#;
 
+pub(crate) const OPENAI_ASSISTANT_POLL_FREQ: usize = 10;
+
 pub(crate) const DEFAULT_AZURE_VERSION: &str = "2024-06-01";
