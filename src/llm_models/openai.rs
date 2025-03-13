@@ -4,7 +4,6 @@ use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::str::FromStr;
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
@@ -26,6 +25,7 @@ pub enum OpenAIModels {
     Gpt4o,
     Gpt4o20240806,
     Gpt4oMini,
+    Gpt4_5Preview,
     // Reasoning models
     O1Preview,
     O1Mini,
@@ -50,6 +50,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => "gpt-4o",
             OpenAIModels::Gpt4o20240806 => "gpt-4o-2024-08-06",
             OpenAIModels::Gpt4oMini => "gpt-4o-mini",
+            OpenAIModels::Gpt4_5Preview => "gpt-4.5-preview",
             OpenAIModels::O1Preview => "o1-preview",
             OpenAIModels::O1Mini => "o1-mini",
             OpenAIModels::O1 => "o1",
@@ -71,6 +72,7 @@ impl LLMModel for OpenAIModels {
             "gpt-4o" => Some(OpenAIModels::Gpt4o),
             "gpt-4o-2024-08-06" => Some(OpenAIModels::Gpt4o20240806),
             "gpt-4o-mini" => Some(OpenAIModels::Gpt4oMini),
+            "gpt-4.5-preview" => Some(OpenAIModels::Gpt4_5Preview),
             "o1-preview" => Some(OpenAIModels::O1Preview),
             "o1-mini" => Some(OpenAIModels::O1Mini),
             "o1" => Some(OpenAIModels::O1),
@@ -96,6 +98,7 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => 128_000,
             OpenAIModels::Gpt4o20240806 => 128_000,
             OpenAIModels::Gpt4oMini => 128_000,
+            OpenAIModels::Gpt4_5Preview => 128_000,
             OpenAIModels::O1Preview => 128_000,
             OpenAIModels::O1Mini => 128_000,
             OpenAIModels::O1 => 200_000,
@@ -123,6 +126,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
@@ -149,6 +153,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4Turbo
                 | OpenAIModels::Gpt4TurboPreview
                 | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
                 | OpenAIModels::Gpt4_32k
@@ -194,6 +199,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Gpt4_5Preview
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -234,6 +240,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Gpt4_5Preview
             | OpenAIModels::Gpt4_32k
             | OpenAIModels::Custom { .. } => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
@@ -402,6 +409,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Gpt4_5Preview
             | OpenAIModels::Gpt4_32k
             | OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
@@ -441,7 +449,7 @@ impl LLMModel for OpenAIModels {
         //This is the max tokens allowed between prompt & response
         match self {
             OpenAIModels::Gpt3_5Turbo => RateLimit {
-                tpm: 2_000_000,
+                tpm: 50_000_000,
                 rpm: 10_000,
             },
             OpenAIModels::Gpt3_5Turbo0613 => RateLimit {
@@ -453,7 +461,7 @@ impl LLMModel for OpenAIModels {
                 rpm: 10_000,
             },
             OpenAIModels::Gpt4 => RateLimit {
-                tpm: 300_000,
+                tpm: 1_000_000,
                 rpm: 10_000,
             },
             OpenAIModels::Gpt4Turbo => RateLimit {
@@ -469,15 +477,19 @@ impl LLMModel for OpenAIModels {
                 rpm: 10_000,
             },
             OpenAIModels::Gpt4o | OpenAIModels::Custom { .. } => RateLimit {
-                tpm: 2_000_000,
-                rpm: 10_000,
+                tpm: 150_000_000,
+                rpm: 50_000,
             },
             OpenAIModels::Gpt4o20240806 => RateLimit {
-                tpm: 2_000_000,
-                rpm: 10_000,
+                tpm: 150_000_000,
+                rpm: 50_000,
             },
             OpenAIModels::Gpt4oMini => RateLimit {
-                tpm: 1_000_000,
+                tpm: 150_000_000,
+                rpm: 30_000,
+            },
+            OpenAIModels::Gpt4_5Preview => RateLimit {
+                tpm: 2_000_000,
                 rpm: 10_000,
             },
             OpenAIModels::O1Preview => RateLimit {
@@ -490,7 +502,7 @@ impl LLMModel for OpenAIModels {
             },
             OpenAIModels::O1 => RateLimit {
                 tpm: 30_000_000,
-                rpm: 1_000,
+                rpm: 10_000,
             },
             OpenAIModels::O3Mini => RateLimit {
                 tpm: 150_000_000,
@@ -523,6 +535,7 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -535,6 +548,7 @@ impl OpenAIModels {
             OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -615,7 +629,7 @@ mod tests {
     fn test_gpt3_5turbo_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(10000, 2000000 / ((4096_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 50_000_000 / ((4096_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -623,7 +637,7 @@ mod tests {
     fn test_gpt3_5turbo0613_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo0613;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(10000, 2000000 / ((4096_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((4096_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -631,7 +645,7 @@ mod tests {
     fn test_gpt3_5turbo16k_max_requests() {
         let model = OpenAIModels::Gpt3_5Turbo16k;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(10000, 2000000 / ((16384_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 2_000_000 / ((16384_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -639,7 +653,7 @@ mod tests {
     fn test_gpt4_max_requests() {
         let model = OpenAIModels::Gpt4;
         let max_requests = model.get_max_requests();
-        let expected_max = std::cmp::min(10_000, 300_000 / ((8192_f64 * 0.5).ceil() as usize));
+        let expected_max = std::cmp::min(10_000, 1_000_000 / ((8192_f64 * 0.5).ceil() as usize));
         assert_eq!(max_requests, expected_max);
     }
 
@@ -690,6 +704,10 @@ mod tests {
             OpenAIModels::try_from_str("gpt-4o-mini"),
             Some(OpenAIModels::Gpt4oMini)
         );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-4.5-preview"),
+            Some(OpenAIModels::Gpt4_5Preview)
+        );
     }
 
     #[test]
@@ -701,6 +719,10 @@ mod tests {
         assert_eq!(
             OpenAIModels::try_from_str("GPT-4o-MiNI"),
             Some(OpenAIModels::Gpt4oMini)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("GPT-4.5-pREVIEW"),
+            Some(OpenAIModels::Gpt4_5Preview)
         );
     }
 

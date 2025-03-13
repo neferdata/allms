@@ -9,9 +9,12 @@ use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::LLMModel;
 
+// API Docs: https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
+    Claude3_7Sonnet,
     Claude3_5Sonnet,
+    Claude3_5Haiku,
     Claude3Opus,
     Claude3Sonnet,
     Claude3Haiku,
@@ -24,8 +27,10 @@ pub enum AnthropicModels {
 impl LLMModel for AnthropicModels {
     fn as_str(&self) -> &str {
         match self {
-            AnthropicModels::Claude3_5Sonnet => "claude-3-5-sonnet-20240620",
-            AnthropicModels::Claude3Opus => "claude-3-opus-20240229",
+            AnthropicModels::Claude3_7Sonnet => "claude-3-7-sonnet-latest",
+            AnthropicModels::Claude3_5Sonnet => "claude-3-5-sonnet-latest",
+            AnthropicModels::Claude3_5Haiku => "claude-3-5-haiku-latest",
+            AnthropicModels::Claude3Opus => "claude-3-opus-latest",
             AnthropicModels::Claude3Sonnet => "claude-3-sonnet-20240229",
             AnthropicModels::Claude3Haiku => "claude-3-haiku-20240307",
             // Legacy
@@ -36,8 +41,12 @@ impl LLMModel for AnthropicModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "claude-3-7-sonnet-latest" => Some(AnthropicModels::Claude3_7Sonnet),
             "claude-3-5-sonnet-20240620" => Some(AnthropicModels::Claude3_5Sonnet),
+            "claude-3-5-sonnet-latest" => Some(AnthropicModels::Claude3_5Sonnet),
+            "claude-3-5-haiku-latest" => Some(AnthropicModels::Claude3_5Haiku),
             "claude-3-opus-20240229" => Some(AnthropicModels::Claude3Opus),
+            "claude-3-opus-latest" => Some(AnthropicModels::Claude3Opus),
             "claude-3-sonnet-20240229" => Some(AnthropicModels::Claude3Sonnet),
             "claude-3-haiku-20240307" => Some(AnthropicModels::Claude3Haiku),
             // Legacy
@@ -50,7 +59,9 @@ impl LLMModel for AnthropicModels {
     fn default_max_tokens(&self) -> usize {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/claude/reference/input-and-output-sizes
         match self {
-            AnthropicModels::Claude3_5Sonnet => 4_096, // 8192 output tokens is in beta and requires the header anthropic-beta: max-tokens-3-5-sonnet-2024-07-15. If the header is not specified, the limit is 4096 tokens. (Source: https://docs.anthropic.com/en/docs/about-claude/models)
+            AnthropicModels::Claude3_7Sonnet => 8_192,
+            AnthropicModels::Claude3_5Sonnet => 8_192,
+            AnthropicModels::Claude3_5Haiku => 8_192,
             AnthropicModels::Claude3Opus => 4_096,
             AnthropicModels::Claude3Sonnet => 4_096,
             AnthropicModels::Claude3Haiku => 4_096,
@@ -62,7 +73,9 @@ impl LLMModel for AnthropicModels {
 
     fn get_endpoint(&self) -> String {
         match self {
-            AnthropicModels::Claude3_5Sonnet
+            AnthropicModels::Claude3_7Sonnet
+            | AnthropicModels::Claude3_5Sonnet
+            | AnthropicModels::Claude3_5Haiku
             | AnthropicModels::Claude3Opus
             | AnthropicModels::Claude3Sonnet
             | AnthropicModels::Claude3Haiku => ANTHROPIC_MESSAGES_API_URL.to_string(),
@@ -115,7 +128,9 @@ impl LLMModel for AnthropicModels {
         });
 
         match self {
-            AnthropicModels::Claude3_5Sonnet
+            AnthropicModels::Claude3_7Sonnet
+            | AnthropicModels::Claude3_5Sonnet
+            | AnthropicModels::Claude3_5Haiku
             | AnthropicModels::Claude3Opus
             | AnthropicModels::Claude3Sonnet
             | AnthropicModels::Claude3Haiku => message_body,
@@ -170,7 +185,9 @@ impl LLMModel for AnthropicModels {
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
         match self {
-            AnthropicModels::Claude3_5Sonnet
+            AnthropicModels::Claude3_7Sonnet
+            | AnthropicModels::Claude3_5Sonnet
+            | AnthropicModels::Claude3_5Haiku
             | AnthropicModels::Claude3Opus
             | AnthropicModels::Claude3Sonnet
             | AnthropicModels::Claude3Haiku => {
