@@ -610,13 +610,6 @@ impl OpenAICompletionsAPIs {
             _ => OpenAICompletionsAPIs::default(),
         }
     }
-
-    fn get_version(&self) -> Option<String> {
-        match self {
-            OpenAICompletionsAPIs::OpenAI => None,
-            OpenAICompletionsAPIs::Azure { version } => Some(version.to_string()),
-        }
-    }
 }
 
 #[cfg(test)]
