@@ -221,6 +221,7 @@ impl LLMModel for GoogleModels {
     async fn call_api(
         &self,
         api_key: &str,
+        _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String> {

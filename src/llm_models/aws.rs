@@ -86,6 +86,7 @@ impl LLMModel for AwsBedrockModels {
         // AWS Bedrock SDK utilizes `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables for request authentication
         // Docs: https://docs.aws.amazon.com/sdk-for-rust/latest/dg/credproviders.html
         _api_key: &str,
+        _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String> {

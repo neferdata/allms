@@ -57,6 +57,19 @@ async fn main() {
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
+    // Get answer using OpenAI (on Azure)
+    // Ensure `OPENAI_API_URL` is set to your Azure OpenAI resource endpoint
+    let azure_openai_completion =
+        Completions::new(OpenAIModels::Gpt4o, &openai_api_key, None, None)
+            .version("azure:2024-08-01-preview");
+    match azure_openai_completion
+        .get_answer::<TranslationResponse>(instructions)
+        .await
+    {
+        Ok(response) => println!("Azure OpenAI response: {:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
     // Get answer using Anthropic
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");

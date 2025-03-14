@@ -19,6 +19,7 @@ pub struct Completions<T: LLMModel> {
     debug: bool,
     function_call: bool,
     api_key: String,
+    version: Option<String>,
 }
 
 impl<T: LLMModel> Completions<T> {
@@ -41,6 +42,7 @@ impl<T: LLMModel> Completions<T> {
             input_json: None,
             debug: false,
             api_key: api_key.to_string(),
+            version: None,
         }
     }
 
@@ -76,6 +78,16 @@ impl<T: LLMModel> Completions<T> {
     ///
     pub fn temperature_unchecked(mut self, temp: f32) -> Self {
         self.temperature = temp;
+        self
+    }
+
+    ///
+    /// This method can be used to set the version of Completions API to be used
+    /// This is currently used for OpenAI models which can be run on OpenAI API or Azure API
+    ///
+    pub fn version(mut self, version: &str) -> Self {
+        // TODO: We should use the model trait to check which versions are allowed
+        self.version = Some(version.to_string());
         self
     }
 
@@ -215,7 +227,7 @@ impl<T: LLMModel> Completions<T> {
 
         let response_text = self
             .model
-            .call_api(&self.api_key, &model_body, self.debug)
+            .call_api(&self.api_key, self.version, &model_body, self.debug)
             .await?;
 
         //Extract data from the returned response text based on the used model
