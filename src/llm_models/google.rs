@@ -151,7 +151,11 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0Flash
             | GoogleModels::Gemini2_0FlashLite
             | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp => GOOGLE_GEMINI_API_URL.to_string(),
+            | GoogleModels::Gemini2_0FlashThinkingExp => format!(
+                "{}/{}:generateContent",
+                &*GOOGLE_GEMINI_API_URL,
+                self.as_str()
+            ),
             GoogleModels::Gemini1_5ProVertex
             | GoogleModels::Gemini1_5FlashVertex
             | GoogleModels::Gemini1_5Flash8BVertex
@@ -435,7 +439,7 @@ impl GoogleModels {
         let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(response_text)?;
 
         //Extract the data part from the response
-        Ok(gemini_response
+        let data = gemini_response
             .candidates
             .iter()
             .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
@@ -444,6 +448,8 @@ impl GoogleModels {
             .fold(String::new(), |mut acc, text| {
                 acc.push_str(text);
                 acc
-            }))
+            });
+
+        Ok(self.sanitize_json_response(&data))
     }
 }

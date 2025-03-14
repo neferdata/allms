@@ -273,7 +273,7 @@ impl<T: LLMModel> Completions<T> {
                 })?;
             Ok(response_deser.data)
         } else {
-            Ok(response_deser.unwrap())
+            response_deser
         }
     }
 }
