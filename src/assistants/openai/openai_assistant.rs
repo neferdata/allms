@@ -12,7 +12,7 @@ use tokio::time;
 use tokio::time::timeout;
 
 use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion, OpenAIVectorStore};
-use crate::constants::OPENAI_ASSISTANT_INSTRUCTIONS;
+use crate::constants::{OPENAI_ASSISTANT_INSTRUCTIONS, OPENAI_ASSISTANT_POLL_FREQ};
 use crate::domain::{
     AllmsError, OpenAIAssistantResp, OpenAIMessageListResp, OpenAIMessageResp, OpenAIRunResp,
     OpenAIThreadResp,
@@ -40,6 +40,7 @@ pub struct OpenAIAssistant {
     version: OpenAIAssistantVersion,
     vector_store: Option<OpenAIVectorStore>,
     temperature: f32,
+    poll_interval: usize,
 }
 
 impl OpenAIAssistant {
@@ -63,6 +64,7 @@ impl OpenAIAssistant {
             // Defaulting to V1 for now
             version: OpenAIAssistantVersion::V1,
             vector_store: None,
+            poll_interval: OPENAI_ASSISTANT_POLL_FREQ,
         }
     }
 
@@ -99,6 +101,15 @@ impl OpenAIAssistant {
     ///
     pub fn temperature_unchecked(mut self, temp: f32) -> Self {
         self.temperature = temp;
+        self
+    }
+
+    ///
+    /// This method can be used to define at what frequency the system will check if Assistant response is ready.
+    /// Current default is defined in `constants::OPENAI_ASSISTANTS_POLL_FREQ`.  
+    ///
+    pub fn poll_interval(mut self, poll_interval: usize) -> Self {
+        self.poll_interval = poll_interval;
         self
     }
 
@@ -247,7 +258,7 @@ impl OpenAIAssistant {
 
         //Step 4: Check in on the status of the run
         let operation_timeout = Duration::from_secs(600); // Timeout for the whole operation
-        let poll_interval = Duration::from_secs(10);
+        let poll_interval = Duration::from_secs(self.poll_interval as u64);
 
         let _result = timeout(operation_timeout, async {
             let mut interval = time::interval(poll_interval);

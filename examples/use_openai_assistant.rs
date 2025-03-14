@@ -71,6 +71,7 @@ async fn main() -> Result<()> {
         .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)
+        .poll_interval(5) // Set response polling to every 5 sec
         .vector_store(openai_vector_store.clone())
         .await?
         .set_context(
