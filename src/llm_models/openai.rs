@@ -110,13 +110,13 @@ impl LLMModel for OpenAIModels {
     fn get_version_endpoint(&self, version: Option<String>) -> String {
         // If no version provided default to Open
         let version = version
-            .map(|version| OpenAICompletionsAPIs::from_str(&version))
-            .unwrap_or(OpenAICompletionsAPIs::default());
+            .map(|version| OpenAICompletionsAPI::from_str(&version))
+            .unwrap_or(OpenAICompletionsAPI::default());
 
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match (version, self) {
             (
-                OpenAICompletionsAPIs::OpenAI,
+                OpenAICompletionsAPI::OpenAI,
                 OpenAIModels::Gpt3_5Turbo
                 | OpenAIModels::Gpt3_5Turbo0613
                 | OpenAIModels::Gpt3_5Turbo16k
@@ -139,12 +139,12 @@ impl LLMModel for OpenAIModels {
                     OPENAI_API_URL = *OPENAI_API_URL
                 )
             }
-            (OpenAICompletionsAPIs::OpenAI, OpenAIModels::TextDavinci003) => format!(
+            (OpenAICompletionsAPI::OpenAI, OpenAIModels::TextDavinci003) => format!(
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
             (
-                OpenAICompletionsAPIs::Azure { version },
+                OpenAICompletionsAPI::Azure { version },
                 OpenAIModels::TextDavinci003
                 | OpenAIModels::Gpt3_5Turbo
                 | OpenAIModels::Gpt3_5Turbo0613
@@ -568,46 +568,46 @@ impl OpenAIModels {
 
 // Enum of supported Completions APIs
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-pub enum OpenAICompletionsAPIs {
+pub enum OpenAICompletionsAPI {
     OpenAI,
     Azure { version: String },
 }
 
-impl OpenAICompletionsAPIs {
+impl OpenAICompletionsAPI {
     /// Defaulting to OpenAI
     fn default() -> Self {
-        OpenAICompletionsAPIs::OpenAI
+        OpenAICompletionsAPI::OpenAI
     }
 
     /// Default version of Azure set to `2024-08-01-preview` as of 2/12/2025
     fn default_azure() -> Self {
-        OpenAICompletionsAPIs::Azure {
+        OpenAICompletionsAPI::Azure {
             version: "2024-08-01-preview".to_string(),
         }
     }
 
-    /// Parses a string into `OpenAICompletionsAPIs`.
+    /// Parses a string into `OpenAICompletionsAPI`.
     ///
     /// Supported formats (case-insensitive):
-    /// - `"OpenAI"` -> `OpenAICompletionsAPIs::OpenAI`
-    /// - `"azure:<version>"` -> `OpenAICompletionsAPIs::Azure { version }`
+    /// - `"OpenAI"` -> `OpenAICompletionsAPI::OpenAI`
+    /// - `"azure:<version>"` -> `OpenAICompletionsAPI::Azure { version }`
     ///
     /// Returns default for others.
     fn from_str(s: &str) -> Self {
         let s_lower = s.to_lowercase();
         match s_lower.as_str() {
-            "openai" => OpenAICompletionsAPIs::OpenAI,
+            "openai" => OpenAICompletionsAPI::OpenAI,
             _ if s_lower.starts_with("azure") => {
                 // Check if the string contains a version after "azure:"
                 if let Some(version) = s_lower.strip_prefix("azure:") {
-                    OpenAICompletionsAPIs::Azure {
+                    OpenAICompletionsAPI::Azure {
                         version: version.trim().to_string(),
                     }
                 } else {
-                    OpenAICompletionsAPIs::default_azure()
+                    OpenAICompletionsAPI::default_azure()
                 }
             }
-            _ => OpenAICompletionsAPIs::default(),
+            _ => OpenAICompletionsAPI::default(),
         }
     }
 }
