@@ -51,18 +51,7 @@ pub(crate) fn remove_think_reasoner_wrapper(json_response: &str) -> String {
 
 /// Removes the properties wrapper from JSON data if it exists
 pub fn remove_properties_wrapper(json_data: &str) -> String {
-    // First clean up the debug representation
-    let cleaned = json_data
-        .replace("Object {", "{")
-        .replace("Array [", "[")
-        .replace("Number(", "")
-        .replace("String(", "")
-        .replace("Bool(", "")
-        .replace(")", "")
-        .replace("\\\"", "\"")
-        .replace("\\\\", "\\");
-
-    match serde_json::from_str::<serde_json::Value>(&cleaned) {
+    match serde_json::from_str::<serde_json::Value>(&json_data) {
         Ok(value) => {
             let processed_value = process_value(value);
             processed_value.to_string()
