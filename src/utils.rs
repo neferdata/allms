@@ -49,6 +49,52 @@ pub(crate) fn remove_think_reasoner_wrapper(json_response: &str) -> String {
     re.replace_all(json_response, "").to_string()
 }
 
+/// Removes the properties wrapper from JSON data if it exists
+pub fn remove_properties_wrapper(json_data: &str) -> String {
+    // First clean up the debug representation
+    let cleaned = json_data
+        .replace("Object {", "{")
+        .replace("Array [", "[")
+        .replace("Number(", "")
+        .replace("String(", "")
+        .replace("Bool(", "")
+        .replace(")", "")
+        .replace("\\\"", "\"")
+        .replace("\\\\", "\\");
+
+    match serde_json::from_str::<serde_json::Value>(&cleaned) {
+        Ok(value) => {
+            let processed_value = process_value(value);
+            processed_value.to_string()
+        }
+        Err(_) => json_data.to_string(),
+    }
+}
+
+fn process_value(value: serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Object(mut obj) => {
+            // If this object has a "properties" field, use its value
+            if let Some(properties) = obj.remove("properties") {
+                process_value(properties)
+            } else {
+                // Process all fields recursively
+                let processed_obj: serde_json::Map<_, _> = obj
+                    .into_iter()
+                    .map(|(k, v)| (k, process_value(v)))
+                    .collect();
+                serde_json::Value::Object(processed_obj)
+            }
+        }
+        serde_json::Value::Array(arr) => {
+            // Process array elements recursively
+            serde_json::Value::Array(arr.into_iter().map(process_value).collect())
+        }
+        // For other types (string, number, bool, null), return as is
+        other => other,
+    }
+}
+
 // This function generates a Json schema for the provided type
 pub(crate) fn get_type_schema<T: JsonSchema + DeserializeOwned>() -> Result<String> {
     // Instruct the Assistant to answer with the right Json format
@@ -120,7 +166,7 @@ mod tests {
     use crate::llm_models::OpenAIModels;
     use crate::utils::{
         fix_value_schema, get_tokenizer, get_type_schema, map_to_range, map_to_range_f32,
-        remove_think_reasoner_wrapper,
+        remove_properties_wrapper, remove_think_reasoner_wrapper,
     };
 
     #[derive(JsonSchema, Serialize, Deserialize)]
@@ -508,6 +554,91 @@ mod tests {
                 "Multiple <think>first</think> parts <think>second</think> remain"
             ),
             "Multiple  parts  remain"
+        );
+    }
+
+    // Tests for remove_properties_wrapper
+    #[test]
+    fn test_remove_properties_wrapper_with_wrapper() {
+        let input = r#"{"properties": {"name": "John", "age": 30}}"#;
+        let expected = r#"{"name":"John","age":30}"#;
+        let result = remove_properties_wrapper(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should remove properties wrapper"
+        );
+    }
+
+    #[test]
+    fn test_remove_properties_wrapper_without_wrapper() {
+        let input = r#"{"name": "John", "age": 30}"#;
+        let result = remove_properties_wrapper(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let input_value: Value = serde_json::from_str(input).unwrap();
+        assert_eq!(
+            result_value, input_value,
+            "Should return original string when no properties wrapper exists"
+        );
+    }
+
+    #[test]
+    fn test_remove_properties_wrapper_with_nested_structure() {
+        let input = r#"{"properties": {"user": {"properties": {"name": "John", "age": 30}}}}"#;
+        let expected = r#"{"user":{"name":"John","age":30}}"#;
+        let result = remove_properties_wrapper(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should handle nested properties wrappers"
+        );
+    }
+
+    #[test]
+    fn test_remove_properties_wrapper_with_invalid_json() {
+        let input = "invalid json";
+        let result = remove_properties_wrapper(input);
+        assert_eq!(
+            result, input,
+            "Should return original string for invalid JSON"
+        );
+    }
+
+    #[test]
+    fn test_remove_properties_wrapper_with_array() {
+        let input = r#"{"properties": {"items": [1, 2, 3]}}"#;
+        let expected = r#"{"items":[1,2,3]}"#;
+        let result = remove_properties_wrapper(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should handle arrays within properties"
+        );
+    }
+
+    #[test]
+    fn test_remove_properties_wrapper_with_complex_structure() {
+        let input = r#"{"properties": {"responses": {"properties": {"items": [{"confidence": 100, "source": "test", "value": {"date": "2024-03-20", "post": "test", "tariffs": false, "url": "https://example.com"}}]}}}}"#;
+        let expected = r#"{"responses":{"items":[{"confidence":100,"source":"test","value":{"date":"2024-03-20","post":"test","tariffs":false,"url":"https://example.com"}}]}}"#;
+        let result = remove_properties_wrapper(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should handle complex nested structures"
         );
     }
 }
