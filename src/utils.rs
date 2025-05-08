@@ -49,6 +49,84 @@ pub(crate) fn remove_think_reasoner_wrapper(json_response: &str) -> String {
     re.replace_all(json_response, "").to_string()
 }
 
+/// Removes schema wrappers (properties and items) from JSON data if they exist
+pub fn remove_schema_wrappers(json_data: &str) -> String {
+    match serde_json::from_str::<serde_json::Value>(json_data) {
+        Ok(value) => {
+            // First remove properties wrappers
+            let processed_value = remove_properties_wrappers(value);
+            // Then handle items wrappers
+            let processed_value = remove_items_wrappers(processed_value);
+            processed_value.to_string()
+        }
+        Err(_) => json_data.to_string(),
+    }
+}
+
+fn remove_properties_wrappers(value: serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Object(mut obj) => {
+            // Check if this is a wrapper object (has only one field)
+            if obj.len() == 1 {
+                // Check for properties wrapper
+                if let Some(properties) = obj.remove("properties") {
+                    if properties.is_object() {
+                        return remove_properties_wrappers(properties);
+                    }
+                }
+            }
+
+            // Process all fields recursively
+            let processed_obj: serde_json::Map<_, _> = obj
+                .into_iter()
+                .map(|(k, v)| (k, remove_properties_wrappers(v)))
+                .collect();
+            serde_json::Value::Object(processed_obj)
+        }
+        serde_json::Value::Array(arr) => {
+            // Process array elements recursively
+            serde_json::Value::Array(arr.into_iter().map(remove_properties_wrappers).collect())
+        }
+        // For other types (string, number, bool, null), return as is
+        other => other,
+    }
+}
+
+fn remove_items_wrappers(value: serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::Object(obj) => {
+            // First process all fields recursively
+            let processed_obj: serde_json::Map<_, _> = obj
+                .into_iter()
+                .map(|(k, v)| {
+                    // Process the value recursively first
+                    let processed_v = remove_items_wrappers(v);
+                    // If this is a named field and its value is an object with a single "items" field that's an array,
+                    // return the array directly
+                    if let serde_json::Value::Object(inner_obj) = &processed_v {
+                        if inner_obj.len() == 1 {
+                            if let Some(items) = inner_obj.get("items") {
+                                if items.is_array() {
+                                    return (k, items.clone());
+                                }
+                            }
+                        }
+                    }
+                    (k, processed_v)
+                })
+                .collect();
+
+            serde_json::Value::Object(processed_obj)
+        }
+        serde_json::Value::Array(arr) => {
+            // Process array elements recursively
+            serde_json::Value::Array(arr.into_iter().map(remove_items_wrappers).collect())
+        }
+        // For other types (string, number, bool, null), return as is
+        other => other,
+    }
+}
+
 // This function generates a Json schema for the provided type
 pub(crate) fn get_type_schema<T: JsonSchema + DeserializeOwned>() -> Result<String> {
     // Instruct the Assistant to answer with the right Json format
@@ -120,7 +198,7 @@ mod tests {
     use crate::llm_models::OpenAIModels;
     use crate::utils::{
         fix_value_schema, get_tokenizer, get_type_schema, map_to_range, map_to_range_f32,
-        remove_think_reasoner_wrapper,
+        remove_schema_wrappers, remove_think_reasoner_wrapper,
     };
 
     #[derive(JsonSchema, Serialize, Deserialize)]
@@ -369,7 +447,7 @@ mod tests {
         let mut schema = RootSchema {
             schema: SchemaObject {
                 object: Some(Box::new(ObjectValidation {
-                    properties: std::collections::BTreeMap::new(), // Empty properties
+                    properties: std::collections::BTreeMap::new(),
                     ..Default::default()
                 })),
                 ..Default::default()
@@ -508,6 +586,229 @@ mod tests {
                 "Multiple <think>first</think> parts <think>second</think> remain"
             ),
             "Multiple  parts  remain"
+        );
+    }
+
+    // Tests for remove_properties_wrapper
+    #[test]
+    fn test_remove_schema_wrappers_with_wrapper() {
+        let input = r#"{
+            "properties": {
+                "name": "John",
+                "age": 30
+            }
+        }"#;
+        let expected = r#"{
+            "name": "John",
+            "age": 30
+        }"#;
+        let result = remove_schema_wrappers(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should remove properties wrapper"
+        );
+    }
+
+    #[test]
+    fn test_remove_schema_wrappers_without_wrapper() {
+        let input = r#"{
+            "name": "John",
+            "age": 30
+        }"#;
+        let result = remove_schema_wrappers(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let input_value: Value = serde_json::from_str(input).unwrap();
+        assert_eq!(
+            result_value, input_value,
+            "Should return original string when no properties wrapper exists"
+        );
+    }
+
+    #[test]
+    fn test_remove_schema_wrappers_with_nested_structure() {
+        let input = r#"{
+            "properties": {
+                "user": {
+                    "properties": {
+                        "name": "John",
+                        "age": 30
+                    }
+                }
+            }
+        }"#;
+        let expected = r#"{
+            "user": {
+                "name": "John",
+                "age": 30
+            }
+        }"#;
+        let result = remove_schema_wrappers(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should handle nested properties wrappers"
+        );
+    }
+
+    #[test]
+    fn test_remove_schema_wrappers_with_invalid_json() {
+        let input = "invalid json";
+        let result = remove_schema_wrappers(input);
+        assert_eq!(
+            result, input,
+            "Should return original string for invalid JSON"
+        );
+    }
+
+    #[test]
+    fn test_remove_schema_wrappers_with_array() {
+        let input = r#"{
+            "properties": {
+                "items": [1, 2, 3]
+            }
+        }"#;
+        let expected = r#"{
+            "items": [1, 2, 3]
+        }"#;
+        let result = remove_schema_wrappers(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should handle arrays within properties"
+        );
+    }
+
+    #[test]
+    fn test_remove_schema_wrappers_with_complex_structure() {
+        let input = r#"{
+            "properties": {
+                "responses": {
+                    "properties": {
+                        "items": [
+                            {
+                                "confidence": 100,
+                                "source": "test",
+                                "value": {
+                                    "date": "2024-03-20",
+                                    "post": "test",
+                                    "check": false,
+                                    "url": "https://example.com"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }"#;
+        let expected = r#"{
+            "responses": [
+                {
+                    "confidence": 100,
+                    "source": "test",
+                    "value": {
+                        "date": "2024-03-20",
+                        "post": "test",
+                        "check": false,
+                        "url": "https://example.com"
+                    }
+                }
+            ]
+        }"#;
+        let result = remove_schema_wrappers(input);
+
+        // Parse both strings into Value to compare the actual data structure
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should handle complex nested structures"
+        );
+    }
+
+    #[test]
+    fn test_remove_schema_wrappers_with_items() {
+        // Test case 1: items in a named field
+        let input = r#"{
+            "properties": {
+                "responses": {
+                    "items": [
+                        {"id": 1},
+                        {"id": 2}
+                    ]
+                }
+            }
+        }"#;
+        let expected = r#"{
+            "responses": [
+                {"id": 1},
+                {"id": 2}
+            ]
+        }"#;
+
+        let result = remove_schema_wrappers(input);
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should remove items wrapper when it's in a named field"
+        );
+
+        // Test case 2: items in an unnamed (top-level) object
+        let input = r#"{
+            "items": [
+                {"id": 1},
+                {"id": 2}
+            ]
+        }"#;
+        let expected = r#"{
+            "items": [
+                {"id": 1},
+                {"id": 2}
+            ]
+        }"#;
+
+        let result = remove_schema_wrappers(input);
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should preserve items when it's in an unnamed object"
+        );
+
+        // Test case 3: items as one of multiple fields
+        let input = r#"{
+            "properties": {
+                "data": {
+                    "items": [1, 2, 3],
+                    "count": 3
+                }
+            }
+        }"#;
+        let expected = r#"{
+            "data": {
+                "items": [1, 2, 3],
+                "count": 3
+            }
+        }"#;
+
+        let result = remove_schema_wrappers(input);
+        let result_value: Value = serde_json::from_str(&result).unwrap();
+        let expected_value: Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(
+            result_value, expected_value,
+            "Should preserve items when it's not the only field"
         );
     }
 }

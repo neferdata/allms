@@ -9,7 +9,7 @@ use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
     llm_models::LLMModel,
-    utils::map_to_range,
+    utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
 };
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -521,6 +521,12 @@ impl LLMModel for OpenAIModels {
         let min = 0u32;
         let max = 2u32;
         map_to_range(min, max, relative_temp)
+    }
+
+    // OpenAI models, especially on Azure, may return JSON with additional properties wrapper. This function removes it.
+    fn sanitize_json_response(&self, json_response: &str) -> String {
+        let without_wrapper = remove_json_wrapper(json_response);
+        remove_schema_wrappers(&without_wrapper)
     }
 }
 
