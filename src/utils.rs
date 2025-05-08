@@ -107,7 +107,6 @@ fn remove_items_wrappers(value: serde_json::Value) -> serde_json::Value {
                         if inner_obj.len() == 1 {
                             if let Some(items) = inner_obj.get("items") {
                                 if items.is_array() {
-                                    println!("Found items array in named field '{}'", k);
                                     return (k, items.clone());
                                 }
                             }
