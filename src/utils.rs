@@ -592,8 +592,16 @@ mod tests {
     // Tests for remove_properties_wrapper
     #[test]
     fn test_remove_schema_wrappers_with_wrapper() {
-        let input = r#"{"properties": {"name": "John", "age": 30}}"#;
-        let expected = r#"{"name":"John","age":30}"#;
+        let input = r#"{
+            "properties": {
+                "name": "John",
+                "age": 30
+            }
+        }"#;
+        let expected = r#"{
+            "name": "John",
+            "age": 30
+        }"#;
         let result = remove_schema_wrappers(input);
 
         // Parse both strings into Value to compare the actual data structure
@@ -607,7 +615,10 @@ mod tests {
 
     #[test]
     fn test_remove_schema_wrappers_without_wrapper() {
-        let input = r#"{"name": "John", "age": 30}"#;
+        let input = r#"{
+            "name": "John",
+            "age": 30
+        }"#;
         let result = remove_schema_wrappers(input);
 
         // Parse both strings into Value to compare the actual data structure
@@ -621,8 +632,22 @@ mod tests {
 
     #[test]
     fn test_remove_schema_wrappers_with_nested_structure() {
-        let input = r#"{"properties": {"user": {"properties": {"name": "John", "age": 30}}}}"#;
-        let expected = r#"{"user":{"name":"John","age":30}}"#;
+        let input = r#"{
+            "properties": {
+                "user": {
+                    "properties": {
+                        "name": "John",
+                        "age": 30
+                    }
+                }
+            }
+        }"#;
+        let expected = r#"{
+            "user": {
+                "name": "John",
+                "age": 30
+            }
+        }"#;
         let result = remove_schema_wrappers(input);
 
         // Parse both strings into Value to compare the actual data structure
@@ -646,8 +671,14 @@ mod tests {
 
     #[test]
     fn test_remove_schema_wrappers_with_array() {
-        let input = r#"{"properties": {"items": [1, 2, 3]}}"#;
-        let expected = r#"{"items":[1,2,3]}"#;
+        let input = r#"{
+            "properties": {
+                "items": [1, 2, 3]
+            }
+        }"#;
+        let expected = r#"{
+            "items": [1, 2, 3]
+        }"#;
         let result = remove_schema_wrappers(input);
 
         // Parse both strings into Value to compare the actual data structure
@@ -661,8 +692,40 @@ mod tests {
 
     #[test]
     fn test_remove_schema_wrappers_with_complex_structure() {
-        let input = r#"{"properties": {"responses": {"properties": {"items": [{"confidence": 100, "source": "test", "value": {"date": "2024-03-20", "post": "test", "check": false, "url": "https://example.com"}}]}}}}"#;
-        let expected = r#"{"responses":[{"confidence":100,"source":"test","value":{"date":"2024-03-20","post":"test","check":false,"url":"https://example.com"}}]}"#;
+        let input = r#"{
+            "properties": {
+                "responses": {
+                    "properties": {
+                        "items": [
+                            {
+                                "confidence": 100,
+                                "source": "test",
+                                "value": {
+                                    "date": "2024-03-20",
+                                    "post": "test",
+                                    "check": false,
+                                    "url": "https://example.com"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }"#;
+        let expected = r#"{
+            "responses": [
+                {
+                    "confidence": 100,
+                    "source": "test",
+                    "value": {
+                        "date": "2024-03-20",
+                        "post": "test",
+                        "check": false,
+                        "url": "https://example.com"
+                    }
+                }
+            ]
+        }"#;
         let result = remove_schema_wrappers(input);
 
         // Parse both strings into Value to compare the actual data structure
