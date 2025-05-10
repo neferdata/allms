@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
     );
 
     // Extract concert information using Assistant API
-    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4oMini, &api_key)
+    let concert_info = OpenAIAssistant::new(OpenAIModels::Gpt4_1Mini, &api_key)
         .debug()
         // Constructor defaults to V1
         .version(OpenAIAssistantVersion::V2)

@@ -12,6 +12,7 @@ use crate::{
     utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
 };
 
+// Docs: https://platform.openai.com/docs/models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIModels {
     Gpt3_5Turbo,
@@ -24,13 +25,19 @@ pub enum OpenAIModels {
     Gpt4TurboPreview,
     Gpt4o,
     Gpt4o20240806,
+    Gpt4_1,
+    Gpt4_1Mini,
+    Gpt4_1Nano,
     Gpt4oMini,
     Gpt4_5Preview,
     // Reasoning models
-    O1Preview,
-    O1Mini,
     O1,
+    O1Preview, // Deprecated
+    O1Mini,    // Deprecated
+    // O1Pro,  // Only supported in the new Responses API
+    O3,
     O3Mini,
+    O4Mini,
     // Custom models
     Custom { name: String },
 }
@@ -50,11 +57,17 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => "gpt-4o",
             OpenAIModels::Gpt4o20240806 => "gpt-4o-2024-08-06",
             OpenAIModels::Gpt4oMini => "gpt-4o-mini",
+            OpenAIModels::Gpt4_1 => "gpt-4.1",
+            OpenAIModels::Gpt4_1Mini => "gpt-4.1-mini",
+            OpenAIModels::Gpt4_1Nano => "gpt-4.1-nano",
             OpenAIModels::Gpt4_5Preview => "gpt-4.5-preview",
             OpenAIModels::O1Preview => "o1-preview",
             OpenAIModels::O1Mini => "o1-mini",
             OpenAIModels::O1 => "o1",
+            // OpenAIModels::O1Pro => "o1-pro",
+            OpenAIModels::O3 => "o3",
             OpenAIModels::O3Mini => "o3-mini",
+            OpenAIModels::O4Mini => "o4-mini",
             OpenAIModels::Custom { name } => name.as_str(),
         }
     }
@@ -72,11 +85,17 @@ impl LLMModel for OpenAIModels {
             "gpt-4o" => Some(OpenAIModels::Gpt4o),
             "gpt-4o-2024-08-06" => Some(OpenAIModels::Gpt4o20240806),
             "gpt-4o-mini" => Some(OpenAIModels::Gpt4oMini),
+            "gpt-4.1" => Some(OpenAIModels::Gpt4_1),
+            "gpt-4.1-mini" => Some(OpenAIModels::Gpt4_1Mini),
+            "gpt-4.1-nano" => Some(OpenAIModels::Gpt4_1Nano),
             "gpt-4.5-preview" => Some(OpenAIModels::Gpt4_5Preview),
             "o1-preview" => Some(OpenAIModels::O1Preview),
             "o1-mini" => Some(OpenAIModels::O1Mini),
             "o1" => Some(OpenAIModels::O1),
+            // "o1-pro" => Some(OpenAIModels::O1Pro),
+            "o3" => Some(OpenAIModels::O3),
             "o3-mini" => Some(OpenAIModels::O3Mini),
+            "o4-mini" => Some(OpenAIModels::O4Mini),
             _ => Some(OpenAIModels::Custom {
                 name: name.to_string(),
             }),
@@ -98,11 +117,17 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt4o => 128_000,
             OpenAIModels::Gpt4o20240806 => 128_000,
             OpenAIModels::Gpt4oMini => 128_000,
+            OpenAIModels::Gpt4_1 => 1_047_576,
+            OpenAIModels::Gpt4_1Mini => 1_047_576,
+            OpenAIModels::Gpt4_1Nano => 1_047_576,
             OpenAIModels::Gpt4_5Preview => 128_000,
             OpenAIModels::O1Preview => 128_000,
             OpenAIModels::O1Mini => 128_000,
             OpenAIModels::O1 => 200_000,
+            // OpenAIModels::O1Pro => 200_000,
+            OpenAIModels::O3 => 200_000,
             OpenAIModels::O3Mini => 200_000,
+            OpenAIModels::O4Mini => 200_000,
             OpenAIModels::Custom { .. } => 128_000,
         }
     }
@@ -126,12 +151,18 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_1
+                | OpenAIModels::Gpt4_1Mini
+                | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
+                //  | OpenAIModels::O1Pro
+                | OpenAIModels::O3
                 | OpenAIModels::O3Mini
+                | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -153,6 +184,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4Turbo
                 | OpenAIModels::Gpt4TurboPreview
                 | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4_1
+                | OpenAIModels::Gpt4_1Mini
+                | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
@@ -160,7 +194,10 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
+                //  | OpenAIModels::O1Pro
+                | OpenAIModels::O3
                 | OpenAIModels::O3Mini
+                | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -190,7 +227,10 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::O1Preview
             | OpenAIModels::O1
             | OpenAIModels::O1Mini
-            | OpenAIModels::O3Mini => false,
+            // | OpenAIModels::O1Pro
+            | OpenAIModels::O3
+            | OpenAIModels::O3Mini
+            | OpenAIModels::O4Mini => false,
             OpenAIModels::Gpt3_5Turbo0613
             | OpenAIModels::Gpt3_5Turbo16k
             | OpenAIModels::Gpt4
@@ -199,6 +239,9 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Gpt4_1
+            | OpenAIModels::Gpt4_1Mini
+            | OpenAIModels::Gpt4_1Nano
             | OpenAIModels::Gpt4_5Preview
             | OpenAIModels::Custom { .. } => true,
         }
@@ -240,6 +283,9 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Gpt4_1
+            | OpenAIModels::Gpt4_1Mini
+            | OpenAIModels::Gpt4_1Nano
             | OpenAIModels::Gpt4_5Preview
             | OpenAIModels::Gpt4_32k
             | OpenAIModels::Custom { .. } => {
@@ -315,7 +361,10 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
             | OpenAIModels::O1
-            | OpenAIModels::O3Mini => {
+            // | OpenAIModels::O1Pro
+            | OpenAIModels::O3
+            | OpenAIModels::O3Mini
+            | OpenAIModels::O4Mini => {
                 let base_instructions = self.get_base_instructions(Some(function_call));
                 let system_message = json!({
                     "role": "user",
@@ -409,12 +458,18 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4o
             | OpenAIModels::Gpt4o20240806
             | OpenAIModels::Gpt4oMini
+            | OpenAIModels::Gpt4_1
+            | OpenAIModels::Gpt4_1Mini
+            | OpenAIModels::Gpt4_1Nano
             | OpenAIModels::Gpt4_5Preview
             | OpenAIModels::Gpt4_32k
             | OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
             | OpenAIModels::O1
+            // | OpenAIModels::O1Pro
+            | OpenAIModels::O3
             | OpenAIModels::O3Mini
+            | OpenAIModels::O4Mini
             | OpenAIModels::Custom { .. } => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
@@ -488,6 +543,18 @@ impl LLMModel for OpenAIModels {
                 tpm: 150_000_000,
                 rpm: 30_000,
             },
+            OpenAIModels::Gpt4_1 => RateLimit {
+                tpm: 30_000_000,
+                rpm: 10_000,
+            },
+            OpenAIModels::Gpt4_1Mini => RateLimit {
+                tpm: 150_000_000,
+                rpm: 30_000,
+            },
+            OpenAIModels::Gpt4_1Nano => RateLimit {
+                tpm: 150_000_000,
+                rpm: 30_000,
+            },
             OpenAIModels::Gpt4_5Preview => RateLimit {
                 tpm: 2_000_000,
                 rpm: 10_000,
@@ -504,7 +571,19 @@ impl LLMModel for OpenAIModels {
                 tpm: 30_000_000,
                 rpm: 10_000,
             },
+            // OpenAIModels::O1Pro => RateLimit {
+            //     tpm: 30_000_000,
+            //     rpm: 10_000,
+            // },
+            OpenAIModels::O3 => RateLimit {
+                tpm: 30_000_000,
+                rpm: 10_000,
+            },
             OpenAIModels::O3Mini => RateLimit {
+                tpm: 150_000_000,
+                rpm: 30_000,
+            },
+            OpenAIModels::O4Mini => RateLimit {
                 tpm: 150_000_000,
                 rpm: 30_000,
             },
@@ -541,6 +620,9 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_1
+                | OpenAIModels::Gpt4_1Mini
+                | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Custom { .. }
         )
@@ -554,6 +636,9 @@ impl OpenAIModels {
             OpenAIModels::Gpt4o
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_1
+                | OpenAIModels::Gpt4_1Mini
+                | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Custom { .. }
         )
@@ -567,7 +652,10 @@ impl OpenAIModels {
             OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
+                // | OpenAIModels::O1Pro
+                | OpenAIModels::O3
                 | OpenAIModels::O3Mini
+                | OpenAIModels::O4Mini
         )
     }
 }
