@@ -42,118 +42,130 @@ async fn main() {
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // Get answer using OpenAI
+    // Get answer using OpenAI Completions API
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
     let model = OpenAIModels::try_from_str("gpt-4o-mini").unwrap_or(OpenAIModels::Gpt4oMini); // Choose the model
     println!("OpenAI model: {:#?}", model.as_str());
 
-    let openai_completion = Completions::new(model, &openai_api_key, None, None);
+    let openai_completion = Completions::new(model.clone(), &openai_api_key, None, None);
 
     match openai_completion
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("OpenAI response: {:#?}", response),
+        Ok(response) => println!("OpenAI Completions API response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // Get answer using OpenAI (on Azure)
-    // Ensure `OPENAI_API_URL` is set to your Azure OpenAI resource endpoint
-    let azure_openai_completion =
-        Completions::new(OpenAIModels::Gpt4o, &openai_api_key, None, None)
-            .version("azure:2024-08-01-preview");
-    match azure_openai_completion
+    // Get answer using OpenAI Responses API
+    let openai_completion =
+        Completions::new(model, &openai_api_key, None, None).version("openai_responses");
+
+    match openai_completion
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("Azure OpenAI response: {:#?}", response),
+        Ok(response) => println!("OpenAI Responses API response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // Get answer using Anthropic
-    let anthropic_api_key: String =
-        std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::try_from_str("claude-3-5-haiku-latest")
-        .unwrap_or(AnthropicModels::Claude3_5Sonnet); // Choose the model
-    println!("Anthropic model: {:#?}", model.as_str());
+    // // Get answer using OpenAI (on Azure)
+    // // Ensure `OPENAI_API_URL` is set to your Azure OpenAI resource endpoint
+    // let azure_openai_completion =
+    //     Completions::new(OpenAIModels::Gpt4o, &openai_api_key, None, None)
+    //         .version("azure:2024-08-01-preview");
+    // match azure_openai_completion
+    //     .get_answer::<TranslationResponse>(instructions)
+    //     .await
+    // {
+    //     Ok(response) => println!("Azure OpenAI response: {:#?}", response),
+    //     Err(e) => eprintln!("Error: {:?}", e),
+    // }
 
-    let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
+    // // Get answer using Anthropic
+    // let anthropic_api_key: String =
+    //     std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
+    // let model = AnthropicModels::try_from_str("claude-3-5-haiku-latest")
+    //     .unwrap_or(AnthropicModels::Claude3_5Sonnet); // Choose the model
+    // println!("Anthropic model: {:#?}", model.as_str());
 
-    match anthropic_completion
-        .get_answer::<TranslationResponse>(instructions)
-        .await
-    {
-        Ok(response) => println!("Anthropic response: {:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
+    // let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
 
-    // Get answer using Mistral
-    let mistral_api_key: String =
-        std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
-    let model =
-        MistralModels::try_from_str("open-mistral-nemo").unwrap_or(MistralModels::MistralLarge); // Choose the model
-    println!("Mistral model: {:#?}", model.as_str());
+    // match anthropic_completion
+    //     .get_answer::<TranslationResponse>(instructions)
+    //     .await
+    // {
+    //     Ok(response) => println!("Anthropic response: {:#?}", response),
+    //     Err(e) => eprintln!("Error: {:?}", e),
+    // }
 
-    let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
+    // // Get answer using Mistral
+    // let mistral_api_key: String =
+    //     std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
+    // let model =
+    //     MistralModels::try_from_str("open-mistral-nemo").unwrap_or(MistralModels::MistralLarge); // Choose the model
+    // println!("Mistral model: {:#?}", model.as_str());
 
-    match mistral_completion
-        .get_answer::<TranslationResponse>(instructions)
-        .await
-    {
-        Ok(response) => println!("Mistral response: {:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
+    // let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
 
-    // Get answer using Google GeminiPro
-    let model =
-        GoogleModels::try_from_str("gemini-1.5-flash").unwrap_or(GoogleModels::Gemini1_5Flash); // Choose the model
-    println!("Google Gemini model: {:#?}", model.as_str());
+    // match mistral_completion
+    //     .get_answer::<TranslationResponse>(instructions)
+    //     .await
+    // {
+    //     Ok(response) => println!("Mistral response: {:#?}", response),
+    //     Err(e) => eprintln!("Error: {:?}", e),
+    // }
 
-    let google_token_str: String =
-        std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");
+    // // Get answer using Google GeminiPro
+    // let model =
+    //     GoogleModels::try_from_str("gemini-1.5-flash").unwrap_or(GoogleModels::Gemini1_5Flash); // Choose the model
+    // println!("Google Gemini model: {:#?}", model.as_str());
 
-    let gemini_completion = Completions::new(model, &google_token_str, None, None);
+    // let google_token_str: String =
+    //     std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");
 
-    match gemini_completion
-        .get_answer::<TranslationResponse>(instructions)
-        .await
-    {
-        Ok(response) => println!("Gemini response: {:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
+    // let gemini_completion = Completions::new(model, &google_token_str, None, None);
 
-    // Get answer using Perplexity
-    let model = PerplexityModels::try_from_str("sonar-pro").unwrap_or(PerplexityModels::Sonar); // Choose the model
-    println!("Perplexity model: {:#?}", model.as_str());
+    // match gemini_completion
+    //     .get_answer::<TranslationResponse>(instructions)
+    //     .await
+    // {
+    //     Ok(response) => println!("Gemini response: {:#?}", response),
+    //     Err(e) => eprintln!("Error: {:?}", e),
+    // }
 
-    let perplexity_token_str: String =
-        std::env::var("PERPLEXITY_API_KEY").expect("PERPLEXITY_API_KEY not set");
+    // // Get answer using Perplexity
+    // let model = PerplexityModels::try_from_str("sonar-pro").unwrap_or(PerplexityModels::Sonar); // Choose the model
+    // println!("Perplexity model: {:#?}", model.as_str());
 
-    let perplexity_completion = Completions::new(model, &perplexity_token_str, None, None);
+    // let perplexity_token_str: String =
+    //     std::env::var("PERPLEXITY_API_KEY").expect("PERPLEXITY_API_KEY not set");
 
-    match perplexity_completion
-        .get_answer::<TranslationResponse>(instructions)
-        .await
-    {
-        Ok(response) => println!("Perplexity response: {:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
+    // let perplexity_completion = Completions::new(model, &perplexity_token_str, None, None);
 
-    // Get answer using DeepSeek
-    let model =
-        DeepSeekModels::try_from_str("deepseek-reasoner").unwrap_or(DeepSeekModels::DeepSeekChat); // Choose the model
-    println!("DeepSeek model: {:#?}", model.as_str());
+    // match perplexity_completion
+    //     .get_answer::<TranslationResponse>(instructions)
+    //     .await
+    // {
+    //     Ok(response) => println!("Perplexity response: {:#?}", response),
+    //     Err(e) => eprintln!("Error: {:?}", e),
+    // }
 
-    let deepseek_token_str: String =
-        std::env::var("DEEPSEEK_API_KEY").expect("DEEPSEEK_API_KEY not set");
+    // // Get answer using DeepSeek
+    // let model =
+    //     DeepSeekModels::try_from_str("deepseek-reasoner").unwrap_or(DeepSeekModels::DeepSeekChat); // Choose the model
+    // println!("DeepSeek model: {:#?}", model.as_str());
 
-    let deepseek_completion = Completions::new(model, &deepseek_token_str, None, None);
+    // let deepseek_token_str: String =
+    //     std::env::var("DEEPSEEK_API_KEY").expect("DEEPSEEK_API_KEY not set");
 
-    match deepseek_completion
-        .get_answer::<TranslationResponse>(instructions)
-        .await
-    {
-        Ok(response) => println!("DeepSeek response: {:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
+    // let deepseek_completion = Completions::new(model, &deepseek_token_str, None, None);
+
+    // match deepseek_completion
+    //     .get_answer::<TranslationResponse>(instructions)
+    //     .await
+    // {
+    //     Ok(response) => println!("DeepSeek response: {:#?}", response),
+    //     Err(e) => eprintln!("Error: {:?}", e),
+    // }
 }

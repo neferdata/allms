@@ -24,7 +24,7 @@ AWS Bedrock:
 - Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
 
 Azure OpenAI:
-- APIs: Assistants, Files, Vector Stores, Tools
+- APIs: Completions, Responses, Assistants, Files, Vector Stores, Tools
     - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
     - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
@@ -44,7 +44,7 @@ Mistral:
 - Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
-- APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
+- APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
 - Models: 
     - Chat Completions only: o1, o1 Preview, o1 Mini, o3 Mini 
     - Chat Completions & Assistants: GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)

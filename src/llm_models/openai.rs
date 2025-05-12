@@ -7,7 +7,9 @@ use serde_json::{json, Value};
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
-    domain::{OpenAPIChatResponse, OpenAPICompletionsResponse, RateLimit},
+    domain::{
+        OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesResponse, RateLimit,
+    },
     llm_models::LLMModel,
     utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
 };
@@ -108,15 +110,15 @@ impl LLMModel for OpenAIModels {
     }
 
     fn get_version_endpoint(&self, version: Option<String>) -> String {
-        // If no version provided default to Open
+        // If no version provided default to OpenAI Completions API
         let version = version
-            .map(|version| OpenAICompletionsAPI::from_str(&version))
-            .unwrap_or(OpenAICompletionsAPI::default());
+            .map(|version| OpenAiApiEndpoints::from_str(&version))
+            .unwrap_or(OpenAiApiEndpoints::default());
 
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match (version, self) {
             (
-                OpenAICompletionsAPI::OpenAI,
+                OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
                 OpenAIModels::Gpt3_5Turbo
                 | OpenAIModels::Gpt3_5Turbo0613
                 | OpenAIModels::Gpt3_5Turbo16k
@@ -139,12 +141,42 @@ impl LLMModel for OpenAIModels {
                     OPENAI_API_URL = *OPENAI_API_URL
                 )
             }
-            (OpenAICompletionsAPI::OpenAI, OpenAIModels::TextDavinci003) => format!(
+            (
+                OpenAiApiEndpoints::OpenAIResponses,
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
+                format!(
+                    "{OPENAI_API_URL}/v1/responses",
+                    OPENAI_API_URL = *OPENAI_API_URL
+                )
+            }
+            (
+                OpenAiApiEndpoints::OpenAI
+                | OpenAiApiEndpoints::OpenAICompletions
+                | OpenAiApiEndpoints::OpenAIResponses,
+                OpenAIModels::TextDavinci003,
+            ) => format!(
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
             (
-                OpenAICompletionsAPI::Azure { version },
+                OpenAiApiEndpoints::Azure { version }
+                | OpenAiApiEndpoints::AzureCompletions { version },
                 OpenAIModels::TextDavinci003
                 | OpenAIModels::Gpt3_5Turbo
                 | OpenAIModels::Gpt3_5Turbo0613
@@ -165,6 +197,33 @@ impl LLMModel for OpenAIModels {
             ) => {
                 format!(
                     "{}/openai/deployments/{}/chat/completions?api-version={}",
+                    &*OPENAI_API_URL,
+                    self.as_str(),
+                    version
+                )
+            }
+            (
+                OpenAiApiEndpoints::AzureResponses { version },
+                OpenAIModels::TextDavinci003
+                | OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
+                format!(
+                    "{}/openai/deployments/{}/responses?api-version={}",
                     &*OPENAI_API_URL,
                     self.as_str(),
                     version
@@ -205,45 +264,44 @@ impl LLMModel for OpenAIModels {
     }
 
     //This method prepares the body of the API call for different models
-    fn get_body(
+    fn get_version_body(
         &self,
         instructions: &str,
         json_schema: &Value,
         function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
+        version: Option<String>,
     ) -> serde_json::Value {
-        match self {
-            //https://platform.openai.com/docs/api-reference/completions/create
-            //For DaVinci model all text goes into the 'prompt' filed of the body
-            OpenAIModels::TextDavinci003 => {
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-                let base_instructions = self.get_base_instructions(Some(function_call));
-                json!({
-                    "model": self.as_str(),
-                    "max_tokens": max_tokens,
-                    "temperature": temperature,
-                    "prompt": format!(
-                        "{base_instructions}\n\n
-                        Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}",
-                    ),
-                })
-            }
-            OpenAIModels::Gpt3_5Turbo
-            | OpenAIModels::Gpt3_5Turbo0613
-            | OpenAIModels::Gpt3_5Turbo16k
-            | OpenAIModels::Gpt4
-            | OpenAIModels::Gpt4Turbo
-            | OpenAIModels::Gpt4TurboPreview
-            | OpenAIModels::Gpt4o
-            | OpenAIModels::Gpt4o20240806
-            | OpenAIModels::Gpt4oMini
-            | OpenAIModels::Gpt4_5Preview
-            | OpenAIModels::Gpt4_32k
-            | OpenAIModels::Custom { .. } => {
-                let base_instructions = self.get_base_instructions(Some(function_call));
+        // If no version provided default to OpenAI Completions API
+        let version = version
+            .map(|version| OpenAiApiEndpoints::from_str(&version))
+            .unwrap_or(OpenAiApiEndpoints::default());
+
+        // Get the base instructions
+        let base_instructions = self.get_base_instructions(Some(function_call));
+
+        match (version, self) {
+            // Chat Completions API Body
+            // Docs: https://platform.openai.com/docs/api-reference/completions/create
+            (
+                OpenAiApiEndpoints::OpenAI
+                | OpenAiApiEndpoints::OpenAICompletions
+                | OpenAiApiEndpoints::Azure { .. }
+                | OpenAiApiEndpoints::AzureCompletions { .. },
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Custom { .. },
+            ) => {
                 let system_message = json!({
                     "role": "system",
                     "content": base_instructions,
@@ -312,11 +370,16 @@ impl LLMModel for OpenAIModels {
             // - Tools: tools, function calling, and response format parameters are not supported.
             // - Other: temperature, top_p and n are fixed at 1, while presence_penalty and frequency_penalty are fixed at 0.
             // - Assistants and Batch: these models are not supported in the Assistants API or Batch API.
-            OpenAIModels::O1Preview
-            | OpenAIModels::O1Mini
-            | OpenAIModels::O1
-            | OpenAIModels::O3Mini => {
-                let base_instructions = self.get_base_instructions(Some(function_call));
+            (
+                OpenAiApiEndpoints::OpenAI
+                | OpenAiApiEndpoints::OpenAICompletions
+                | OpenAiApiEndpoints::Azure { .. }
+                | OpenAiApiEndpoints::AzureCompletions { .. },
+                OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini,
+            ) => {
                 let system_message = json!({
                     "role": "user",
                     "content": base_instructions,
@@ -338,6 +401,69 @@ impl LLMModel for OpenAIModels {
                         system_message,
                         user_message,
                     ],
+                })
+            }
+            // Responses API Body
+            // Docs: https://platform.openai.com/docs/api-reference/responses/create
+            (
+                OpenAiApiEndpoints::OpenAIResponses | OpenAiApiEndpoints::AzureResponses { .. },
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
+                json!({
+                    "model": self.as_str(),
+                    "input": format!(
+                        "{instructions}\n\n
+                        Output Json schema:\n
+                        {json_schema}"
+                    ),
+                    "instructions": base_instructions,
+                    // TODO: Check if this is correct
+                    "max_output_tokens": max_tokens,
+                    "temperature": temperature,
+                    // TODO: Other fields to be implemented in the future
+                    // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
+                    // "text": {
+                    //     "format": {
+                    //         "type": "json_schema",
+                    //         "name": "output",
+                    //         "schema": json_schema,
+                    //         "strict": true
+                    //     }
+                    // } - Structured Outputs is rejecting the json schema auto-generated from T
+                    // "tools" - file search, web search, etc.
+                    // "reasoning" - configuration of reasoning models
+                    // "previous_response_id" - to implement chained conversations
+                })
+            }
+            // Legacy Completions API Body
+            // For DaVinci model all text goes into the 'prompt' filed of the body
+            (_, OpenAIModels::TextDavinci003) => {
+                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
+                json!({
+                    "model": self.as_str(),
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "prompt": format!(
+                        "{base_instructions}\n\n
+                        Output Json schema:\n
+                        {schema_string}\n\n
+                        {instructions}",
+                    ),
                 })
             }
         }
@@ -383,39 +509,42 @@ impl LLMModel for OpenAIModels {
     }
 
     //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
-    fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {
-        match self {
-            //https://platform.openai.com/docs/api-reference/completions/create
-            OpenAIModels::TextDavinci003 => {
-                //Convert API response to struct representing expected response format
-                let completions_response: OpenAPICompletionsResponse =
-                    serde_json::from_str(response_text)?;
+    fn get_version_data(
+        &self,
+        response_text: &str,
+        function_call: bool,
+        version: Option<String>,
+    ) -> Result<String> {
+        // If no version provided default to OpenAI Completions API
+        let version = version
+            .map(|version| OpenAiApiEndpoints::from_str(&version))
+            .unwrap_or(OpenAiApiEndpoints::default());
 
-                //Extract data part
-                match completions_response.choices {
-                    Some(choices) => Ok(choices.into_iter().filter_map(|item| item.text).collect()),
-                    None => Err(anyhow!(
-                        "Unable to retrieve response from OpenAI Completions API"
-                    )),
-                }
-            }
-            //https://platform.openai.com/docs/guides/chat/introduction
-            OpenAIModels::Gpt3_5Turbo
-            | OpenAIModels::Gpt3_5Turbo0613
-            | OpenAIModels::Gpt3_5Turbo16k
-            | OpenAIModels::Gpt4
-            | OpenAIModels::Gpt4Turbo
-            | OpenAIModels::Gpt4TurboPreview
-            | OpenAIModels::Gpt4o
-            | OpenAIModels::Gpt4o20240806
-            | OpenAIModels::Gpt4oMini
-            | OpenAIModels::Gpt4_5Preview
-            | OpenAIModels::Gpt4_32k
-            | OpenAIModels::O1Preview
-            | OpenAIModels::O1Mini
-            | OpenAIModels::O1
-            | OpenAIModels::O3Mini
-            | OpenAIModels::Custom { .. } => {
+        match (version, self) {
+            // Chat Completions API Data
+            // Docs:https://platform.openai.com/docs/guides/chat/introduction
+            (
+                OpenAiApiEndpoints::OpenAI
+                | OpenAiApiEndpoints::OpenAICompletions
+                | OpenAiApiEndpoints::Azure { .. }
+                | OpenAiApiEndpoints::AzureCompletions { .. },
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
 
@@ -437,6 +566,51 @@ impl LLMModel for OpenAIModels {
                         })
                         .collect()),
                     None => Err(anyhow!("Unable to retrieve response from OpenAI Chat API")),
+                }
+            }
+            // Responses API Data
+            // Docs: https://platform.openai.com/docs/api-reference/responses/create
+            (
+                OpenAiApiEndpoints::OpenAIResponses | OpenAiApiEndpoints::AzureResponses { .. },
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+            ) => {
+                //Convert API response to struct representing expected response format
+                let responses_response: OpenAPIResponsesResponse =
+                    serde_json::from_str(response_text)?;
+
+                Ok(responses_response
+                    .output
+                    .into_iter()
+                    .flat_map(|output| output.content)
+                    .filter_map(|content| content.text)
+                    .collect())
+            }
+            (_, OpenAIModels::TextDavinci003) => {
+                //Convert API response to struct representing expected response format
+                let completions_response: OpenAPICompletionsResponse =
+                    serde_json::from_str(response_text)?;
+
+                //Extract data part
+                match completions_response.choices {
+                    Some(choices) => Ok(choices.into_iter().filter_map(|item| item.text).collect()),
+                    None => Err(anyhow!(
+                        "Unable to retrieve response from OpenAI Completions API"
+                    )),
                 }
             }
         }
@@ -574,46 +748,69 @@ impl OpenAIModels {
 
 // Enum of supported Completions APIs
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-pub enum OpenAICompletionsAPI {
+pub enum OpenAiApiEndpoints {
+    #[deprecated(note = "Use OpenAICompletions instead")]
     OpenAI,
-    Azure { version: String },
+    OpenAICompletions,
+    OpenAIResponses,
+    #[deprecated(note = "Use AzureCompletions instead")]
+    Azure {
+        version: String,
+    },
+    AzureCompletions {
+        version: String,
+    },
+    AzureResponses {
+        version: String,
+    },
 }
 
-impl OpenAICompletionsAPI {
-    /// Defaulting to OpenAI
+/// Type alias for backward compatibility
+pub type OpenAICompletionsAPI = OpenAiApiEndpoints;
+
+impl OpenAiApiEndpoints {
+    /// Defaulting to OpenAICompletions
     fn default() -> Self {
-        OpenAICompletionsAPI::OpenAI
+        OpenAiApiEndpoints::OpenAICompletions
     }
 
-    /// Default version of Azure set to `2024-08-01-preview` as of 2/12/2025
-    fn default_azure() -> Self {
-        OpenAICompletionsAPI::Azure {
-            version: "2024-08-01-preview".to_string(),
-        }
+    /// Default version of Azure set to `2025-01-01-preview` as of 5/9/2025
+    fn default_azure_version() -> String {
+        "2025-01-01-preview".to_string()
     }
 
-    /// Parses a string into `OpenAICompletionsAPI`.
+    /// Parses a string into `OpenAiApiEndpoints`.
     ///
     /// Supported formats (case-insensitive):
-    /// - `"OpenAI"` -> `OpenAICompletionsAPI::OpenAI`
-    /// - `"azure:<version>"` -> `OpenAICompletionsAPI::Azure { version }`
+    /// - `"OpenAI"` or `"openai_completions"` -> `OpenAiApiEndpoints::OpenAICompletions`
+    /// - `"openai_responses"` -> `OpenAiApiEndpoints::OpenAIResponses`
+    /// - `"azure:<version>"` or `"azure_completions:<version>"` -> `OpenAiApiEndpoints::AzureCompletions { version }`
+    /// - `"azure_responses:<version>"` -> `OpenAiApiEndpoints::AzureResponses { version }`
     ///
     /// Returns default for others.
     fn from_str(s: &str) -> Self {
         let s_lower = s.to_lowercase();
         match s_lower.as_str() {
-            "openai" => OpenAICompletionsAPI::OpenAI,
-            _ if s_lower.starts_with("azure") => {
-                // Check if the string contains a version after "azure:"
-                if let Some(version) = s_lower.strip_prefix("azure:") {
-                    OpenAICompletionsAPI::Azure {
-                        version: version.trim().to_string(),
-                    }
-                } else {
-                    OpenAICompletionsAPI::default_azure()
-                }
+            "openai" | "openai_completions" => OpenAiApiEndpoints::OpenAICompletions,
+            "openai_responses" => OpenAiApiEndpoints::OpenAIResponses,
+            _ if s_lower.starts_with("azure") || s_lower.starts_with("azure_completions") => {
+                let version = s_lower
+                    .strip_prefix("azure:")
+                    .or_else(|| s_lower.strip_prefix("azure_completions:"))
+                    .map(|v| v.trim().to_string())
+                    .unwrap_or_else(|| OpenAICompletionsAPI::default_azure_version());
+
+                OpenAICompletionsAPI::AzureCompletions { version }
             }
-            _ => OpenAICompletionsAPI::default(),
+            _ if s_lower.starts_with("azure_responses") => {
+                let version = s_lower
+                    .strip_prefix("azure_responses:")
+                    .map(|v| v.trim().to_string())
+                    .unwrap_or_else(|| OpenAICompletionsAPI::default_azure_version());
+
+                OpenAICompletionsAPI::AzureResponses { version }
+            }
+            _ => OpenAiApiEndpoints::default(),
         }
     }
 }
