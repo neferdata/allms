@@ -47,7 +47,7 @@ OpenAI:
 - APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
 - Models: 
     - Chat Completions only: o1, o1 Preview, o1 Mini, o3 Mini 
-    - Chat Completions & Assistants: GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
+    - Chat Completions, Responses & Assistants: GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 
 Perplexity:
 - APIs: Chat Completions
@@ -91,6 +91,11 @@ let mistral_answer = Completions::new(MistralModels::MistralSmall, &API_KEY, Non
     .await?
 
 let openai_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let openai_responses_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+    .version("openai_responses")
     .get_answer::<T>(instructions)
     .await?
 
