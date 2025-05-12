@@ -42,7 +42,34 @@ pub trait LLMModel {
         function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
-    ) -> serde_json::Value;
+    ) -> serde_json::Value {
+        self.get_version_body(
+            instructions,
+            json_schema,
+            function_call,
+            max_tokens,
+            temperature,
+            None,
+        )
+    }
+    /// An API-version-specific implementation of the body constructor
+    fn get_version_body(
+        &self,
+        instructions: &str,
+        json_schema: &Value,
+        function_call: bool,
+        max_tokens: &usize,
+        temperature: &f32,
+        _version: Option<String>,
+    ) -> serde_json::Value {
+        self.get_body(
+            instructions,
+            json_schema,
+            function_call,
+            max_tokens,
+            temperature,
+        )
+    }
     ///Makes the call to the correct API for the selected model
     async fn call_api(
         &self,
@@ -52,7 +79,18 @@ pub trait LLMModel {
         debug: bool,
     ) -> Result<String>;
     ///Based on the model type extracts the data portion of the API response
-    fn get_data(&self, response_text: &str, function_call: bool) -> Result<String>;
+    fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {
+        self.get_version_data(response_text, function_call, None)
+    }
+    /// An API-version-specific implementation of the data extractor
+    fn get_version_data(
+        &self,
+        response_text: &str,
+        function_call: bool,
+        _version: Option<String>,
+    ) -> Result<String> {
+        self.get_data(response_text, function_call)
+    }
     /// This function sanitizes the text response from LLMs to clean up common formatting issues.
     /// The default implementation of the function removes the common ```json{}``` wrapper returned by most models
     fn sanitize_json_response(&self, json_response: &str) -> String {

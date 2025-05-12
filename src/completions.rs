@@ -172,7 +172,7 @@ impl<T: LLMModel> Completions<T> {
         let json_schema = serde_json::from_str(&schema)?;
 
         let prompt = format!(
-            "Instructions:
+            "Instructions:,
             {instructions}
 
             Input data:
@@ -207,12 +207,13 @@ impl<T: LLMModel> Completions<T> {
         };
 
         //Build the API body depending on the used model
-        let model_body = self.model.get_body(
+        let model_body = self.model.get_version_body(
             &prompt,
             &json_schema,
             self.function_call,
             &response_tokens,
             &self.temperature,
+            self.version.clone(),
         );
 
         //Display debug info if requested
@@ -227,13 +228,13 @@ impl<T: LLMModel> Completions<T> {
 
         let response_text = self
             .model
-            .call_api(&self.api_key, self.version, &model_body, self.debug)
+            .call_api(&self.api_key, self.version.clone(), &model_body, self.debug)
             .await?;
 
         //Extract data from the returned response text based on the used model
         let response_string = self
             .model
-            .get_data(&response_text, self.function_call)
+            .get_version_data(&response_text, self.function_call, self.version)
             .map_err(|error| {
                 let error = AllmsError {
                     crate_name: "allms".to_string(),
