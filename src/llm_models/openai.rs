@@ -117,6 +117,7 @@ impl LLMModel for OpenAIModels {
 
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match (version, self) {
+            #[allow(deprecated)]
             (
                 OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
                 OpenAIModels::Gpt3_5Turbo
@@ -165,6 +166,7 @@ impl LLMModel for OpenAIModels {
                     OPENAI_API_URL = *OPENAI_API_URL
                 )
             }
+            #[allow(deprecated)]
             (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
@@ -174,6 +176,7 @@ impl LLMModel for OpenAIModels {
                 "{OPENAI_API_URL}/v1/completions",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
+            #[allow(deprecated)]
             (
                 OpenAiApiEndpoints::Azure { version }
                 | OpenAiApiEndpoints::AzureCompletions { version },
@@ -284,6 +287,7 @@ impl LLMModel for OpenAIModels {
         match (version, self) {
             // Chat Completions API Body
             // Docs: https://platform.openai.com/docs/api-reference/completions/create
+            #[allow(deprecated)]
             (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
@@ -370,6 +374,7 @@ impl LLMModel for OpenAIModels {
             // - Tools: tools, function calling, and response format parameters are not supported.
             // - Other: temperature, top_p and n are fixed at 1, while presence_penalty and frequency_penalty are fixed at 0.
             // - Assistants and Batch: these models are not supported in the Assistants API or Batch API.
+            #[allow(deprecated)]
             (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
