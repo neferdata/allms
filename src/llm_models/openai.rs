@@ -798,7 +798,7 @@ impl OpenAiApiEndpoints {
                     .strip_prefix("azure:")
                     .or_else(|| s_lower.strip_prefix("azure_completions:"))
                     .map(|v| v.trim().to_string())
-                    .unwrap_or_else(|| OpenAICompletionsAPI::default_azure_version());
+                    .unwrap_or_else(OpenAICompletionsAPI::default_azure_version);
 
                 OpenAICompletionsAPI::AzureCompletions { version }
             }
@@ -806,7 +806,7 @@ impl OpenAiApiEndpoints {
                 let version = s_lower
                     .strip_prefix("azure_responses:")
                     .map(|v| v.trim().to_string())
-                    .unwrap_or_else(|| OpenAICompletionsAPI::default_azure_version());
+                    .unwrap_or_else(OpenAICompletionsAPI::default_azure_version);
 
                 OpenAICompletionsAPI::AzureResponses { version }
             }
