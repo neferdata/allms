@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use log::info;
@@ -528,6 +530,7 @@ impl LLMModel for OpenAIModels {
         match (version, self) {
             // Chat Completions API Data
             // Docs:https://platform.openai.com/docs/guides/chat/introduction
+            #[allow(deprecated)]
             (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
