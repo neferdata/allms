@@ -48,6 +48,12 @@ pub struct OpenAIWebSearchConfig {
     pub search_context_size: Option<OpenAIWebSearchContextSize>,
 }
 
+impl Default for OpenAIWebSearchConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenAIWebSearchConfig {
     pub fn new() -> Self {
         Self {
