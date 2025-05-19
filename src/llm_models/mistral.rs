@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 
 use crate::constants::MISTRAL_API_URL;
 use crate::domain::{MistralAPICompletionsResponse, RateLimit};
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Mistral docs: https://docs.mistral.ai/platform/endpoints
@@ -80,6 +80,7 @@ impl LLMModel for MistralModels {
         function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
+        _tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions = self.get_base_instructions(Some(function_call));

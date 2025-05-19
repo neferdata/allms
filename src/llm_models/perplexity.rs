@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 
 use crate::constants::PERPLEXITY_API_URL;
 use crate::domain::{PerplexityAPICompletionsResponse, RateLimit};
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 use crate::utils::{map_to_range_f32, remove_json_wrapper, remove_think_reasoner_wrapper};
 
 // Perplexity API Docs: https://docs.perplexity.ai/api-reference/chat-completions
@@ -99,6 +99,7 @@ impl LLMModel for PerplexityModels {
         // If left unspecified, then the model will generate tokens until either it reaches its stop token or the end of its context window.
         _max_tokens: &usize,
         temperature: &f32,
+        _tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions = self.get_base_instructions(Some(function_call));

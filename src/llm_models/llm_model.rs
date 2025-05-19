@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::constants::OPENAI_BASE_INSTRUCTIONS;
 use crate::domain::RateLimit;
+use crate::llm_models::LLMTools;
 use crate::utils::{map_to_range, remove_json_wrapper};
 
 ///This trait defines functions that need to be implemented for an enum that represents an LLM Model from any of the API providers
@@ -42,6 +43,7 @@ pub trait LLMModel {
         function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
+        tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         self.get_version_body(
             instructions,
@@ -50,6 +52,7 @@ pub trait LLMModel {
             max_tokens,
             temperature,
             None,
+            tools,
         )
     }
     /// An API-version-specific implementation of the body constructor
@@ -61,6 +64,7 @@ pub trait LLMModel {
         max_tokens: &usize,
         temperature: &f32,
         _version: Option<String>,
+        tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         self.get_body(
             instructions,
@@ -68,6 +72,7 @@ pub trait LLMModel {
             function_call,
             max_tokens,
             temperature,
+            tools,
         )
     }
     ///Makes the call to the correct API for the selected model

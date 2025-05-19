@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use allms::{
     llm::{
+        tools::{LLMTools, OpenAIWebSearchConfig},
         AnthropicModels, AwsBedrockModels, DeepSeekModels, GoogleModels, LLMModel, MistralModels,
         OpenAIModels, PerplexityModels,
     },
@@ -57,11 +58,14 @@ async fn main() {
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // Get answer using OpenAI Responses API
-    let openai_completion =
-        Completions::new(model, &openai_api_key, None, None).version("openai_responses");
+    // Get answer using OpenAI Responses API using web search tool
+    let web_search_tool = LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new());
 
-    match openai_completion
+    let openai_responses = Completions::new(model, &openai_api_key, None, None)
+        .version("openai_responses")
+        .add_tool(web_search_tool);
+
+    match openai_responses
         .get_answer::<TranslationResponse>(instructions)
         .await
     {

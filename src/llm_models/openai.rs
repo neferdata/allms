@@ -12,7 +12,7 @@ use crate::{
     domain::{
         OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesResponse, RateLimit,
     },
-    llm_models::LLMModel,
+    llm_models::{LLMModel, LLMTools},
     utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
 };
 
@@ -277,6 +277,7 @@ impl LLMModel for OpenAIModels {
         max_tokens: &usize,
         temperature: &f32,
         version: Option<String>,
+        tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         // If no version provided default to OpenAI Completions API
         let version = version
@@ -286,7 +287,7 @@ impl LLMModel for OpenAIModels {
         // Get the base instructions
         let base_instructions = self.get_base_instructions(Some(function_call));
 
-        match (version, self) {
+        match (version, self, tools) {
             // Chat Completions API Body
             // Docs: https://platform.openai.com/docs/api-reference/completions/create
             #[allow(deprecated)]
@@ -307,6 +308,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
                 | OpenAIModels::Custom { .. },
+                _,
             ) => {
                 let system_message = json!({
                     "role": "system",
@@ -386,6 +388,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
                 | OpenAIModels::O3Mini,
+                _,
             ) => {
                 let system_message = json!({
                     "role": "user",
@@ -430,6 +433,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O1
                 | OpenAIModels::O3Mini
                 | OpenAIModels::Custom { .. },
+                None,
             ) => {
                 json!({
                     "model": self.as_str(),
@@ -451,15 +455,61 @@ impl LLMModel for OpenAIModels {
                     //         "schema": json_schema,
                     //         "strict": true
                     //     }
+                    // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
+                    // "reasoning" - configuration of reasoning models
+                    // "previous_response_id" - to implement chained conversations
+                })
+            }
+            // Responses API with tools
+            (
+                OpenAiApiEndpoints::OpenAIResponses | OpenAiApiEndpoints::AzureResponses { .. },
+                OpenAIModels::Gpt3_5Turbo
+                | OpenAIModels::Gpt3_5Turbo0613
+                | OpenAIModels::Gpt3_5Turbo16k
+                | OpenAIModels::Gpt4
+                | OpenAIModels::Gpt4Turbo
+                | OpenAIModels::Gpt4TurboPreview
+                | OpenAIModels::Gpt4o
+                | OpenAIModels::Gpt4o20240806
+                | OpenAIModels::Gpt4oMini
+                | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt4_32k
+                | OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O3Mini
+                | OpenAIModels::Custom { .. },
+                Some(tools),
+            ) => {
+                json!({
+                    "model": self.as_str(),
+                    "input": format!(
+                        "{instructions}\n\n
+                        Output Json schema:\n
+                        {json_schema}"
+                    ),
+                    "instructions": base_instructions,
+                    // TODO: Check if this is correct
+                    "max_output_tokens": max_tokens,
+                    "temperature": temperature,
+                    "tools": tools.iter().filter_map(LLMTools::get_config_json).collect::<Vec<Value>>(),
+                    // TODO: Other fields to be implemented in the future
+                    // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
+                    // "text": {
+                    //     "format": {
+                    //         "type": "json_schema",
+                    //         "name": "output",
+                    //         "schema": json_schema,
+                    //         "strict": true
+                    //     }
                     // } - Structured Outputs is rejecting the json schema auto-generated from T
-                    // "tools" - file search, web search, etc.
                     // "reasoning" - configuration of reasoning models
                     // "previous_response_id" - to implement chained conversations
                 })
             }
             // Legacy Completions API Body
             // For DaVinci model all text goes into the 'prompt' filed of the body
-            (_, OpenAIModels::TextDavinci003) => {
+            (_, OpenAIModels::TextDavinci003, _) => {
                 let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
                 json!({
                     "model": self.as_str(),

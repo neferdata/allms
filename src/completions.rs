@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::domain::{AllmsError, OpenAIDataResponse};
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 use crate::utils::{get_tokenizer, get_type_schema};
 
 /// Completions APIs take a list of messages as input and return a model-generated message as output.
@@ -20,6 +20,7 @@ pub struct Completions<T: LLMModel> {
     function_call: bool,
     api_key: String,
     version: Option<String>,
+    tools: Option<Vec<LLMTools>>,
 }
 
 impl<T: LLMModel> Completions<T> {
@@ -43,6 +44,7 @@ impl<T: LLMModel> Completions<T> {
             debug: false,
             api_key: api_key.to_string(),
             version: None,
+            tools: None,
         }
     }
 
@@ -88,6 +90,21 @@ impl<T: LLMModel> Completions<T> {
     pub fn version(mut self, version: &str) -> Self {
         // TODO: We should use the model trait to check which versions are allowed
         self.version = Some(version.to_string());
+        self
+    }
+
+    ///
+    /// This method can be used to inform the model to use a tool.
+    /// Different models support different tool implementations.
+    ///
+    pub fn add_tool(mut self, tool: LLMTools) -> Self {
+        self.tools = Some(match self.tools {
+            Some(mut tools) => {
+                tools.push(tool);
+                tools
+            }
+            None => vec![tool],
+        });
         self
     }
 
@@ -214,6 +231,7 @@ impl<T: LLMModel> Completions<T> {
             &response_tokens,
             &self.temperature,
             self.version.clone(),
+            self.tools.as_deref(),
         );
 
         //Display debug info if requested
