@@ -376,6 +376,7 @@ pub struct DeepSeekAPICompletionsReasoningUsage {
     pub reasoning_tokens: usize,
 }
 
+// OpenAI Responses API response type format
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesResponse {
     pub id: Option<String>,
@@ -415,8 +416,8 @@ pub struct OpenAPIResponsesOutput {
     pub r#type: Option<OpenAPIResponsesOutputType>,
     pub id: Option<String>,
     pub status: Option<OpenAPIResponsesMessageStatus>,
-    pub role: Option<String>,
-    pub content: Vec<OpenAPIResponsesContent>,
+    pub role: Option<OpenAPIResponsesRole>,
+    pub content: Option<Vec<OpenAPIResponsesContent>>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -436,6 +437,14 @@ pub enum OpenAPIResponsesMessageStatus {
     InProgress,
     Completed,
     Incomplete,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesRole {
+    Assistant,
+    User,
+    System,
 }
 
 #[derive(Deserialize, Serialize, Debug)]

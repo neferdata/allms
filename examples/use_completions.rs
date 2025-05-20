@@ -48,28 +48,13 @@ async fn main() {
     let model = OpenAIModels::try_from_str("gpt-4o-mini").unwrap_or(OpenAIModels::Gpt4oMini); // Choose the model
     println!("OpenAI model: {:#?}", model.as_str());
 
-    let openai_completion = Completions::new(model.clone(), &openai_api_key, None, None);
+    let openai_completion = Completions::new(model, &openai_api_key, None, None);
 
     match openai_completion
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
         Ok(response) => println!("OpenAI Completions API response: {:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
-    }
-
-    // Get answer using OpenAI Responses API using web search tool
-    let web_search_tool = LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new());
-
-    let openai_responses = Completions::new(model, &openai_api_key, None, None)
-        .version("openai_responses")
-        .add_tool(web_search_tool);
-
-    match openai_responses
-        .get_answer::<TranslationResponse>(instructions)
-        .await
-    {
-        Ok(response) => println!("OpenAI Responses API response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 

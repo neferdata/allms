@@ -10,7 +10,8 @@ use serde_json::{json, Value};
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{
-        OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesResponse, RateLimit,
+        OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesContentType,
+        OpenAPIResponsesOutputType, OpenAPIResponsesResponse, OpenAPIResponsesRole, RateLimit,
     },
     llm_models::{LLMModel, LLMTools},
     utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
@@ -649,13 +650,24 @@ impl LLMModel for OpenAIModels {
             ) => {
                 //Convert API response to struct representing expected response format
                 let responses_response: OpenAPIResponsesResponse =
-                    serde_json::from_str(response_text)?;
+                    serde_json::from_str(response_text).map_err(|e| {
+                        println!("Deserialization error: {:#?}", e);
+                        e
+                    })?;
 
                 Ok(responses_response
                     .output
                     .into_iter()
-                    .flat_map(|output| output.content)
+                    .filter(|output| {
+                        matches!(output.role, Some(OpenAPIResponsesRole::Assistant))
+                            && matches!(output.r#type, Some(OpenAPIResponsesOutputType::Message))
+                    })
+                    .flat_map(|output| output.content.unwrap_or_default())
+                    .filter(|content| {
+                        matches!(content.r#type, OpenAPIResponsesContentType::OutputText)
+                    })
                     .filter_map(|content| content.text)
+                    .map(|text| self.sanitize_json_response(&text))
                     .collect())
             }
             (_, OpenAIModels::TextDavinci003) => {

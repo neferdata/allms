@@ -124,11 +124,12 @@ impl<T: LLMModel> Completions<T> {
             None => "".to_string(),
         };
         let new_json = format!(
-            "{}{}{}: {}",
+            "{}{}<{}>{}</{}>",
             self.input_json.unwrap_or_default(),
             line_break,
             input_name,
             input_json,
+            input_name,
         );
         self.input_json = Some(new_json);
         Ok(self)
@@ -145,16 +146,17 @@ impl<T: LLMModel> Completions<T> {
         //Output schema is extracted from the type parameter
         let schema = get_type_schema::<U>()?;
 
+        let context_text = self
+            .input_json
+            .as_ref()
+            .map(|context| format!("\n\n{}", &context))
+            .unwrap_or_default();
+
         let prompt = format!(
             "Instructions:
-            {instructions}
-
-            Input data:
-            {input_json}
+            {instructions}{context_text}
             
             Respond ONLY with the data portion of a valid Json object. No schema definition required. No other words.", 
-            instructions = instructions,
-            input_json = self.input_json.clone().unwrap_or_default(),
         );
 
         let full_prompt = format!(
@@ -188,16 +190,17 @@ impl<T: LLMModel> Completions<T> {
         let schema = get_type_schema::<U>()?;
         let json_schema = serde_json::from_str(&schema)?;
 
+        let context_text = self
+            .input_json
+            .as_ref()
+            .map(|context| format!("\n\n{}", &context))
+            .unwrap_or_default();
+
         let prompt = format!(
             "Instructions:,
-            {instructions}
-
-            Input data:
-            {input_json}
+            {instructions}{context_text}
             
             Respond ONLY with the data portion of a valid Json object. No schema definition required. No other words.", 
-            instructions = instructions,
-            input_json = self.input_json.clone().unwrap_or_default(),
         );
 
         //Validate how many tokens remain for the response (and how many are used for prompt)
