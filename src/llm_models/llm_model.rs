@@ -56,6 +56,7 @@ pub trait LLMModel {
         )
     }
     /// An API-version-specific implementation of the body constructor
+    #[allow(clippy::too_many_arguments)]
     fn get_version_body(
         &self,
         instructions: &str,

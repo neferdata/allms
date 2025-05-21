@@ -115,20 +115,13 @@ impl LLMTools {
 ///
 /// OpenAI Reasoning config
 ///
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
 pub struct OpenAIReasoningConfig {
     pub effort: Option<OpenAIReasoningEffort>,
     pub summary: Option<OpenAIReasoningSummary>,
 }
 
 impl OpenAIReasoningConfig {
-    pub fn default() -> Self {
-        Self {
-            effort: None,
-            summary: None,
-        }
-    }
-
     pub fn new(
         effort: Option<OpenAIReasoningEffort>,
         summary: Option<OpenAIReasoningSummary>,

@@ -347,6 +347,7 @@ impl LLMModel for OpenAIModels {
     }
 
     //This method prepares the body of the API call for different models
+    #[allow(clippy::too_many_arguments)]
     fn get_version_body(
         &self,
         instructions: &str,
