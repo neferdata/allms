@@ -44,7 +44,7 @@ async fn main() {
 
     // Get answer using OpenAI Completions API
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::try_from_str("gpt-4o-mini").unwrap_or(OpenAIModels::Gpt4oMini); // Choose the model
+    let model = OpenAIModels::try_from_str("gpt-4.1-mini").unwrap_or(OpenAIModels::Gpt4_1Mini); // Choose the model
     println!("OpenAI model: {:#?}", model.as_str());
 
     let openai_completion = Completions::new(model, &openai_api_key, None, None);
