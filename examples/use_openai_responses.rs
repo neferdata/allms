@@ -8,7 +8,7 @@ use std::path::Path;
 use allms::{
     assistants::{OpenAIFile, OpenAIVectorStore},
     llm::{
-        tools::{LLMTools, OpenAIFileSearchConfig, OpenAIWebSearchConfig},
+        tools::{LLMTools, OpenAIFileSearchConfig, OpenAIReasoningConfig, OpenAIWebSearchConfig},
         OpenAIModels,
     },
     Completions,
@@ -60,13 +60,16 @@ const BANDS_GENRES: &[(&str, &str)] = &[
 async fn main() -> Result<()> {
     env_logger::init();
 
-    // Example 1: Basic translation example without tools
+    // Example 1: Basic translation example using reasoning model
     let instructions =
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
 
+    let reasoning_tool = LLMTools::OpenAIReasoning(OpenAIReasoningConfig::default());
+
     let openai_responses = Completions::new(OpenAIModels::O1Pro, &openai_api_key, None, None)
+        .add_tool(reasoning_tool)
         .version("openai_responses");
 
     match openai_responses

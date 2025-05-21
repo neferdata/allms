@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, to_value, Value};
 
 use crate::{
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
@@ -537,7 +537,6 @@ impl LLMModel for OpenAIModels {
                     //         "strict": true
                     //     }
                     // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
-                    // "reasoning" - configuration of reasoning models
                     // "previous_response_id" - to implement chained conversations
                 })
             }
@@ -552,6 +551,18 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini,
             ) => {
+                // Check if reasoning configuration is provided as a tool
+                let reasoning_opt = tools
+                    .map(|tools_inner| {
+                        tools_inner.iter().find_map(|tool| {
+                            if let LLMTools::OpenAIReasoning(cfg) = tool {
+                                to_value(cfg).ok()
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                    .flatten();
                 json!({
                     "model": self.as_str(),
                     "input": format!(
@@ -562,6 +573,7 @@ impl LLMModel for OpenAIModels {
                     "instructions": base_instructions,
                     // TODO: Check if this is correct
                     "max_output_tokens": max_tokens,
+                    "reasoning": reasoning_opt,
                     // TODO: Other fields to be implemented in the future
                     // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
                     // "text": {
@@ -572,7 +584,6 @@ impl LLMModel for OpenAIModels {
                     //         "strict": true
                     //     }
                     // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
-                    // "reasoning" - configuration of reasoning models
                     // "previous_response_id" - to implement chained conversations
                 })
             }

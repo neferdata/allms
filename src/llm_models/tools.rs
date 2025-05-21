@@ -9,6 +9,7 @@ pub enum LLMTools {
     OpenAIFileSearch(OpenAIFileSearchConfig),
     OpenAIWebSearch(OpenAIWebSearchConfig),
     OpenAIComputerUse(OpenAIComputerUseConfig),
+    OpenAIReasoning(OpenAIReasoningConfig),
 }
 
 ///
@@ -106,6 +107,52 @@ impl LLMTools {
             LLMTools::OpenAIFileSearch(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIComputerUse(cfg) => to_value(cfg).ok(),
+            LLMTools::OpenAIReasoning(cfg) => to_value(cfg).ok(),
         }
     }
+}
+
+///
+/// OpenAI Reasoning config
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct OpenAIReasoningConfig {
+    pub effort: Option<OpenAIReasoningEffort>,
+    pub summary: Option<OpenAIReasoningSummary>,
+}
+
+impl OpenAIReasoningConfig {
+    pub fn default() -> Self {
+        Self {
+            effort: None,
+            summary: None,
+        }
+    }
+
+    pub fn new(
+        effort: Option<OpenAIReasoningEffort>,
+        summary: Option<OpenAIReasoningSummary>,
+    ) -> Self {
+        Self { effort, summary }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub enum OpenAIReasoningEffort {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub enum OpenAIReasoningSummary {
+    #[serde(rename = "auto")]
+    Auto,
+    #[serde(rename = "none")]
+    Concise,
+    #[serde(rename = "detailed")]
+    Detailed,
 }
