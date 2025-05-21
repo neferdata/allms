@@ -512,13 +512,6 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
-                | OpenAIModels::O1Preview
-                | OpenAIModels::O1Mini
-                | OpenAIModels::O1
-                | OpenAIModels::O1Pro
-                | OpenAIModels::O3
-                | OpenAIModels::O3Mini
-                | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             ) => {
                 json!({
@@ -534,6 +527,41 @@ impl LLMModel for OpenAIModels {
                     "temperature": temperature,
                     // If tools are provided we add them to the body
                     "tools": tools.map(|tools_inner| tools_inner.iter().filter_map(LLMTools::get_config_json).collect::<Vec<Value>>()),
+                    // TODO: Other fields to be implemented in the future
+                    // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
+                    // "text": {
+                    //     "format": {
+                    //         "type": "json_schema",
+                    //         "name": "output",
+                    //         "schema": json_schema,
+                    //         "strict": true
+                    //     }
+                    // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
+                    // "reasoning" - configuration of reasoning models
+                    // "previous_response_id" - to implement chained conversations
+                })
+            }
+            // Reasoning models cannot use tools or set temperature in Responses API as well
+            (
+                OpenAiApiEndpoints::OpenAIResponses | OpenAiApiEndpoints::AzureResponses { .. },
+                OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O1Pro
+                | OpenAIModels::O3
+                | OpenAIModels::O3Mini
+                | OpenAIModels::O4Mini,
+            ) => {
+                json!({
+                    "model": self.as_str(),
+                    "input": format!(
+                        "{instructions}\n\n
+                        Output Json schema:\n
+                        {json_schema}"
+                    ),
+                    "instructions": base_instructions,
+                    // TODO: Check if this is correct
+                    "max_output_tokens": max_tokens,
                     // TODO: Other fields to be implemented in the future
                     // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
                     // "text": {

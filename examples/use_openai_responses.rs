@@ -65,10 +65,9 @@ async fn main() -> Result<()> {
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::Gpt4oMini;
 
-    let openai_responses =
-        Completions::new(model.clone(), &openai_api_key, None, None).version("openai_responses");
+    let openai_responses = Completions::new(OpenAIModels::O1Pro, &openai_api_key, None, None)
+        .version("openai_responses");
 
     match openai_responses
         .get_answer::<TranslationResponse>(instructions)
@@ -80,7 +79,7 @@ async fn main() -> Result<()> {
 
     // Example 2: Web search example
     let web_search_tool = LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new());
-    let openai_responses = Completions::new(model.clone(), &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt4_1Mini, &openai_api_key, None, None)
         .version("openai_responses")
         .add_tool(web_search_tool);
 
@@ -117,7 +116,7 @@ async fn main() -> Result<()> {
             .clone()
             .unwrap_or_default()]));
 
-    let openai_responses = Completions::new(model, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt4_1, &openai_api_key, None, None)
         .version("openai_responses")
         .set_context("bands_genres", &BANDS_GENRES)?
         .add_tool(file_search_tool);
