@@ -552,17 +552,15 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini,
             ) => {
                 // Check if reasoning configuration is provided as a tool
-                let reasoning_opt = tools
-                    .map(|tools_inner| {
-                        tools_inner.iter().find_map(|tool| {
-                            if let LLMTools::OpenAIReasoning(cfg) = tool {
-                                to_value(cfg).ok()
-                            } else {
-                                None
-                            }
-                        })
+                let reasoning_opt = tools.and_then(|tools_inner| {
+                    tools_inner.iter().find_map(|tool| {
+                        if let LLMTools::OpenAIReasoning(cfg) = tool {
+                            to_value(cfg).ok()
+                        } else {
+                            None
+                        }
                     })
-                    .flatten();
+                });
                 json!({
                     "model": self.as_str(),
                     "input": format!(

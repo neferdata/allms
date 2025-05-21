@@ -14,7 +14,7 @@ use allms::{
     Completions,
 };
 
-// Example 1: Basic translation example without tools
+// Example 1: Basic translation example using reasoning model
 #[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
 struct TranslationResponse {
     pub spanish: String,
