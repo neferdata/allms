@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 
 use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 
 // API Docs: https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -94,6 +94,7 @@ impl LLMModel for AnthropicModels {
         function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
+        _tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
         let base_instructions = self.get_base_instructions(Some(function_call));

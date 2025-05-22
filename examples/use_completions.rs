@@ -42,7 +42,7 @@ async fn main() {
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // Get answer using OpenAI
+    // Get answer using OpenAI Completions API
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
     let model = OpenAIModels::try_from_str("gpt-4.1-mini").unwrap_or(OpenAIModels::Gpt4_1Mini); // Choose the model
     println!("OpenAI model: {:#?}", model.as_str());
@@ -53,7 +53,7 @@ async fn main() {
         .get_answer::<TranslationResponse>(instructions)
         .await
     {
-        Ok(response) => println!("OpenAI response: {:#?}", response),
+        Ok(response) => println!("OpenAI Completions API response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 

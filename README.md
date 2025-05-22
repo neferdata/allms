@@ -24,7 +24,7 @@ AWS Bedrock:
 - Models: Nova Micro, Nova Lite, Nova Pro (additional models to be added)
 
 Azure OpenAI:
-- APIs: Assistants, Files, Vector Stores, Tools
+- APIs: Completions, Responses, Assistants, Files, Vector Stores, Tools
     - API version can be set using `AzureVersion` variant
 - Models: as per model deployments in Azure OpenAI Studio
     - If using custom model deployment names please use the `Custom` variant of `OpenAIModels`
@@ -44,11 +44,10 @@ Mistral:
 - Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
-- APIs: Chat Completions, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
-    - Responses API coming soon ...
+- APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
 - Models: 
-    - Chat Completions only: o1, o1 Preview, o1 Mini, o3, o3 Mini, o4 Mini 
-    - Chat Completions & Assistants: GPT-4.5-Preview, GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, GPT-4o, GPT-4o Mini, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
+    - Chat Completions & Responses only: o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini 
+    - Chat Completions, Responses & Assistants: GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 
 Perplexity:
 - APIs: Chat Completions
@@ -92,6 +91,11 @@ let mistral_answer = Completions::new(MistralModels::MistralSmall, &API_KEY, Non
     .await?
 
 let openai_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let openai_responses_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+    .version("openai_responses")
     .get_answer::<T>(instructions)
     .await?
 
