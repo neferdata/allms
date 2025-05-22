@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
 
     let reasoning_tool = LLMTools::OpenAIReasoning(OpenAIReasoningConfig::default());
 
-    let openai_responses = Completions::new(OpenAIModels::Gpt4oMini, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::O1Pro, &openai_api_key, None, None)
         .add_tool(reasoning_tool)
         .version("openai_responses");
 
