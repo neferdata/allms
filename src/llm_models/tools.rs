@@ -12,6 +12,17 @@ pub enum LLMTools {
     OpenAIReasoning(OpenAIReasoningConfig),
 }
 
+impl LLMTools {
+    pub fn get_config_json(&self) -> Option<Value> {
+        match self {
+            LLMTools::OpenAIFileSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::OpenAIWebSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::OpenAIComputerUse(cfg) => to_value(cfg).ok(),
+            LLMTools::OpenAIReasoning(cfg) => to_value(cfg).ok(),
+        }
+    }
+}
+
 ///
 /// OpenAI File Search tool config
 ///
@@ -99,17 +110,6 @@ pub struct OpenAIComputerUseConfig {
 pub enum OpenAIComputerUseToolType {
     #[serde(rename = "computer_use_preview")]
     ComputerUsePreview,
-}
-
-impl LLMTools {
-    pub fn get_config_json(&self) -> Option<Value> {
-        match self {
-            LLMTools::OpenAIFileSearch(cfg) => to_value(cfg).ok(),
-            LLMTools::OpenAIWebSearch(cfg) => to_value(cfg).ok(),
-            LLMTools::OpenAIComputerUse(cfg) => to_value(cfg).ok(),
-            LLMTools::OpenAIReasoning(cfg) => to_value(cfg).ok(),
-        }
-    }
 }
 
 ///

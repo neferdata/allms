@@ -201,6 +201,11 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
+            )
+            // o1 Pro is not supported in Completions API, we redirect to Responses API
+            | (
+                OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
+                OpenAIModels::O1Pro,
             ) => {
                 format!(
                     "{OPENAI_API_URL}/v1/responses",
@@ -276,25 +281,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
-            ) => {
-                format!(
-                    "{}/openai/deployments/{}/responses?api-version={}",
-                    &*OPENAI_API_URL,
-                    self.as_str(),
-                    version
-                )
-            }
+            )
             // o1 Pro is not supported in Completions API, we redirect to Responses API
-            (
-                OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
-                OpenAIModels::O1Pro,
-            ) => {
-                format!(
-                    "{OPENAI_API_URL}/v1/responses",
-                    OPENAI_API_URL = *OPENAI_API_URL
-                )
-            }
-            (
+            | (
                 OpenAiApiEndpoints::Azure { version }
                 | OpenAiApiEndpoints::AzureCompletions { version },
                 OpenAIModels::O1Pro,
@@ -523,11 +512,15 @@ impl LLMModel for OpenAIModels {
                         {json_schema}"
                     ),
                     "instructions": base_instructions,
-                    // TODO: Check if this is correct
                     "max_output_tokens": max_tokens,
                     "temperature": temperature,
                     // If tools are provided we add them to the body
-                    "tools": tools.map(|tools_inner| tools_inner.iter().filter_map(LLMTools::get_config_json).collect::<Vec<Value>>()),
+                    "tools": tools.map(|tools_inner| tools_inner
+                        .iter()
+                        .filter(|tool| !matches!(tool, LLMTools::OpenAIReasoning(_)))
+                        .filter_map(LLMTools::get_config_json)
+                        .collect::<Vec<Value>>()
+                    ),
                     // TODO: Other fields to be implemented in the future
                     // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
                     // "text": {
@@ -537,7 +530,7 @@ impl LLMModel for OpenAIModels {
                     //         "schema": json_schema,
                     //         "strict": true
                     //     }
-                    // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
+                    // } - Structured Outputs is rejecting the json schema auto-generated from T
                     // "previous_response_id" - to implement chained conversations
                 })
             }
@@ -551,6 +544,14 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini,
+            )
+            // o1 Pro is not supported in Completions API, we use the Responses API body
+            | (
+                OpenAiApiEndpoints::OpenAI
+                | OpenAiApiEndpoints::OpenAICompletions
+                | OpenAiApiEndpoints::Azure { .. }
+                | OpenAiApiEndpoints::AzureCompletions { .. },
+                OpenAIModels::O1Pro,
             ) => {
                 // Check if reasoning configuration is provided as a tool
                 let reasoning_opt = tools.and_then(|tools_inner| {
@@ -570,7 +571,6 @@ impl LLMModel for OpenAIModels {
                         {json_schema}"
                     ),
                     "instructions": base_instructions,
-                    // TODO: Check if this is correct
                     "max_output_tokens": max_tokens,
                     "reasoning": reasoning_opt,
                     // TODO: Other fields to be implemented in the future
@@ -582,42 +582,7 @@ impl LLMModel for OpenAIModels {
                     //         "schema": json_schema,
                     //         "strict": true
                     //     }
-                    // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
-                    // "previous_response_id" - to implement chained conversations
-                })
-            }
-            // o1 Pro is not supported in Completions API, we use the Responses API body
-            (
-                OpenAiApiEndpoints::OpenAI
-                | OpenAiApiEndpoints::OpenAICompletions
-                | OpenAiApiEndpoints::Azure { .. }
-                | OpenAiApiEndpoints::AzureCompletions { .. },
-                OpenAIModels::O1Pro,
-            ) => {
-                json!({
-                    "model": self.as_str(),
-                    "input": format!(
-                        "{instructions}\n\n
-                        Output Json schema:\n
-                        {json_schema}"
-                    ),
-                    "instructions": base_instructions,
-                    // TODO: Check if this is correct
-                    "max_output_tokens": max_tokens,
-                    "temperature": temperature,
-                    // If tools are provided we add them to the body
-                    "tools": tools.map(|tools_inner| tools_inner.iter().filter_map(LLMTools::get_config_json).collect::<Vec<Value>>()),
-                    // TODO: Other fields to be implemented in the future
-                    // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
-                    // "text": {
-                    //     "format": {
-                    //         "type": "json_schema",
-                    //         "name": "output",
-                    //         "schema": json_schema,
-                    //         "strict": true
-                    //     }
-                    // } - Structured Outputs is rejecting the json schema auto-generated from T                    // "tools" - file search, web search, etc.
-                    // "reasoning" - configuration of reasoning models
+                    // } - Structured Outputs is rejecting the json schema auto-generated from T
                     // "previous_response_id" - to implement chained conversations
                 })
             }
