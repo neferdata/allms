@@ -736,28 +736,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
-            ) => {
-                //Convert API response to struct representing expected response format
-                let responses_response: OpenAPIResponsesResponse =
-                    serde_json::from_str(response_text)?;
-
-                Ok(responses_response
-                    .output
-                    .into_iter()
-                    .filter(|output| {
-                        matches!(output.role, Some(OpenAPIResponsesRole::Assistant))
-                            && matches!(output.r#type, Some(OpenAPIResponsesOutputType::Message))
-                    })
-                    .flat_map(|output| output.content.unwrap_or_default())
-                    .filter(|content| {
-                        matches!(content.r#type, OpenAPIResponsesContentType::OutputText)
-                    })
-                    .filter_map(|content| content.text)
-                    .map(|text| self.sanitize_json_response(&text))
-                    .collect())
-            }
+            )
             // o1 Pro is not supported in Completions API, we use the Responses API data schema
-            (
+            | (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
                 | OpenAiApiEndpoints::Azure { .. }
