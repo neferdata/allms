@@ -13,7 +13,10 @@ use crate::{
         OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesContentType,
         OpenAPIResponsesOutputType, OpenAPIResponsesResponse, OpenAPIResponsesRole, RateLimit,
     },
-    llm_models::{LLMModel, LLMTools},
+    llm_models::{
+        tools::{OpenAICodeInterpreterConfig, OpenAIFileSearchConfig},
+        LLMModel, LLMTools,
+    },
     utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
 };
 
@@ -573,6 +576,13 @@ impl LLMModel for OpenAIModels {
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     "reasoning": reasoning_opt,
+                    // Reasoning models can use certain tools
+                    "tools": tools.map(|tools_inner| tools_inner
+                        .iter()
+                        .filter(|tool| self.get_supported_reasoning_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
+                        .filter_map(LLMTools::get_config_json)
+                        .collect::<Vec<Value>>()
+                    ),
                     // TODO: Other fields to be implemented in the future
                     // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
                     // "text": {
@@ -940,6 +950,27 @@ impl OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
         )
+    }
+
+    // This function returns a list of supported tools for reasoning models
+    pub fn get_supported_reasoning_tools(&self) -> Vec<LLMTools> {
+        if matches!(
+            self,
+            OpenAIModels::O1Preview
+                | OpenAIModels::O1Mini
+                | OpenAIModels::O1
+                | OpenAIModels::O1Pro
+                | OpenAIModels::O3
+                | OpenAIModels::O3Mini
+                | OpenAIModels::O4Mini
+        ) {
+            vec![
+                LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
+            ]
+        } else {
+            vec![]
+        }
     }
 }
 

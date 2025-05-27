@@ -429,6 +429,7 @@ pub enum OpenAPIResponsesOutputType {
     WebSearchCall,
     ComputerCall,
     Reasoning,
+    CodeInterpreterCall,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -538,6 +539,7 @@ pub enum OpenAPIResponsesToolType {
     FileSearch,
     WebSearch,
     Computer,
+    CodeInterpreter,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
