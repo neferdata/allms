@@ -190,6 +190,12 @@ pub enum OpenAICodeInterpreterContainerType {
     Auto,
 }
 
+impl Default for OpenAICodeInterpreterConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OpenAICodeInterpreterConfig {
     pub fn new() -> Self {
         Self {
