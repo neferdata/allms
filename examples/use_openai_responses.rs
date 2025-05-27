@@ -8,7 +8,10 @@ use std::path::Path;
 use allms::{
     assistants::{OpenAIFile, OpenAIVectorStore},
     llm::{
-        tools::{LLMTools, OpenAIFileSearchConfig, OpenAIReasoningConfig, OpenAIWebSearchConfig},
+        tools::{
+            LLMTools, OpenAICodeInterpreterConfig, OpenAIFileSearchConfig, OpenAIReasoningConfig,
+            OpenAIWebSearchConfig,
+        },
         OpenAIModels,
     },
     Completions,
@@ -56,6 +59,14 @@ const BANDS_GENRES: &[(&str, &str)] = &[
     ("Johnny Cash", "Country"),
 ];
 
+// Example 4: Code interpreter example
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct CodeInterpreterResponse {
+    pub problem: String,
+    pub code: String,
+    pub output: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
@@ -68,7 +79,7 @@ async fn main() -> Result<()> {
 
     let reasoning_tool = LLMTools::OpenAIReasoning(OpenAIReasoningConfig::default());
 
-    let openai_responses = Completions::new(OpenAIModels::O1Pro, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt4_1Nano, &openai_api_key, None, None)
         .add_tool(reasoning_tool)
         .version("openai_responses");
 
@@ -137,6 +148,24 @@ async fn main() -> Result<()> {
     // Cleanup
     openai_file.delete().await?;
     openai_vector_store.delete().await?;
+
+    // Example 4: Code interpreter example
+
+    let code_interpreter_tool = LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new());
+    let openai_responses = Completions::new(OpenAIModels::Gpt4_1, &openai_api_key, None, None)
+        .version("openai_responses")
+        .set_context("Code Interpreter", &"You are a personal math tutor. When asked a math question, write and run code to answer the question.".to_string())?
+        .add_tool(code_interpreter_tool);
+
+    match openai_responses
+        .get_answer::<CodeInterpreterResponse>(
+            "I need to solve the equation 3x + 11 = 14. Can you help me?",
+        )
+        .await
+    {
+        Ok(response) => println!("Code interpreter response:\n{:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
 
     Ok(())
 }

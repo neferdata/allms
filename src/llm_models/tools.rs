@@ -10,6 +10,7 @@ pub enum LLMTools {
     OpenAIWebSearch(OpenAIWebSearchConfig),
     OpenAIComputerUse(OpenAIComputerUseConfig),
     OpenAIReasoning(OpenAIReasoningConfig),
+    OpenAICodeInterpreter(OpenAICodeInterpreterConfig),
 }
 
 impl LLMTools {
@@ -19,6 +20,7 @@ impl LLMTools {
             LLMTools::OpenAIWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIComputerUse(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIReasoning(cfg) => to_value(cfg).ok(),
+            LLMTools::OpenAICodeInterpreter(cfg) => to_value(cfg).ok(),
         }
     }
 }
@@ -148,4 +150,53 @@ pub enum OpenAIReasoningSummary {
     Concise,
     #[serde(rename = "detailed")]
     Detailed,
+}
+
+///
+/// OpenAI Code Interpreter tool config
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct OpenAICodeInterpreterConfig {
+    #[serde(rename = "type")]
+    pub tool_type: OpenAICodeInterpreterToolType,
+    pub container: OpenAICodeInterpreterContainerConfig,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub enum OpenAICodeInterpreterToolType {
+    #[serde(rename = "code_interpreter")]
+    CodeInterpreter,
+}
+
+// Can be a container ID or an object that specifies uploaded file IDs to make available to your code.
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+#[serde(untagged)]
+pub enum OpenAICodeInterpreterContainerConfig {
+    ContainerId(String),
+    CodeInterpreterContainerAuto(CodeInterpreterContainerAutoConfig),
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct CodeInterpreterContainerAutoConfig {
+    #[serde(rename = "type")]
+    container_type: OpenAICodeInterpreterContainerType,
+    file_ids: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum OpenAICodeInterpreterContainerType {
+    #[serde(rename = "auto")]
+    #[default]
+    Auto,
+}
+
+impl OpenAICodeInterpreterConfig {
+    pub fn new() -> Self {
+        Self {
+            tool_type: OpenAICodeInterpreterToolType::CodeInterpreter,
+            container: OpenAICodeInterpreterContainerConfig::CodeInterpreterContainerAuto(
+                CodeInterpreterContainerAutoConfig::default(),
+            ),
+        }
+    }
 }
