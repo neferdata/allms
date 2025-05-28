@@ -375,3 +375,211 @@ pub struct DeepSeekAPICompletionsUsage {
 pub struct DeepSeekAPICompletionsReasoningUsage {
     pub reasoning_tokens: usize,
 }
+
+// OpenAI Responses API response type format
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesResponse {
+    pub id: Option<String>,
+    pub object: Option<String>,
+    pub created_at: Option<i64>,
+    pub status: Option<OpenAPIResponsesStatus>,
+    pub error: Option<OpenAPIResponsesError>,
+    pub incomplete_details: Option<OpenAPIResponsesIncompleteDetails>,
+    pub instructions: Option<String>,
+    pub max_output_tokens: Option<i32>,
+    pub model: String,
+    pub output: Vec<OpenAPIResponsesOutput>,
+    // pub previous_response_id: Option<String>,
+    // pub reasoning: Option<OpenAPIResponsesReasoning>,
+    pub temperature: Option<f32>,
+    pub text: OpenAPIResponsesTextFormat,
+    // pub tool_choice: OpenAPIResponsesToolChoice,
+    // pub tools: Vec<OpenAPIResponsesTool>,
+    pub top_p: Option<f32>,
+    pub usage: OpenAPIResponsesUsage,
+    pub user: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesError {
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesIncompleteDetails {
+    pub reason: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesOutput {
+    pub r#type: Option<OpenAPIResponsesOutputType>,
+    pub id: Option<String>,
+    pub status: Option<OpenAPIResponsesMessageStatus>,
+    pub role: Option<OpenAPIResponsesRole>,
+    pub content: Option<Vec<OpenAPIResponsesContent>>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesOutputType {
+    Message,
+    FileSearchCall,
+    FunctionCall,
+    WebSearchCall,
+    ComputerCall,
+    Reasoning,
+    CodeInterpreterCall,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesMessageStatus {
+    InProgress,
+    Completed,
+    Incomplete,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesRole {
+    Assistant,
+    User,
+    System,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesContent {
+    pub r#type: OpenAPIResponsesContentType,
+    pub text: Option<String>,
+    pub annotations: Option<Vec<OpenAPIResponsesAnnotation>>,
+    pub refusal: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesContentType {
+    OutputText,
+    Refusal,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesAnnotation {
+    pub r#type: String,
+    pub text: String,
+    pub start_index: Option<i32>,
+    pub end_index: Option<i32>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesReasoning {
+    pub effort: Option<String>,
+    pub summary: Option<String>,
+    pub service_tier: Option<OpenAPIResponsesServiceTier>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesServiceTier {
+    Auto,
+    Default,
+    Flex,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesTextFormat {
+    pub format: OpenAPIResponsesFormat,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesFormat {
+    pub r#type: OpenAPIResponsesFormatType,
+    pub name: Option<String>,
+    pub schema: Option<serde_json::Value>,
+    pub description: Option<String>,
+    pub strict: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesFormatType {
+    Text,
+    JsonSchema,
+    JsonObject,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(untagged)]
+pub enum OpenAPIResponsesToolChoice {
+    String(String),
+    Object(OpenAPIResponsesToolChoiceObject),
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesToolChoiceObject {
+    pub r#type: String,
+    pub function: Option<OpenAPIResponsesToolChoiceFunction>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesToolChoiceFunction {
+    pub name: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesTool {
+    pub r#type: OpenAPIResponsesToolType,
+    pub function: Option<OpenAPIResponsesToolFunction>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesToolType {
+    Function,
+    FileSearch,
+    WebSearch,
+    Computer,
+    CodeInterpreter,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesToolFunction {
+    pub name: String,
+    pub description: Option<String>,
+    pub parameters: serde_json::Value,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesTruncationStrategy {
+    Auto,
+    Disabled,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesUsage {
+    pub input_tokens: i32,
+    pub input_tokens_details: OpenAPIResponsesTokenDetails,
+    pub output_tokens: i32,
+    pub output_tokens_details: OpenAPIResponsesOutputTokenDetails,
+    pub total_tokens: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesTokenDetails {
+    pub cached_tokens: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAPIResponsesOutputTokenDetails {
+    pub reasoning_tokens: i32,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAPIResponsesStatus {
+    Completed,
+    Failed,
+    InProgress,
+    Incomplete,
+}

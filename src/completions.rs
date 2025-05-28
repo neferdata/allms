@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::domain::{AllmsError, OpenAIDataResponse};
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 use crate::utils::{get_tokenizer, get_type_schema};
 
 /// Completions APIs take a list of messages as input and return a model-generated message as output.
@@ -20,6 +20,7 @@ pub struct Completions<T: LLMModel> {
     function_call: bool,
     api_key: String,
     version: Option<String>,
+    tools: Option<Vec<LLMTools>>,
 }
 
 impl<T: LLMModel> Completions<T> {
@@ -43,6 +44,7 @@ impl<T: LLMModel> Completions<T> {
             debug: false,
             api_key: api_key.to_string(),
             version: None,
+            tools: None,
         }
     }
 
@@ -92,6 +94,21 @@ impl<T: LLMModel> Completions<T> {
     }
 
     ///
+    /// This method can be used to inform the model to use a tool.
+    /// Different models support different tool implementations.
+    ///
+    pub fn add_tool(mut self, tool: LLMTools) -> Self {
+        self.tools = Some(match self.tools {
+            Some(mut tools) => {
+                tools.push(tool);
+                tools
+            }
+            None => vec![tool],
+        });
+        self
+    }
+
+    ///
     /// This method can be used to provide values that will be used as context for the prompt.
     /// Using this function you can provide multiple input values by calling it multiple times. New values will be appended with the category name
     /// It accepts any instance that implements the Serialize trait.
@@ -107,11 +124,12 @@ impl<T: LLMModel> Completions<T> {
             None => "".to_string(),
         };
         let new_json = format!(
-            "{}{}{}: {}",
+            "{}{}<{}>{}</{}>",
             self.input_json.unwrap_or_default(),
             line_break,
             input_name,
             input_json,
+            input_name,
         );
         self.input_json = Some(new_json);
         Ok(self)
@@ -128,16 +146,17 @@ impl<T: LLMModel> Completions<T> {
         //Output schema is extracted from the type parameter
         let schema = get_type_schema::<U>()?;
 
+        let context_text = self
+            .input_json
+            .as_ref()
+            .map(|context| format!("\n\n{}", &context))
+            .unwrap_or_default();
+
         let prompt = format!(
             "Instructions:
-            {instructions}
-
-            Input data:
-            {input_json}
+            {instructions}{context_text}
             
             Respond ONLY with the data portion of a valid Json object. No schema definition required. No other words.", 
-            instructions = instructions,
-            input_json = self.input_json.clone().unwrap_or_default(),
         );
 
         let full_prompt = format!(
@@ -171,16 +190,17 @@ impl<T: LLMModel> Completions<T> {
         let schema = get_type_schema::<U>()?;
         let json_schema = serde_json::from_str(&schema)?;
 
-        let prompt = format!(
-            "Instructions:
-            {instructions}
+        let context_text = self
+            .input_json
+            .as_ref()
+            .map(|context| format!("\n\n{}", &context))
+            .unwrap_or_default();
 
-            Input data:
-            {input_json}
+        let prompt = format!(
+            "Instructions:,
+            {instructions}{context_text}
             
             Respond ONLY with the data portion of a valid Json object. No schema definition required. No other words.", 
-            instructions = instructions,
-            input_json = self.input_json.clone().unwrap_or_default(),
         );
 
         //Validate how many tokens remain for the response (and how many are used for prompt)
@@ -207,12 +227,14 @@ impl<T: LLMModel> Completions<T> {
         };
 
         //Build the API body depending on the used model
-        let model_body = self.model.get_body(
+        let model_body = self.model.get_version_body(
             &prompt,
             &json_schema,
             self.function_call,
             &response_tokens,
             &self.temperature,
+            self.version.clone(),
+            self.tools.as_deref(),
         );
 
         //Display debug info if requested
@@ -227,13 +249,13 @@ impl<T: LLMModel> Completions<T> {
 
         let response_text = self
             .model
-            .call_api(&self.api_key, self.version, &model_body, self.debug)
+            .call_api(&self.api_key, self.version.clone(), &model_body, self.debug)
             .await?;
 
         //Extract data from the returned response text based on the used model
         let response_string = self
             .model
-            .get_data(&response_text, self.function_call)
+            .get_version_data(&response_text, self.function_call, self.version)
             .map_err(|error| {
                 let error = AllmsError {
                     crate_name: "allms".to_string(),

@@ -11,7 +11,7 @@ use serde_json::Value;
 
 use crate::constants::{AWS_BEDROCK_API_URL, AWS_REGION};
 use crate::domain::RateLimit;
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 
 #[derive(Serialize, Deserialize)]
 struct AwsBedrockRequestBody {
@@ -68,6 +68,7 @@ impl LLMModel for AwsBedrockModels {
         _function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
+        _tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         let body = AwsBedrockRequestBody {
             instructions: instructions.to_string(),

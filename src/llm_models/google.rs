@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 
 use crate::constants::{GOOGLE_GEMINI_API_URL, GOOGLE_VERTEX_API_URL};
 use crate::domain::{GoogleGeminiProApiResp, RateLimit};
-use crate::llm_models::LLMModel;
+use crate::llm_models::{LLMModel, LLMTools};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 // Google Docs: https://ai.google.dev/gemini-api/docs/models/gemini
@@ -181,6 +181,7 @@ impl LLMModel for GoogleModels {
         function_call: bool,
         _max_tokens: &usize,
         temperature: &f32,
+        _tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions_json = json!({
