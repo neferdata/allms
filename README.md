@@ -36,7 +36,6 @@ DeepSeek:
 Google Vertex AI / AI Studio:
 - APIs: Chat Completions (including streaming)
 - Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite
-    - The following legacy models will be supported until February 15, 2025: Gemini 1.0 Pro
 - Experimental models: Gemini 2.0 Pro, Gemini 2.0 Flash-Thinking
 
 Mistral:

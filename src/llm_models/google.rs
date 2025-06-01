@@ -25,36 +25,46 @@ pub enum GoogleModels {
     Gemini2_0FlashLite,
     Gemini2_0ProExp,
     Gemini2_0FlashThinkingExp,
-    // Vertex 1.5
+    // 2.5
+    // TODO: Add 2.5 models
+    // Fine-tuned models
+    Custom { name: String },
+    // Legacy approach to Vertex models
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini1_5FlashVertex,
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini1_5Flash8BVertex,
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini1_5ProVertex,
-    // Vertex 2.0
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini2_0FlashVertex,
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini2_0FlashLiteVertex,
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini2_0ProExpVertex,
+    #[deprecated(
+        since = "0.19.0",
+        note = "Starting 0.19.0 `allms` allows to set the API version to `google-vertex` or `google-studio` instead of using the model name to call the right API."
+    )]
     Gemini2_0FlashThinkingExpVertex,
-    // Legacy models
-    #[deprecated(
-        since = "0.15.0",
-        note = "`Gemini Pro 1.0` is deprecated starting February 15, 2025, please use a different model."
-    )]
-    GeminiPro,
-    #[deprecated(
-        since = "0.15.0",
-        note = "`Gemini Pro 1.0` is deprecated starting February 15, 2025, please use a different model."
-    )]
-    Gemini1_0Pro,
-    #[deprecated(
-        since = "0.15.0",
-        note = "`Gemini Pro 1.0` is deprecated starting February 15, 2025, please use a different model."
-    )]
-    GeminiProVertex,
-    #[deprecated(
-        since = "0.15.0",
-        note = "`Gemini Pro 1.0` is deprecated starting February 15, 2025, please use a different model."
-    )]
-    Gemini1_0ProVertex,
 }
 
 #[async_trait(?Send)]
@@ -79,11 +89,7 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => {
                 "gemini-2.0-flash-thinking-exp-01-21"
             }
-            // Legacy
-            #[allow(deprecated)]
-            GoogleModels::GeminiPro | GoogleModels::GeminiProVertex => "gemini-pro",
-            #[allow(deprecated)]
-            GoogleModels::Gemini1_0Pro | GoogleModels::Gemini1_0ProVertex => "gemini-1.0-pro",
+            GoogleModels::Custom { name } => name,
         }
     }
 
@@ -112,7 +118,9 @@ impl LLMModel for GoogleModels {
             "gemini-1.0-pro" => Some(GoogleModels::Gemini1_5Pro),
             "gemini-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
             "gemini-1.0-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
-            _ => None,
+            _ => Some(GoogleModels::Custom {
+                name: name.to_string(),
+            }),
         }
     }
 
@@ -127,15 +135,17 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini2_0ProExp | GoogleModels::Gemini2_0ProExpVertex => 2_097_152,
             GoogleModels::Gemini2_0FlashThinkingExp
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => 1_048_576,
-            // Legacy
-            #[allow(deprecated)]
-            GoogleModels::GeminiPro | GoogleModels::GeminiProVertex => 32_000,
-            #[allow(deprecated)]
-            GoogleModels::Gemini1_0Pro | GoogleModels::Gemini1_0ProVertex => 32_000,
+            // TODO: Is this a good assumption?
+            GoogleModels::Custom { .. } => 1_048_576,
         }
     }
 
-    fn get_endpoint(&self) -> String {
+    fn get_version_endpoint(&self, version: Option<String>) -> String {
+        // If no version provided default to Google Studio API
+        let version = version
+            .map(|version| GoogleApiEndpoints::from_str(&version))
+            .unwrap_or(GoogleApiEndpoints::default());
+        
         //The URL requires GOOGLE_REGION and GOOGLE_PROJECT_ID env variables defined to work.
         //If not set GOOGLE_REGION will default to 'us-central1' but GOOGLE_PROJECT_ID needs to be defined.
         let vertex_url = format!(
@@ -144,32 +154,40 @@ impl LLMModel for GoogleModels {
             self.as_str()
         );
 
-        match self {
-            GoogleModels::Gemini1_5Pro
+        match (self, version) {
+            // Google Studio API
+            (GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
             | GoogleModels::Gemini1_5Flash8B
             | GoogleModels::Gemini2_0Flash
             | GoogleModels::Gemini2_0FlashLite
             | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp => format!(
+            | GoogleModels::Gemini2_0FlashThinkingExp
+            | GoogleModels::Custom { .. }
+            , GoogleApiEndpoints::GoogleStudio) => format!(
                 "{}/{}:generateContent",
                 &*GOOGLE_GEMINI_API_URL,
                 self.as_str()
             ),
-            GoogleModels::Gemini1_5ProVertex
+            // Google Vertex API
+            (GoogleModels::Gemini1_5Pro
+                | GoogleModels::Gemini1_5Flash
+                | GoogleModels::Gemini1_5Flash8B
+                | GoogleModels::Gemini2_0Flash
+                | GoogleModels::Gemini2_0FlashLite
+                | GoogleModels::Gemini2_0ProExp
+                | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Custom { .. }
+                , GoogleApiEndpoints::GoogleVertex) => vertex_url,
+            // Legacy Google Vertex API implementation
+            #[allow(deprecated)]
+            (GoogleModels::Gemini1_5ProVertex
             | GoogleModels::Gemini1_5FlashVertex
             | GoogleModels::Gemini1_5Flash8BVertex
             | GoogleModels::Gemini2_0FlashVertex
             | GoogleModels::Gemini2_0FlashLiteVertex
             | GoogleModels::Gemini2_0ProExpVertex
-            | GoogleModels::Gemini2_0FlashThinkingExpVertex => vertex_url,
-            // Legacy
-            #[allow(deprecated)]
-            GoogleModels::GeminiPro | GoogleModels::Gemini1_0Pro => {
-                GOOGLE_GEMINI_API_URL.to_string()
-            }
-            #[allow(deprecated)]
-            GoogleModels::GeminiProVertex | GoogleModels::Gemini1_0ProVertex => vertex_url,
+            | GoogleModels::Gemini2_0FlashThinkingExpVertex, _) => vertex_url,
         }
     }
 
@@ -214,75 +232,106 @@ impl LLMModel for GoogleModels {
             "generationConfig": generation_config,
         })
     }
+    
     /*
-     * This function leverages Mistral API to perform any query as per the provided body.
+     * This function leverages Google API to perform any query as per the provided body.
      *
      * It returns a String the Response object that needs to be parsed based on the self.model.
      */
     async fn call_api(
         &self,
         api_key: &str,
-        _version: Option<String>,
+        version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String> {
-        match &self {
-            GoogleModels::Gemini1_5Pro
+        // If no version provided default to Google Studio API
+        let version = version
+            .map(|version| GoogleApiEndpoints::from_str(&version))
+            .unwrap_or(GoogleApiEndpoints::default());
+
+        match (self, version) {
+            // Google Studio API
+            (GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
             | GoogleModels::Gemini1_5Flash8B
             | GoogleModels::Gemini2_0Flash
             | GoogleModels::Gemini2_0FlashLite
             | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp => {
+            | GoogleModels::Gemini2_0FlashThinkingExp
+            | GoogleModels::Custom { .. },
+            GoogleApiEndpoints::GoogleStudio) => {
                 self.call_api_studio(api_key, body, debug).await
-            }
-            GoogleModels::Gemini1_5ProVertex
+            },
+            // Google Vertex API
+            (GoogleModels::Gemini1_5Pro
+            | GoogleModels::Gemini1_5Flash
+            | GoogleModels::Gemini1_5Flash8B
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini2_0FlashLite
+            | GoogleModels::Gemini2_0ProExp
+            | GoogleModels::Gemini2_0FlashThinkingExp
+            | GoogleModels::Custom { .. },
+            GoogleApiEndpoints::GoogleVertex) => {
+                self.call_api_vertex(api_key, body, debug).await
+            },
+            // Legacy approach to Google Vertex API
+            #[allow(deprecated)]
+            (GoogleModels::Gemini1_5ProVertex
             | GoogleModels::Gemini1_5FlashVertex
             | GoogleModels::Gemini1_5Flash8BVertex
             | GoogleModels::Gemini2_0FlashVertex
             | GoogleModels::Gemini2_0FlashLiteVertex
             | GoogleModels::Gemini2_0ProExpVertex
-            | GoogleModels::Gemini2_0FlashThinkingExpVertex => {
-                self.call_api_vertex(api_key, body, debug).await
-            }
-            // Legacy
-            #[allow(deprecated)]
-            GoogleModels::GeminiPro | GoogleModels::Gemini1_0Pro => {
-                self.call_api_studio(api_key, body, debug).await
-            }
-            #[allow(deprecated)]
-            GoogleModels::GeminiProVertex | GoogleModels::Gemini1_0ProVertex => {
+            | GoogleModels::Gemini2_0FlashThinkingExpVertex,
+        _) => {
                 self.call_api_vertex(api_key, body, debug).await
             }
         }
     }
 
-    fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
-        match self {
-            GoogleModels::Gemini1_5Pro
+    fn get_version_data(
+        &self,
+        response_text: &str,
+        _function_call: bool,
+        version: Option<String>,
+    ) -> Result<String> {
+        // If no version provided default to Google Studio API
+        let version = version
+            .map(|version| GoogleApiEndpoints::from_str(&version))
+            .unwrap_or(GoogleApiEndpoints::default());
+
+        match (self, version) {
+            // Google Studio API
+            (GoogleModels::Gemini1_5Pro
             | GoogleModels::Gemini1_5Flash
             | GoogleModels::Gemini1_5Flash8B
             | GoogleModels::Gemini2_0Flash
             | GoogleModels::Gemini2_0FlashLite
             | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp => self.get_data_studio(response_text),
+            | GoogleModels::Gemini2_0FlashThinkingExp
+            | GoogleModels::Custom { .. }
+            , GoogleApiEndpoints::GoogleStudio) => self.get_data_studio(response_text),
             //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
-            GoogleModels::Gemini1_5ProVertex
+            (GoogleModels::Gemini1_5Pro
+                | GoogleModels::Gemini1_5Flash
+                | GoogleModels::Gemini1_5Flash8B
+                | GoogleModels::Gemini2_0Flash
+                | GoogleModels::Gemini2_0FlashLite
+                | GoogleModels::Gemini2_0ProExp
+                | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Custom { .. }
+                , GoogleApiEndpoints::GoogleVertex) => Ok(response_text.to_string()),
+            // Legacy approach to Vertex API implementation
+            #[allow(deprecated)]
+            (GoogleModels::Gemini1_5ProVertex
             | GoogleModels::Gemini1_5FlashVertex
             | GoogleModels::Gemini1_5Flash8BVertex
             | GoogleModels::Gemini2_0FlashVertex
             | GoogleModels::Gemini2_0FlashLiteVertex
             | GoogleModels::Gemini2_0ProExpVertex
-            | GoogleModels::Gemini2_0FlashThinkingExpVertex => Ok(response_text.to_string()),
-            // Legacy
-            #[allow(deprecated)]
-            GoogleModels::GeminiPro | GoogleModels::Gemini1_0Pro => {
-                self.get_data_studio(response_text)
-            }
-            #[allow(deprecated)]
-            GoogleModels::GeminiProVertex | GoogleModels::Gemini1_0ProVertex => {
-                Ok(response_text.to_string())
-            }
+            | GoogleModels::Gemini2_0FlashThinkingExpVertex
+            , _) => Ok(response_text.to_string()),
         }
     }
 
@@ -312,6 +361,7 @@ impl LLMModel for GoogleModels {
                     rpm: 10,
                 }
             }
+            // TODO: Update rate limits
             // TODO: No rate limits published for experimental models
             _ => RateLimit {
                 tpm: 120_000,
@@ -453,5 +503,35 @@ impl GoogleModels {
             });
 
         Ok(self.sanitize_json_response(&data))
+    }
+}
+
+// Enum of supported Completions APIs
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub enum GoogleApiEndpoints {
+    GoogleStudio,
+    GoogleVertex,
+}
+
+impl GoogleApiEndpoints {
+    /// Defaulting to OpenAICompletions
+    fn default() -> Self {
+        GoogleApiEndpoints::GoogleStudio
+    }
+
+    /// Parses a string into `GoogleApiEndpoints`.
+    ///
+    /// Supported formats (case-insensitive):
+    /// - `"google-studio"` -> `GoogleApiEndpoints::GoogleStudio`
+    /// - `"google-vertex"` -> `GoogleApiEndpoints::GoogleVertex`
+    ///
+    /// Returns default for others.
+    fn from_str(s: &str) -> Self {
+        let s_lower = s.to_lowercase();
+        match s_lower.as_str() {
+            "google-studio" => GoogleApiEndpoints::GoogleStudio,
+            "google-vertex" => GoogleApiEndpoints::GoogleVertex,
+            _ => GoogleApiEndpoints::default(),
+        }
     }
 }

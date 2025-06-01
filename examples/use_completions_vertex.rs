@@ -22,7 +22,7 @@ async fn main() {
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     // Get answer using Google GeminiPro via Vertex AI
-    let model = GoogleModels::Gemini2_0ProExpVertex;
+    let model = GoogleModels::Gemini2_0Flash;
 
     // To authenticate Google Vertex AI we need to use a key associated with a GCP service account with correct permissions
     // Load your service account key from a file or an environment variable
@@ -42,7 +42,8 @@ async fn main() {
     let google_token_str = &google_token.token().unwrap();
 
     // **Pre-requisite**: GeminiPro request through Vertex AI require `GOOGLE_PROJECT_ID` environment variable defined
-    let gemini_completion = Completions::new(model, google_token_str, None, None);
+    let gemini_completion = Completions::new(model, google_token_str, None, None)
+        .version("google-vertex");
 
     match gemini_completion
         .get_answer::<TranslationResponse>(instructions)
