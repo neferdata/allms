@@ -28,7 +28,9 @@ pub enum GoogleModels {
     // 2.5
     // TODO: Add 2.5 models
     // Fine-tuned models
-    Custom { name: String },
+    Custom {
+        name: String,
+    },
     // Legacy approach to Vertex models
     #[deprecated(
         since = "0.19.0",
@@ -145,7 +147,7 @@ impl LLMModel for GoogleModels {
         let version = version
             .map(|version| GoogleApiEndpoints::from_str(&version))
             .unwrap_or(GoogleApiEndpoints::default());
-        
+
         //The URL requires GOOGLE_REGION and GOOGLE_PROJECT_ID env variables defined to work.
         //If not set GOOGLE_REGION will default to 'us-central1' but GOOGLE_PROJECT_ID needs to be defined.
         let vertex_url = format!(
@@ -156,38 +158,45 @@ impl LLMModel for GoogleModels {
 
         match (self, version) {
             // Google Studio API
-            (GoogleModels::Gemini1_5Pro
-            | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_5Flash8B
-            | GoogleModels::Gemini2_0Flash
-            | GoogleModels::Gemini2_0FlashLite
-            | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp
-            | GoogleModels::Custom { .. }
-            , GoogleApiEndpoints::GoogleStudio) => format!(
-                "{}/{}:generateContent",
-                &*GOOGLE_GEMINI_API_URL,
-                self.as_str()
-            ),
-            // Google Vertex API
-            (GoogleModels::Gemini1_5Pro
+            (
+                GoogleModels::Gemini1_5Pro
                 | GoogleModels::Gemini1_5Flash
                 | GoogleModels::Gemini1_5Flash8B
                 | GoogleModels::Gemini2_0Flash
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
-                | GoogleModels::Custom { .. }
-                , GoogleApiEndpoints::GoogleVertex) => vertex_url,
+                | GoogleModels::Custom { .. },
+                GoogleApiEndpoints::GoogleStudio,
+            ) => format!(
+                "{}/{}:generateContent",
+                &*GOOGLE_GEMINI_API_URL,
+                self.as_str()
+            ),
+            // Google Vertex API
+            (
+                GoogleModels::Gemini1_5Pro
+                | GoogleModels::Gemini1_5Flash
+                | GoogleModels::Gemini1_5Flash8B
+                | GoogleModels::Gemini2_0Flash
+                | GoogleModels::Gemini2_0FlashLite
+                | GoogleModels::Gemini2_0ProExp
+                | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Custom { .. },
+                GoogleApiEndpoints::GoogleVertex,
+            ) => vertex_url,
             // Legacy Google Vertex API implementation
             #[allow(deprecated)]
-            (GoogleModels::Gemini1_5ProVertex
-            | GoogleModels::Gemini1_5FlashVertex
-            | GoogleModels::Gemini1_5Flash8BVertex
-            | GoogleModels::Gemini2_0FlashVertex
-            | GoogleModels::Gemini2_0FlashLiteVertex
-            | GoogleModels::Gemini2_0ProExpVertex
-            | GoogleModels::Gemini2_0FlashThinkingExpVertex, _) => vertex_url,
+            (
+                GoogleModels::Gemini1_5ProVertex
+                | GoogleModels::Gemini1_5FlashVertex
+                | GoogleModels::Gemini1_5Flash8BVertex
+                | GoogleModels::Gemini2_0FlashVertex
+                | GoogleModels::Gemini2_0FlashLiteVertex
+                | GoogleModels::Gemini2_0ProExpVertex
+                | GoogleModels::Gemini2_0FlashThinkingExpVertex,
+                _,
+            ) => vertex_url,
         }
     }
 
@@ -232,7 +241,7 @@ impl LLMModel for GoogleModels {
             "generationConfig": generation_config,
         })
     }
-    
+
     /*
      * This function leverages Google API to perform any query as per the provided body.
      *
@@ -252,41 +261,41 @@ impl LLMModel for GoogleModels {
 
         match (self, version) {
             // Google Studio API
-            (GoogleModels::Gemini1_5Pro
-            | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_5Flash8B
-            | GoogleModels::Gemini2_0Flash
-            | GoogleModels::Gemini2_0FlashLite
-            | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp
-            | GoogleModels::Custom { .. },
-            GoogleApiEndpoints::GoogleStudio) => {
-                self.call_api_studio(api_key, body, debug).await
-            },
+            (
+                GoogleModels::Gemini1_5Pro
+                | GoogleModels::Gemini1_5Flash
+                | GoogleModels::Gemini1_5Flash8B
+                | GoogleModels::Gemini2_0Flash
+                | GoogleModels::Gemini2_0FlashLite
+                | GoogleModels::Gemini2_0ProExp
+                | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Custom { .. },
+                GoogleApiEndpoints::GoogleStudio,
+            ) => self.call_api_studio(api_key, body, debug).await,
             // Google Vertex API
-            (GoogleModels::Gemini1_5Pro
-            | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_5Flash8B
-            | GoogleModels::Gemini2_0Flash
-            | GoogleModels::Gemini2_0FlashLite
-            | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp
-            | GoogleModels::Custom { .. },
-            GoogleApiEndpoints::GoogleVertex) => {
-                self.call_api_vertex(api_key, body, debug).await
-            },
+            (
+                GoogleModels::Gemini1_5Pro
+                | GoogleModels::Gemini1_5Flash
+                | GoogleModels::Gemini1_5Flash8B
+                | GoogleModels::Gemini2_0Flash
+                | GoogleModels::Gemini2_0FlashLite
+                | GoogleModels::Gemini2_0ProExp
+                | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Custom { .. },
+                GoogleApiEndpoints::GoogleVertex,
+            ) => self.call_api_vertex(api_key, body, debug).await,
             // Legacy approach to Google Vertex API
             #[allow(deprecated)]
-            (GoogleModels::Gemini1_5ProVertex
-            | GoogleModels::Gemini1_5FlashVertex
-            | GoogleModels::Gemini1_5Flash8BVertex
-            | GoogleModels::Gemini2_0FlashVertex
-            | GoogleModels::Gemini2_0FlashLiteVertex
-            | GoogleModels::Gemini2_0ProExpVertex
-            | GoogleModels::Gemini2_0FlashThinkingExpVertex,
-        _) => {
-                self.call_api_vertex(api_key, body, debug).await
-            }
+            (
+                GoogleModels::Gemini1_5ProVertex
+                | GoogleModels::Gemini1_5FlashVertex
+                | GoogleModels::Gemini1_5Flash8BVertex
+                | GoogleModels::Gemini2_0FlashVertex
+                | GoogleModels::Gemini2_0FlashLiteVertex
+                | GoogleModels::Gemini2_0ProExpVertex
+                | GoogleModels::Gemini2_0FlashThinkingExpVertex,
+                _,
+            ) => self.call_api_vertex(api_key, body, debug).await,
         }
     }
 
@@ -303,35 +312,41 @@ impl LLMModel for GoogleModels {
 
         match (self, version) {
             // Google Studio API
-            (GoogleModels::Gemini1_5Pro
-            | GoogleModels::Gemini1_5Flash
-            | GoogleModels::Gemini1_5Flash8B
-            | GoogleModels::Gemini2_0Flash
-            | GoogleModels::Gemini2_0FlashLite
-            | GoogleModels::Gemini2_0ProExp
-            | GoogleModels::Gemini2_0FlashThinkingExp
-            | GoogleModels::Custom { .. }
-            , GoogleApiEndpoints::GoogleStudio) => self.get_data_studio(response_text),
-            //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
-            (GoogleModels::Gemini1_5Pro
+            (
+                GoogleModels::Gemini1_5Pro
                 | GoogleModels::Gemini1_5Flash
                 | GoogleModels::Gemini1_5Flash8B
                 | GoogleModels::Gemini2_0Flash
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
-                | GoogleModels::Custom { .. }
-                , GoogleApiEndpoints::GoogleVertex) => Ok(response_text.to_string()),
+                | GoogleModels::Custom { .. },
+                GoogleApiEndpoints::GoogleStudio,
+            ) => self.get_data_studio(response_text),
+            //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
+            (
+                GoogleModels::Gemini1_5Pro
+                | GoogleModels::Gemini1_5Flash
+                | GoogleModels::Gemini1_5Flash8B
+                | GoogleModels::Gemini2_0Flash
+                | GoogleModels::Gemini2_0FlashLite
+                | GoogleModels::Gemini2_0ProExp
+                | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Custom { .. },
+                GoogleApiEndpoints::GoogleVertex,
+            ) => Ok(response_text.to_string()),
             // Legacy approach to Vertex API implementation
             #[allow(deprecated)]
-            (GoogleModels::Gemini1_5ProVertex
-            | GoogleModels::Gemini1_5FlashVertex
-            | GoogleModels::Gemini1_5Flash8BVertex
-            | GoogleModels::Gemini2_0FlashVertex
-            | GoogleModels::Gemini2_0FlashLiteVertex
-            | GoogleModels::Gemini2_0ProExpVertex
-            | GoogleModels::Gemini2_0FlashThinkingExpVertex
-            , _) => Ok(response_text.to_string()),
+            (
+                GoogleModels::Gemini1_5ProVertex
+                | GoogleModels::Gemini1_5FlashVertex
+                | GoogleModels::Gemini1_5Flash8BVertex
+                | GoogleModels::Gemini2_0FlashVertex
+                | GoogleModels::Gemini2_0FlashLiteVertex
+                | GoogleModels::Gemini2_0ProExpVertex
+                | GoogleModels::Gemini2_0FlashThinkingExpVertex,
+                _,
+            ) => Ok(response_text.to_string()),
         }
     }
 

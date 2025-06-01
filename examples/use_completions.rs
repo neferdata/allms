@@ -112,8 +112,8 @@ async fn main() {
     let google_token_str: String =
         std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");
 
-    let gemini_completion = Completions::new(model, &google_token_str, None, None)
-        .version("google-studio");
+    let gemini_completion =
+        Completions::new(model, &google_token_str, None, None).version("google-studio");
 
     match gemini_completion
         .get_answer::<TranslationResponse>(instructions)
