@@ -28,6 +28,9 @@ lazy_static! {
     };
     pub(crate) static ref GOOGLE_GEMINI_API_URL: String = std::env::var("GOOGLE_GEMINI_API_URL")
         .unwrap_or("https://generativelanguage.googleapis.com/v1/models".to_string());
+    pub(crate) static ref GOOGLE_GEMINI_BETA_API_URL: String =
+        std::env::var("GOOGLE_GEMINI_BETA_API_URL")
+            .unwrap_or("https://generativelanguage.googleapis.com/v1beta/models".to_string());
 }
 
 lazy_static! {

@@ -8,7 +8,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::constants::{GOOGLE_GEMINI_API_URL, GOOGLE_VERTEX_API_URL};
+use crate::constants::{GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL};
 use crate::domain::{GoogleGeminiProApiResp, RateLimit};
 use crate::llm_models::{LLMModel, LLMTools};
 
@@ -26,7 +26,8 @@ pub enum GoogleModels {
     Gemini2_0ProExp,
     Gemini2_0FlashThinkingExp,
     // 2.5
-    // TODO: Add 2.5 models
+    Gemini2_5Flash,
+    Gemini2_5Pro,
     // Fine-tuned models
     Custom {
         name: String,
@@ -78,11 +79,9 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini1_5Flash8B | GoogleModels::Gemini1_5Flash8BVertex => {
                 "gemini-1.5-flash-8b"
             }
-            GoogleModels::Gemini2_0Flash | GoogleModels::Gemini2_0FlashVertex => {
-                "gemini-2.0-flash-001"
-            }
+            GoogleModels::Gemini2_0Flash | GoogleModels::Gemini2_0FlashVertex => "gemini-2.0-flash",
             GoogleModels::Gemini2_0FlashLite | GoogleModels::Gemini2_0FlashLiteVertex => {
-                "gemini-2.0-flash-lite-preview-02-05"
+                "gemini-2.0-flash-lite"
             }
             GoogleModels::Gemini2_0ProExp | GoogleModels::Gemini2_0ProExpVertex => {
                 "gemini-2.0-pro-exp-02-05"
@@ -91,6 +90,8 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => {
                 "gemini-2.0-flash-thinking-exp-01-21"
             }
+            GoogleModels::Gemini2_5Flash => "gemini-2.5-flash-preview-05-20",
+            GoogleModels::Gemini2_5Pro => "gemini-2.5-pro-preview-05-06",
             GoogleModels::Custom { name } => name,
         }
     }
@@ -115,11 +116,14 @@ impl LLMModel for GoogleModels {
             "gemini-2.0-flash-thinking-vertex" => {
                 Some(GoogleModels::Gemini2_0FlashThinkingExpVertex)
             }
+            "gemini-2.5-flash" => Some(GoogleModels::Gemini2_5Flash),
+            "gemini-2.5-pro" => Some(GoogleModels::Gemini2_5Pro),
             // Gemini 1.0 Pro is deprecated starting 2/15/2025. We are re-routing to 1.5 Pro for the model
             "gemini-pro" => Some(GoogleModels::Gemini1_5Pro),
             "gemini-1.0-pro" => Some(GoogleModels::Gemini1_5Pro),
             "gemini-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
             "gemini-1.0-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
+            // Custom / fine-tuned models
             _ => Some(GoogleModels::Custom {
                 name: name.to_string(),
             }),
@@ -137,6 +141,8 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini2_0ProExp | GoogleModels::Gemini2_0ProExpVertex => 2_097_152,
             GoogleModels::Gemini2_0FlashThinkingExp
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => 1_048_576,
+            GoogleModels::Gemini2_5Flash => 1_048_576,
+            GoogleModels::Gemini2_5Pro => 1_048_576,
             // TODO: Is this a good assumption?
             GoogleModels::Custom { .. } => 1_048_576,
         }
@@ -173,6 +179,15 @@ impl LLMModel for GoogleModels {
                 &*GOOGLE_GEMINI_API_URL,
                 self.as_str()
             ),
+            // 2.5 models are only available in the beta API
+            (
+                GoogleModels::Gemini2_5Flash | GoogleModels::Gemini2_5Pro,
+                GoogleApiEndpoints::GoogleStudio,
+            ) => format!(
+                "{}/{}:generateContent",
+                &*GOOGLE_GEMINI_BETA_API_URL,
+                self.as_str()
+            ),
             // Google Vertex API
             (
                 GoogleModels::Gemini1_5Pro
@@ -182,6 +197,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
                 | GoogleModels::Custom { .. },
                 GoogleApiEndpoints::GoogleVertex,
             ) => vertex_url,
@@ -269,6 +286,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
                 | GoogleModels::Custom { .. },
                 GoogleApiEndpoints::GoogleStudio,
             ) => self.call_api_studio(api_key, body, debug).await,
@@ -281,6 +300,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
                 | GoogleModels::Custom { .. },
                 GoogleApiEndpoints::GoogleVertex,
             ) => self.call_api_vertex(api_key, body, debug).await,
@@ -320,6 +341,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
                 | GoogleModels::Custom { .. },
                 GoogleApiEndpoints::GoogleStudio,
             ) => self.get_data_studio(response_text),
@@ -332,6 +355,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
+                | GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
                 | GoogleModels::Custom { .. },
                 GoogleApiEndpoints::GoogleVertex,
             ) => Ok(response_text.to_string()),
@@ -367,15 +392,23 @@ impl LLMModel for GoogleModels {
                 rpm: 1_000,
             },
             GoogleModels::Gemini2_0Flash | GoogleModels::Gemini2_0FlashVertex => RateLimit {
-                tpm: 4_000_000,
-                rpm: 2_000,
+                tpm: 30_000_000,
+                rpm: 30_000,
             },
             GoogleModels::Gemini2_0FlashLite | GoogleModels::Gemini2_0FlashLiteVertex => {
                 RateLimit {
-                    tpm: 4_000_000,
-                    rpm: 10,
+                    tpm: 30_000_000,
+                    rpm: 30_000,
                 }
             }
+            GoogleModels::Gemini2_5Flash => RateLimit {
+                tpm: 8_000_000,
+                rpm: 10_000,
+            },
+            GoogleModels::Gemini2_5Pro => RateLimit {
+                tpm: 8_000_000,
+                rpm: 2_000,
+            },
             // TODO: Update rate limits
             // TODO: No rate limits published for experimental models
             _ => RateLimit {

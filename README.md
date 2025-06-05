@@ -33,9 +33,10 @@ DeepSeek:
 - APIs: Chat Completion
 - Models: DeepSeek-V3, DeepSeek-R1
 
-Google Vertex AI / AI Studio:
+Google Gemini:
 - APIs: Chat Completions (including streaming)
-- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite
+    - Via Vertex AI or AI Studio
+- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 2.5 Flash, Gemini 2.5 Pro
 - Experimental models: Gemini 2.0 Pro, Gemini 2.0 Flash-Thinking
 
 Mistral:
@@ -43,7 +44,7 @@ Mistral:
 - Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
-- APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file_search)
+- APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file search, web search, code interpreter)
 - Models: 
     - Chat Completions & Responses only: o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini 
     - Chat Completions, Responses & Assistants: GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
