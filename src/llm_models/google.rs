@@ -8,7 +8,10 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::constants::{GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL};
+use crate::constants::{
+    GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL,
+    GOOGLE_VERTEX_ENDPOINT_API_URL,
+};
 use crate::domain::{GoogleGeminiProApiResp, RateLimit};
 use crate::llm_models::{LLMModel, LLMTools};
 
@@ -29,7 +32,7 @@ pub enum GoogleModels {
     Gemini2_5Flash,
     Gemini2_5Pro,
     // Fine-tuned models
-    Custom {
+    FineTunedEndpoint {
         name: String,
     },
     // Legacy approach to Vertex models
@@ -92,7 +95,7 @@ impl LLMModel for GoogleModels {
             }
             GoogleModels::Gemini2_5Flash => "gemini-2.5-flash-preview-05-20",
             GoogleModels::Gemini2_5Pro => "gemini-2.5-pro-preview-05-06",
-            GoogleModels::Custom { name } => name,
+            GoogleModels::FineTunedEndpoint { name } => name,
         }
     }
 
@@ -123,10 +126,8 @@ impl LLMModel for GoogleModels {
             "gemini-1.0-pro" => Some(GoogleModels::Gemini1_5Pro),
             "gemini-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
             "gemini-1.0-pro-vertex" => Some(GoogleModels::Gemini1_5ProVertex),
-            // Custom / fine-tuned models
-            _ => Some(GoogleModels::Custom {
-                name: name.to_string(),
-            }),
+            // Fine-tuned models need to be constructed via the endpoint method
+            _ => None,
         }
     }
 
@@ -144,7 +145,7 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini2_5Flash => 1_048_576,
             GoogleModels::Gemini2_5Pro => 1_048_576,
             // TODO: Is this a good assumption?
-            GoogleModels::Custom { .. } => 1_048_576,
+            GoogleModels::FineTunedEndpoint { .. } => 1_048_576,
         }
     }
 
@@ -162,6 +163,12 @@ impl LLMModel for GoogleModels {
             self.as_str()
         );
 
+        let vertex_url_fine_tuned = format!(
+            "{}/{}:generateContent",
+            &*GOOGLE_VERTEX_ENDPOINT_API_URL,
+            self.as_str()
+        );
+
         match (self, version) {
             // Google Studio API
             (
@@ -171,8 +178,7 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0Flash
                 | GoogleModels::Gemini2_0FlashLite
                 | GoogleModels::Gemini2_0ProExp
-                | GoogleModels::Gemini2_0FlashThinkingExp
-                | GoogleModels::Custom { .. },
+                | GoogleModels::Gemini2_0FlashThinkingExp,
                 GoogleApiEndpoints::GoogleStudio,
             ) => format!(
                 "{}/{}:generateContent",
@@ -188,6 +194,11 @@ impl LLMModel for GoogleModels {
                 &*GOOGLE_GEMINI_BETA_API_URL,
                 self.as_str()
             ),
+            // Fine-tuned models are only available in the Vertex API
+            // TODO: Explore fine-tuned models in the Studio API
+            (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleStudio) => {
+                vertex_url_fine_tuned
+            }
             // Google Vertex API
             (
                 GoogleModels::Gemini1_5Pro
@@ -198,10 +209,13 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Custom { .. },
+                | GoogleModels::Gemini2_5Pro,
                 GoogleApiEndpoints::GoogleVertex,
             ) => vertex_url,
+            // Google Vertex API for fine-tuned models
+            (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
+                vertex_url_fine_tuned
+            }
             // Legacy Google Vertex API implementation
             #[allow(deprecated)]
             (
@@ -272,11 +286,12 @@ impl LLMModel for GoogleModels {
         debug: bool,
     ) -> Result<String> {
         // If no version provided default to Google Studio API
-        let version = version
-            .map(|version| GoogleApiEndpoints::from_str(&version))
+        let api_version = version
+            .as_ref()
+            .map(|version| GoogleApiEndpoints::from_str(version))
             .unwrap_or(GoogleApiEndpoints::default());
 
-        match (self, version) {
+        match (self, api_version) {
             // Google Studio API
             (
                 GoogleModels::Gemini1_5Pro
@@ -287,10 +302,14 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Custom { .. },
+                | GoogleModels::Gemini2_5Pro,
                 GoogleApiEndpoints::GoogleStudio,
-            ) => self.call_api_studio(api_key, body, debug).await,
+            ) => self.call_api_studio(api_key, version, body, debug).await,
+            // Fine-tuned models are only available in the Vertex API
+            // TODO: Explore fine-tuned models in the Studio API
+            (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleStudio) => {
+                self.call_api_vertex(api_key, version, body, debug).await
+            }
             // Google Vertex API
             (
                 GoogleModels::Gemini1_5Pro
@@ -301,10 +320,16 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Custom { .. },
+                | GoogleModels::Gemini2_5Pro,
                 GoogleApiEndpoints::GoogleVertex,
-            ) => self.call_api_vertex(api_key, body, debug).await,
+            ) => {
+                self.call_api_vertex_stream(api_key, version, body, debug)
+                    .await
+            }
+            // Google Vertex API for fine-tuned models
+            (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
+                self.call_api_vertex(api_key, version, body, debug).await
+            }
             // Legacy approach to Google Vertex API
             #[allow(deprecated)]
             (
@@ -316,7 +341,10 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExpVertex
                 | GoogleModels::Gemini2_0FlashThinkingExpVertex,
                 _,
-            ) => self.call_api_vertex(api_key, body, debug).await,
+            ) => {
+                self.call_api_vertex_stream(api_key, version, body, debug)
+                    .await
+            }
         }
     }
 
@@ -342,10 +370,14 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Custom { .. },
+                | GoogleModels::Gemini2_5Pro,
                 GoogleApiEndpoints::GoogleStudio,
-            ) => self.get_data_studio(response_text),
+            ) => self.get_generate_content_data(response_text),
+            // Fine-tuned models are only available in the Vertex API
+            // TODO: Explore fine-tuned models in the Studio API
+            (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleStudio) => {
+                self.get_generate_content_data(response_text)
+            }
             //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
             (
                 GoogleModels::Gemini1_5Pro
@@ -356,10 +388,13 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Custom { .. },
+                | GoogleModels::Gemini2_5Pro,
                 GoogleApiEndpoints::GoogleVertex,
             ) => Ok(response_text.to_string()),
+            // Google Vertex API for fine-tuned models
+            (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
+                self.get_generate_content_data(response_text)
+            }
             // Legacy approach to Vertex API implementation
             #[allow(deprecated)]
             (
@@ -409,7 +444,11 @@ impl LLMModel for GoogleModels {
                 tpm: 8_000_000,
                 rpm: 2_000,
             },
-            // TODO: Update rate limits
+            // Fine-tuned models use 2.0 Flash and Flash Lite rate limits
+            GoogleModels::FineTunedEndpoint { .. } => RateLimit {
+                tpm: 30_000_000,
+                rpm: 30_000,
+            },
             // TODO: No rate limits published for experimental models
             _ => RateLimit {
                 tpm: 120_000,
@@ -420,15 +459,24 @@ impl LLMModel for GoogleModels {
 }
 
 impl GoogleModels {
+    /// Constructor of the fine-tuned model endpoint
+    /// Fine-tuned models are available in the Vertex API via the endpoint ID
+    pub fn endpoint(name: &str) -> Self {
+        GoogleModels::FineTunedEndpoint {
+            name: name.to_string(),
+        }
+    }
+
     // Specialized function for calling AI Studio API
     async fn call_api_studio(
         &self,
         api_key: &str,
+        version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String> {
         //Get the API url
-        let model_url = self.get_endpoint();
+        let model_url = self.get_version_endpoint(version);
 
         //Make the API call
         let client = Client::new();
@@ -455,15 +503,16 @@ impl GoogleModels {
         Ok(response_text)
     }
 
-    // Specialized function for calling Vertex API
-    async fn call_api_vertex(
+    // Specialized function for calling Vertex API with streaming
+    async fn call_api_vertex_stream(
         &self,
         api_key: &str,
+        version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
     ) -> Result<String> {
         //Get the API url
-        let model_url = self.get_endpoint();
+        let model_url = self.get_version_endpoint(version);
 
         //Make the API call
         let client = Client::new();
@@ -533,8 +582,44 @@ impl GoogleModels {
         }
     }
 
-    // Specialized function for parsing response of AI Studio API
-    fn get_data_studio(&self, response_text: &str) -> Result<String> {
+    // Specialized function for calling Vertex API without streaming (used for fine-tuned models)
+    async fn call_api_vertex(
+        &self,
+        api_key: &str,
+        version: Option<String>,
+        body: &serde_json::Value,
+        debug: bool,
+    ) -> Result<String> {
+        //Get the API url
+        let model_url = self.get_version_endpoint(version);
+
+        //Make the API call
+        let client = Client::new();
+
+        //Send request
+        let response = client
+            .post(model_url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .bearer_auth(api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if debug {
+            info!(
+                "[allms][Google AI Vertex][Fine-tuned] API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        Ok(response_text)
+    }
+
+    // Specialized function for parsing response of the generateContent API (non-streaming)
+    fn get_generate_content_data(&self, response_text: &str) -> Result<String> {
         //Convert response to struct representing expected response format
         let gemini_response: GoogleGeminiProApiResp = serde_json::from_str(response_text)?;
 

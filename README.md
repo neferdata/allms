@@ -37,7 +37,8 @@ Google Gemini:
 - APIs: Chat Completions (including streaming)
     - Via Vertex AI or AI Studio
 - Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 2.5 Flash, Gemini 2.5 Pro
-- Experimental models: Gemini 2.0 Pro, Gemini 2.0 Flash-Thinking
+    - Experimental models: Gemini 2.0 Pro, Gemini 2.0 Flash-Thinking
+    - Fine-tuned models: in Vertex AI only, using endpoint constructor
 
 Mistral:
 - APIs: Chat Completions

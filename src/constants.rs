@@ -26,6 +26,12 @@ lazy_static! {
         format!("https://{}-aiplatform.googleapis.com/v1/projects/{}/locations/{}/publishers/google/models",
                 region, project_id, region)
     };
+    pub(crate) static ref GOOGLE_VERTEX_ENDPOINT_API_URL: String = {
+        let region = std::env::var("GOOGLE_REGION").unwrap_or("us-central1".to_string());
+        let project_id = std::env::var("GOOGLE_PROJECT_ID").expect("PROJECT_ID not set");
+
+        format!("https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/endpoints")
+    };
     pub(crate) static ref GOOGLE_GEMINI_API_URL: String = std::env::var("GOOGLE_GEMINI_API_URL")
         .unwrap_or("https://generativelanguage.googleapis.com/v1/models".to_string());
     pub(crate) static ref GOOGLE_GEMINI_BETA_API_URL: String =
