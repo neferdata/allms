@@ -56,7 +56,10 @@ async fn main() {
     // Get answer using a fine-tuned model
 
     // Using a fine-tuned model requires addressing the endpoint directly
-    let model = GoogleModels::endpoint("8524413594589200384");
+    // Replace env variable with the endpoint ID of the fine-tuned model
+    let fine_tuned_endpoint_id: String =
+        std::env::var("GOOGLE_VERTEX_ENDPOINT_ID").expect("GOOGLE_VERTEX_ENDPOINT_ID not set");
+    let model = GoogleModels::endpoint(&fine_tuned_endpoint_id);
 
     let gemini_completion =
         Completions::new(model, google_token_str, None, None).version("google-vertex");
