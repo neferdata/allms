@@ -104,15 +104,16 @@ async fn main() {
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // Get answer using Google GeminiPro
+    // Get answer using Google Studio
     let model =
-        GoogleModels::try_from_str("gemini-1.5-flash").unwrap_or(GoogleModels::Gemini1_5Flash); // Choose the model
+        GoogleModels::try_from_str("gemini-2.5-flash").unwrap_or(GoogleModels::Gemini2_5Flash); // Choose the model
     println!("Google Gemini model: {:#?}", model.as_str());
 
     let google_token_str: String =
         std::env::var("GOOGLE_AI_STUDIO_API_KEY").expect("GOOGLE_AI_STUDIO_API_KEY not set");
 
-    let gemini_completion = Completions::new(model, &google_token_str, None, None);
+    let gemini_completion =
+        Completions::new(model, &google_token_str, None, None).version("google-studio");
 
     match gemini_completion
         .get_answer::<TranslationResponse>(instructions)
