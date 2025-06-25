@@ -520,9 +520,7 @@ impl OpenAI {
         if prompt_tokens * 2 >= self.max_tokens {
             warn!(
                 "{} tokens remaining for response: {} allocated, {} used for prompt",
-                response_tokens,
-                self.max_tokens,
-                prompt_tokens,
+                response_tokens, self.max_tokens, prompt_tokens,
             );
         };
 
@@ -540,8 +538,7 @@ impl OpenAI {
             info!("[debug] Model body: {:#?}", model_body);
             info!(
                 "[debug] Prompt accounts for approx {} tokens, leaving {} tokens for answer.",
-                prompt_tokens,
-                response_tokens,
+                prompt_tokens, response_tokens,
             );
         }
 
