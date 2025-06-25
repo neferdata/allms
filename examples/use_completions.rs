@@ -74,7 +74,7 @@ async fn main() {
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
     let model =
-        AnthropicModels::try_from_str("claude-opus-4-0").unwrap_or(AnthropicModels::Claude4Opus); // Choose the model
+        AnthropicModels::try_from_str("claude-opus-4-0").unwrap_or(AnthropicModels::Claude4Sonnet); // Choose the model
     println!("Anthropic model: {:#?}", model.as_str());
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
@@ -91,7 +91,7 @@ async fn main() {
     let mistral_api_key: String =
         std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
     let model =
-        MistralModels::try_from_str("mistral-small-2506").unwrap_or(MistralModels::MistralMedium3); // Choose the model
+        MistralModels::try_from_str("mistral-medium-2505").unwrap_or(MistralModels::MistralMedium3); // Choose the model
     println!("Mistral model: {:#?}", model.as_str());
 
     let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
