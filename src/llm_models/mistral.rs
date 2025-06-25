@@ -10,14 +10,22 @@ use crate::domain::{MistralAPICompletionsResponse, RateLimit};
 use crate::llm_models::{LLMModel, LLMTools};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-//Mistral docs: https://docs.mistral.ai/platform/endpoints
+//Mistral docs: https://docs.mistral.ai/getting-started/models/models_overview/
 pub enum MistralModels {
+    // Premier models
+    MistralMedium3,
+    MagistralMedium,
+    Codestral2,
+    Ministral3B,
+    Ministral8B,
+    MistralLarge2_1,
+    MistralSmall2,
+    // Legacy models
     MistralLarge,
     MistralNemo,
     Mistral7B,
     Mixtral8x7B,
     Mixtral8x22B,
-    // Legacy
     MistralTiny,
     MistralSmall,
     MistralMedium,
@@ -27,12 +35,20 @@ pub enum MistralModels {
 impl LLMModel for MistralModels {
     fn as_str(&self) -> &str {
         match self {
+            // Premier models
+            MistralModels::MistralMedium3 => "mistral-medium-2505",
+            MistralModels::MagistralMedium => "magistral-medium-2506",
+            MistralModels::Codestral2 => "codestral-2501",
+            MistralModels::Ministral3B => "ministral-3b-2410",
+            MistralModels::Ministral8B => "ministral-8b-2410",
+            MistralModels::MistralLarge2_1 => "mistral-large-2411",
+            MistralModels::MistralSmall2 => "mistral-small-2506",
+            // Legacy
             MistralModels::MistralLarge => "mistral-large-latest",
             MistralModels::MistralNemo => "open-mistral-nemo",
             MistralModels::Mistral7B => "open-mistral-7b",
             MistralModels::Mixtral8x7B => "open-mixtral-8x7b",
             MistralModels::Mixtral8x22B => "open-mixtral-8x22b",
-            // Legacy
             MistralModels::MistralTiny => "mistral-tiny",
             MistralModels::MistralSmall => "mistral-small",
             MistralModels::MistralMedium => "mistral-medium",
@@ -41,12 +57,27 @@ impl LLMModel for MistralModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
-            "mistral-large-latest" => Some(MistralModels::MistralLarge),
+            // Premier models
+            "mistral-medium-2505" => Some(MistralModels::MistralMedium3),
+            "mistral-medium-latest" => Some(MistralModels::MistralMedium3),
+            "magistral-medium-2506" => Some(MistralModels::MagistralMedium),
+            "magistral-medium-latest" => Some(MistralModels::MagistralMedium),
+            "codestral-2501" => Some(MistralModels::Codestral2),
+            "codestral-latest" => Some(MistralModels::Codestral2),
+            "ministral-3b-2410" => Some(MistralModels::Ministral3B),
+            "ministral-3b-latest" => Some(MistralModels::Ministral3B),
+            "ministral-8b-2410" => Some(MistralModels::Ministral8B),
+            "ministral-8b-latest" => Some(MistralModels::Ministral8B),
+            "mistral-large-2411" => Some(MistralModels::MistralLarge2_1),
+            "mistral-large-latest" => Some(MistralModels::MistralLarge2_1),
+            "mistral-small-2407" => Some(MistralModels::MistralSmall2),
+            "mistral-small-2506" => Some(MistralModels::MistralSmall2),
+            "mistral-small-latest" => Some(MistralModels::MistralSmall2),
+            // Legacy
             "open-mistral-nemo" => Some(MistralModels::MistralNemo),
             "open-mistral-7b" => Some(MistralModels::Mistral7B),
             "open-mixtral-8x7b" => Some(MistralModels::Mixtral8x7B),
             "open-mixtral-8x22b" => Some(MistralModels::Mixtral8x22B),
-            // Legacy
             "mistral-tiny" => Some(MistralModels::MistralTiny),
             "mistral-small" => Some(MistralModels::MistralSmall),
             "mistral-medium" => Some(MistralModels::MistralMedium),
@@ -56,12 +87,20 @@ impl LLMModel for MistralModels {
 
     fn default_max_tokens(&self) -> usize {
         match self {
+            // Premier models
+            MistralModels::MistralMedium3 => 128_000,
+            MistralModels::MagistralMedium => 40_000,
+            MistralModels::Codestral2 => 256_000,
+            MistralModels::Ministral3B => 128_000,
+            MistralModels::Ministral8B => 128_000,
+            MistralModels::MistralLarge2_1 => 128_000,
+            MistralModels::MistralSmall2 => 32_000,
+            // Legacy
             MistralModels::MistralLarge => 128_000,
             MistralModels::MistralNemo => 128_000,
             MistralModels::Mistral7B => 32_000,
             MistralModels::Mixtral8x7B => 32_000,
             MistralModels::Mixtral8x22B => 64_000,
-            // Legacy
             MistralModels::MistralTiny => 32_000,
             MistralModels::MistralSmall => 32_000,
             MistralModels::MistralMedium => 32_000,
@@ -173,7 +212,7 @@ impl LLMModel for MistralModels {
         //Mistral documentation: https://docs.mistral.ai/platform/pricing#rate-limits
         RateLimit {
             tpm: 2_000_000,
-            rpm: 120, // 2 request per second
+            rpm: 36, // 6 requests per second
         }
     }
 }

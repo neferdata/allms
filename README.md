@@ -42,7 +42,8 @@ Google Gemini:
 
 Mistral:
 - APIs: Chat Completions
-- Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
+- Models: Mistral Medium 3, Magistral Medium, Codestral 2, Ministral 3B, Ministral 8B, Mistral Large 2.1, Mistral Small 2
+    - Legacy models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
 - APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file search, web search, code interpreter)
