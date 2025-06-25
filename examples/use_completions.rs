@@ -73,8 +73,8 @@ async fn main() {
     // Get answer using Anthropic
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::try_from_str("claude-3-5-haiku-latest")
-        .unwrap_or(AnthropicModels::Claude3_5Sonnet); // Choose the model
+    let model =
+        AnthropicModels::try_from_str("claude-opus-4-0").unwrap_or(AnthropicModels::Claude4Opus); // Choose the model
     println!("Anthropic model: {:#?}", model.as_str());
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None);
