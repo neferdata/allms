@@ -136,6 +136,7 @@ impl LLMModel for PerplexityModels {
         _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         //Get the API url
         let model_url = self.get_endpoint();

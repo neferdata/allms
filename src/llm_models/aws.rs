@@ -90,6 +90,7 @@ impl LLMModel for AwsBedrockModels {
         _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         let sdk_config = aws_config::defaults(BehaviorVersion::latest())
             .region(&**AWS_REGION)
