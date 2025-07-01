@@ -246,7 +246,13 @@ impl<T: LLMModel> Completions<T> {
 
         let response_text = self
             .model
-            .call_api(&self.api_key, self.version.clone(), &model_body, self.debug)
+            .call_api(
+                &self.api_key,
+                self.version.clone(),
+                &model_body,
+                self.debug,
+                self.tools.as_deref(),
+            )
             .await?;
 
         //Extract data from the returned response text based on the used model

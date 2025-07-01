@@ -176,7 +176,7 @@ pub struct AnthropicAPIMessagesResponse {
 pub struct AnthropicAPIMessagesContent {
     #[serde(rename(deserialize = "type", serialize = "type"))]
     pub content_type: String,
-    pub text: String,
+    pub text: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

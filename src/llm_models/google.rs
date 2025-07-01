@@ -284,6 +284,7 @@ impl LLMModel for GoogleModels {
         version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         // If no version provided default to Google Studio API
         let api_version = version
