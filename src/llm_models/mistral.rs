@@ -212,7 +212,7 @@ impl LLMModel for MistralModels {
         //Mistral documentation: https://docs.mistral.ai/platform/pricing#rate-limits
         RateLimit {
             tpm: 2_000_000,
-            rpm: 36, // 6 requests per second
+            rpm: 360, // 6 requests per second
         }
     }
 }
