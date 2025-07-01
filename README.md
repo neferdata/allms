@@ -17,7 +17,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 ### Foundational Models
 Anthropic:
 - APIs: Messages, Text Completions
-- Models: Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
+- Models: Claude Sonnet 4, Claude Opus 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
 
 AWS Bedrock:
 - APIs: Converse
@@ -42,7 +42,8 @@ Google Gemini:
 
 Mistral:
 - APIs: Chat Completions
-- Models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
+- Models: Mistral Medium 3, Magistral Medium, Codestral 2, Ministral 3B, Ministral 8B, Mistral Large 2.1, Mistral Small 2
+    - Legacy models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
 - APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file search, web search, code interpreter)
@@ -71,7 +72,7 @@ Explore the `examples` directory to see more use cases and how to use different 
 
 Using `Completions` API with different foundational models:
 ```
-let anthropic_answer = Completions::new(AnthropicModels::Claude3_7Sonnet, &API_KEY, None, None)
+let anthropic_answer = Completions::new(AnthropicModels::Claude4Sonnet, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
@@ -83,19 +84,19 @@ let deepseek_answer = Completions::new(DeepSeekModels::DeepSeekReasoner, &API_KE
     .get_answer::<T>(instructions)
     .await?
 
-let google_answer = Completions::new(GoogleModels::GeminiPro, &API_KEY, None, None)
+let google_answer = Completions::new(GoogleModels::Gemini2_5Flash, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
-let mistral_answer = Completions::new(MistralModels::MistralSmall, &API_KEY, None, None)
+let mistral_answer = Completions::new(MistralModels::MistralMedium3, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
-let openai_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+let openai_answer = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
-let openai_responses_answer = Completions::new(OpenAIModels::Gpt4o, &API_KEY, None, None)
+let openai_responses_answer = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
     .version("openai_responses")
     .get_answer::<T>(instructions)
     .await?
