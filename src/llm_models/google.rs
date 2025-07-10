@@ -155,20 +155,6 @@ impl LLMModel for GoogleModels {
             .map(|version| GoogleApiEndpoints::from_str(&version))
             .unwrap_or(GoogleApiEndpoints::default());
 
-        //The URL requires GOOGLE_REGION and GOOGLE_PROJECT_ID env variables defined to work.
-        //If not set GOOGLE_REGION will default to 'us-central1' but GOOGLE_PROJECT_ID needs to be defined.
-        let vertex_url = format!(
-            "{}/{}:streamGenerateContent?alt=sse",
-            &*GOOGLE_VERTEX_API_URL,
-            self.as_str()
-        );
-
-        let vertex_url_fine_tuned = format!(
-            "{}/{}:generateContent",
-            &*GOOGLE_VERTEX_ENDPOINT_API_URL,
-            self.as_str()
-        );
-
         match (self, version) {
             // Google Studio API
             (
@@ -197,7 +183,12 @@ impl LLMModel for GoogleModels {
             // Fine-tuned models are only available in the Vertex API
             // TODO: Explore fine-tuned models in the Studio API
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleStudio) => {
-                vertex_url_fine_tuned
+                // Construct Vertex URL when needed
+                format!(
+                    "{}/{}:generateContent",
+                    &*GOOGLE_VERTEX_ENDPOINT_API_URL,
+                    self.as_str()
+                )
             }
             // Google Vertex API
             (
@@ -211,10 +202,22 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro,
                 GoogleApiEndpoints::GoogleVertex,
-            ) => vertex_url,
+            ) => {
+                // Construct Vertex URL when needed
+                format!(
+                    "{}/{}:streamGenerateContent?alt=sse",
+                    &*GOOGLE_VERTEX_API_URL,
+                    self.as_str()
+                )
+            }
             // Google Vertex API for fine-tuned models
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
-                vertex_url_fine_tuned
+                // Construct Vertex URL when needed
+                format!(
+                    "{}/{}:generateContent",
+                    &*GOOGLE_VERTEX_ENDPOINT_API_URL,
+                    self.as_str()
+                )
             }
             // Legacy Google Vertex API implementation
             #[allow(deprecated)]
@@ -227,7 +230,14 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExpVertex
                 | GoogleModels::Gemini2_0FlashThinkingExpVertex,
                 _,
-            ) => vertex_url,
+            ) => {
+                // Construct Vertex URL when needed
+                format!(
+                    "{}/{}:streamGenerateContent?alt=sse",
+                    &*GOOGLE_VERTEX_API_URL,
+                    self.as_str()
+                )
+            }
         }
     }
 
