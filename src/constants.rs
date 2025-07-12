@@ -67,6 +67,11 @@ lazy_static! {
         .unwrap_or("https://api.deepseek.com/chat/completions".to_string());
 }
 
+lazy_static! {
+    pub(crate) static ref XAI_API_URL: String =
+        std::env::var("XAI_API_URL").unwrap_or("https://api.x.ai/v1/chat/completions".to_string());
+}
+
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
 Step 1: Review and understand the 'instructions' from the *Instructions* section.
