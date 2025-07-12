@@ -1,11 +1,11 @@
 [package]
 name = "allms"
-version = "0.20.2"
+version = "0.21.0"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
-    "Dario Lencina <dario@armore.dev>",
-    "Nate Dubetz <nate@neferdata.com>"
+    "Nate Dubetz <nate@neferdata.com>",
+    "Dario Lencina <dario@armore.dev>"
 ]
 keywords = ["openai", "anthropic", "mistral", "gemini", "assistant"]
 description = "One Library to rule them aLLMs"

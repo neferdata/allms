@@ -604,7 +604,7 @@ pub struct XAIChatRequest {
     pub temperature: Option<f32>,
     pub max_completion_tokens: Option<usize>,
     pub response_format: Option<XAIResponseFormat>,
-    pub search_parameters: Option<XAISearchParameters>,
+    pub search_parameters: Option<XAIWebSearchConfig>,
     pub tools: Option<Vec<XAITool>>,
     // TODO: Future implementations
     // pub tool_choice: Option<XAIToolChoice>, // Controls which (if any) tool is called by the model. `none` is the default when no tools are present. `auto`` is the default if tools are present.
@@ -715,30 +715,61 @@ pub struct XAIResponseFormatJsonSchema {
     pub json_schema: serde_json::Value,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 #[serde(rename_all = "snake_case")]
-pub struct XAISearchParameters {
+pub struct XAIWebSearchConfig {
     pub from_date: Option<String>,
     pub to_date: Option<String>,
-    pub max_search_results: Option<u32>,
-    pub mode: Option<String>,
+    pub max_search_results: Option<usize>,
+    pub mode: Option<XAISearchMode>,
     pub return_citations: Option<bool>,
     pub sources: Option<Vec<XAISearchSource>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum XAISearchMode {
+    On,
+    Off,
+    #[default]
+    Auto,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum XAISearchSource {
+    Web(WebSource),
+    X(XSource),
+    News(NewsSource),
+    Rss(RssSource),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct WebSource {
+    pub allowed_websites: Option<Vec<String>>,
+    pub excluded_websites: Option<Vec<String>>,
+    pub country: Option<String>,
     pub safe_search: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct XAISearchSource {
-    #[serde(rename = "type")]
-    pub source_type: String,
-    pub allowed_websites: Option<Vec<String>>,
-    pub excluded_websites: Option<Vec<String>>,
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct XSource {
     pub included_x_handles: Option<Vec<String>>,
     pub excluded_x_handles: Option<Vec<String>>,
-    pub post_favorite_count: Option<u32>,
-    pub post_view_count: Option<u32>,
+    pub post_favorite_count: Option<usize>,
+    pub post_view_count: Option<usize>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct NewsSource {
+    pub excluded_websites: Option<Vec<String>>,
     pub country: Option<String>,
-    pub links: Option<Vec<String>>, // for RSS
+    pub safe_search: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct RssSource {
+    pub links: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
