@@ -312,18 +312,22 @@ impl XAISearchSource {
     }
 
     /// Add allowed websites to a Web search source
+    /// This will clear any excluded_websites to avoid conflicts
     pub fn with_allowed_sites(mut self, allowed_websites: Vec<String>) -> Self {
         if let XAISearchSource::Web(ref mut web_source) = self {
             web_source.allowed_websites = Some(allowed_websites);
+            web_source.excluded_websites = None; // Clear conflicting parameter
         }
         self
     }
 
     /// Add excluded websites to a Web or News search source
+    /// For Web sources, this will clear any allowed_websites to avoid conflicts
     pub fn with_excluded_sites(mut self, excluded_websites: Vec<String>) -> Self {
         match &mut self {
             XAISearchSource::Web(web_source) => {
                 web_source.excluded_websites = Some(excluded_websites);
+                web_source.allowed_websites = None; // Clear conflicting parameter
             }
             XAISearchSource::News(news_source) => {
                 news_source.excluded_websites = Some(excluded_websites);
@@ -362,17 +366,21 @@ impl XAISearchSource {
     }
 
     /// Add included X handles to an X search source
+    /// This will clear any excluded_x_handles to avoid conflicts
     pub fn with_included_handles(mut self, included_x_handles: Vec<String>) -> Self {
         if let XAISearchSource::X(ref mut x_source) = self {
             x_source.included_x_handles = Some(included_x_handles);
+            x_source.excluded_x_handles = None; // Clear conflicting parameter
         }
         self
     }
 
     /// Add excluded X handles to an X search source
+    /// This will clear any included_x_handles to avoid conflicts
     pub fn with_excluded_handles(mut self, excluded_x_handles: Vec<String>) -> Self {
         if let XAISearchSource::X(ref mut x_source) = self {
             x_source.excluded_x_handles = Some(excluded_x_handles);
+            x_source.included_x_handles = None; // Clear conflicting parameter
         }
         self
     }

@@ -70,7 +70,7 @@ impl LLMModel for XAIModels {
         function_call: bool,
         max_tokens: &usize,
         temperature: &f32,
-        _tools: Option<&[LLMTools]>,
+        tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         // Get system instructions
         let base_instructions = self.get_base_instructions(Some(function_call));
@@ -89,9 +89,15 @@ impl LLMModel for XAIModels {
             instructions, json_schema,
         );
 
+        let search_parameters = tools.and_then(|tools| {
+            tools.iter().find_map(|tool| match tool {
+                LLMTools::XAIWebSearch(config) => Some(config.clone()),
+                _ => None,
+            })
+        });
+
         // TODOs:
-        // Search Tool
-        // TextFile tool
+        // TextFile tool - currently only supports text files exposed as URL with instructions and not content
 
         let chat_request = XAIChatRequest {
             model: self.as_str().to_string(),
@@ -103,7 +109,7 @@ impl LLMModel for XAIModels {
             ],
             response_format: None,
             tools: None,
-            search_parameters: None,
+            search_parameters,
         };
 
         serde_json::to_value(chat_request).unwrap_or_default()

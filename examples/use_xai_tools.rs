@@ -35,7 +35,6 @@ async fn main() -> Result<()> {
         .add_source(
             XAISearchSource::web()
                 .with_allowed_sites(vec!["techcrunch.com".to_string(), "wired.com".to_string()])
-                .with_excluded_sites(vec!["spam-site.com".to_string()])
                 .with_country("US".to_string())
                 .with_safe_search(true),
         )
@@ -47,7 +46,11 @@ async fn main() -> Result<()> {
         )
         .add_source(
             XAISearchSource::x()
-                .with_included_handles(vec!["openai".to_string(), "anthropic".to_string()])
+                .with_included_handles(vec![
+                    "openai".to_string(),
+                    "anthropic".to_string(),
+                    "googleai".to_string(),
+                ])
                 .with_favorite_count(100)
                 .with_view_count(1000),
         )
