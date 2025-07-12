@@ -218,6 +218,12 @@ impl OpenAICodeInterpreterConfig {
 ///
 /// xAI Web Search tool config
 ///
+impl Default for XAIWebSearchConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl XAIWebSearchConfig {
     pub fn new() -> Self {
         Self {
