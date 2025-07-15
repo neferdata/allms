@@ -1,3 +1,4 @@
+use log::warn;
 use serde::{Deserialize, Serialize};
 use serde_json::{to_value, Value};
 
@@ -316,7 +317,10 @@ impl XAISearchSource {
     pub fn with_allowed_sites(mut self, allowed_websites: Vec<String>) -> Self {
         if let XAISearchSource::Web(ref mut web_source) = self {
             web_source.allowed_websites = Some(allowed_websites);
-            web_source.excluded_websites = None; // Clear conflicting parameter
+            if web_source.excluded_websites.is_some() {
+                warn!("[allms][xAI][Tools] Allowed websites will clear any excluded websites");
+                web_source.excluded_websites = None; // Clear conflicting parameter
+            }
         }
         self
     }
@@ -327,7 +331,10 @@ impl XAISearchSource {
         match &mut self {
             XAISearchSource::Web(web_source) => {
                 web_source.excluded_websites = Some(excluded_websites);
-                web_source.allowed_websites = None; // Clear conflicting parameter
+                if web_source.allowed_websites.is_some() {
+                    warn!("[allms][xAI][Tools] Excluded websites will clear any allowed websites");
+                    web_source.allowed_websites = None; // Clear conflicting parameter
+                }
             }
             XAISearchSource::News(news_source) => {
                 news_source.excluded_websites = Some(excluded_websites);
@@ -370,7 +377,10 @@ impl XAISearchSource {
     pub fn with_included_handles(mut self, included_x_handles: Vec<String>) -> Self {
         if let XAISearchSource::X(ref mut x_source) = self {
             x_source.included_x_handles = Some(included_x_handles);
-            x_source.excluded_x_handles = None; // Clear conflicting parameter
+            if x_source.excluded_x_handles.is_some() {
+                warn!("[allms][xAI][Tools] Included X handles will clear any excluded X handles");
+                x_source.excluded_x_handles = None; // Clear conflicting parameter
+            }
         }
         self
     }
@@ -380,7 +390,10 @@ impl XAISearchSource {
     pub fn with_excluded_handles(mut self, excluded_x_handles: Vec<String>) -> Self {
         if let XAISearchSource::X(ref mut x_source) = self {
             x_source.excluded_x_handles = Some(excluded_x_handles);
-            x_source.included_x_handles = None; // Clear conflicting parameter
+            if x_source.included_x_handles.is_some() {
+                warn!("[allms][xAI][Tools] Excluded X handles will clear any included X handles");
+                x_source.included_x_handles = None; // Clear conflicting parameter
+            }
         }
         self
     }
@@ -399,61 +412,5 @@ impl XAISearchSource {
             x_source.post_view_count = Some(post_view_count);
         }
         self
-    }
-
-    // Legacy methods for backward compatibility
-    /// Create a new Web search source with allowed websites
-    pub fn web_with_allowed_sites(allowed_websites: Vec<String>) -> Self {
-        Self::web().with_allowed_sites(allowed_websites)
-    }
-
-    /// Create a new Web search source with excluded websites
-    pub fn web_with_excluded_sites(excluded_websites: Vec<String>) -> Self {
-        Self::web().with_excluded_sites(excluded_websites)
-    }
-
-    /// Create a new Web search source with country filter
-    pub fn web_with_country(country: String) -> Self {
-        Self::web().with_country(country)
-    }
-
-    /// Create a new Web search source with safe search enabled
-    pub fn web_with_safe_search(safe_search: bool) -> Self {
-        Self::web().with_safe_search(safe_search)
-    }
-
-    /// Create a new X search source with included handles
-    pub fn x_with_included_handles(included_x_handles: Vec<String>) -> Self {
-        Self::x().with_included_handles(included_x_handles)
-    }
-
-    /// Create a new X search source with excluded handles
-    pub fn x_with_excluded_handles(excluded_x_handles: Vec<String>) -> Self {
-        Self::x().with_excluded_handles(excluded_x_handles)
-    }
-
-    /// Create a new X search source with post favorite count filter
-    pub fn x_with_favorite_count(post_favorite_count: usize) -> Self {
-        Self::x().with_favorite_count(post_favorite_count)
-    }
-
-    /// Create a new X search source with post view count filter
-    pub fn x_with_view_count(post_view_count: usize) -> Self {
-        Self::x().with_view_count(post_view_count)
-    }
-
-    /// Create a new News search source with excluded websites
-    pub fn news_with_excluded_sites(excluded_websites: Vec<String>) -> Self {
-        Self::news().with_excluded_sites(excluded_websites)
-    }
-
-    /// Create a new News search source with country filter
-    pub fn news_with_country(country: String) -> Self {
-        Self::news().with_country(country)
-    }
-
-    /// Create a new News search source with safe search enabled
-    pub fn news_with_safe_search(safe_search: bool) -> Self {
-        Self::news().with_safe_search(safe_search)
     }
 }

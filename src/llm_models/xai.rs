@@ -33,22 +33,30 @@ impl LLMModel for XAIModels {
         }
     }
 
-    // Docs: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-aliases
+    // Docs: https://docs.x.ai/docs/models
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
             "grok-4" => Some(XAIModels::Grok4),
             "grok-4-latest" => Some(XAIModels::Grok4),
             "grok-4-0709" => Some(XAIModels::Grok4),
             "grok-3" => Some(XAIModels::Grok3),
+            "grok-3-latest" => Some(XAIModels::Grok3),
+            "grok-3-beta" => Some(XAIModels::Grok3),
             "grok-3-mini" => Some(XAIModels::Grok3Mini),
+            "grok-3-mini-latest" => Some(XAIModels::Grok3Mini),
+            "grok-3-mini-beta" => Some(XAIModels::Grok3Mini),
             "grok-3-fast" => Some(XAIModels::Grok3Fast),
+            "grok-3-fast-latest" => Some(XAIModels::Grok3Fast),
+            "grok-3-fast-beta" => Some(XAIModels::Grok3Fast),
             "grok-3-mini-fast" => Some(XAIModels::Grok3MiniFast),
+            "grok-3-mini-fast-latest" => Some(XAIModels::Grok3MiniFast),
+            "grok-3-mini-fast-beta" => Some(XAIModels::Grok3MiniFast),
             _ => None,
         }
     }
 
     fn default_max_tokens(&self) -> usize {
-        // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
+        // Docs: https://docs.x.ai/docs/models
         match self {
             XAIModels::Grok4 => 256_000,
             XAIModels::Grok3 => 131_072,
@@ -116,7 +124,7 @@ impl LLMModel for XAIModels {
     }
 
     /*
-     * This function leverages Anthropic API to perform any query as per the provided body.
+     * This function leverages xAI API to perform any query as per the provided body.
      *
      * It returns a String the Response object that needs to be parsed based on the self.model.
      */
