@@ -397,7 +397,7 @@ pub struct OpenAPIResponsesResponse {
     // pub previous_response_id: Option<String>,
     // pub reasoning: Option<OpenAPIResponsesReasoning>,
     pub temperature: Option<f32>,
-    pub text: OpenAPIResponsesTextFormat,
+    pub text: Option<OpenAPIResponsesTextFormat>,
     // pub tool_choice: OpenAPIResponsesToolChoice,
     // pub tools: Vec<OpenAPIResponsesTool>,
     pub top_p: Option<f32>,
@@ -407,13 +407,13 @@ pub struct OpenAPIResponsesResponse {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesError {
-    pub code: String,
-    pub message: String,
+    pub code: Option<String>,
+    pub message: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesIncompleteDetails {
-    pub reason: String,
+    pub reason: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -470,8 +470,8 @@ pub enum OpenAPIResponsesContentType {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesAnnotation {
-    pub r#type: String,
-    pub text: String,
+    pub r#type: Option<String>,
+    pub text: Option<String>,
     pub start_index: Option<i32>,
     pub end_index: Option<i32>,
 }
@@ -493,12 +493,12 @@ pub enum OpenAPIResponsesServiceTier {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesTextFormat {
-    pub format: OpenAPIResponsesFormat,
+    pub format: Option<OpenAPIResponsesFormat>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesFormat {
-    pub r#type: OpenAPIResponsesFormatType,
+    pub r#type: Option<OpenAPIResponsesFormatType>,
     pub name: Option<String>,
     pub schema: Option<serde_json::Value>,
     pub description: Option<String>,
@@ -522,18 +522,18 @@ pub enum OpenAPIResponsesToolChoice {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesToolChoiceObject {
-    pub r#type: String,
+    pub r#type: Option<String>,
     pub function: Option<OpenAPIResponsesToolChoiceFunction>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesToolChoiceFunction {
-    pub name: String,
+    pub name: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesTool {
-    pub r#type: OpenAPIResponsesToolType,
+    pub r#type: Option<OpenAPIResponsesToolType>,
     pub function: Option<OpenAPIResponsesToolFunction>,
 }
 
@@ -549,9 +549,9 @@ pub enum OpenAPIResponsesToolType {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesToolFunction {
-    pub name: String,
+    pub name: Option<String>,
     pub description: Option<String>,
-    pub parameters: serde_json::Value,
+    pub parameters: Option<serde_json::Value>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
