@@ -5,7 +5,7 @@ use serde::Serialize;
 use allms::{
     llm::{
         AnthropicModels, AwsBedrockModels, DeepSeekModels, GoogleModels, LLMModel, MistralModels,
-        OpenAIModels, PerplexityModels,
+        OpenAIModels, PerplexityModels, XAIModels,
     },
     Completions,
 };
@@ -155,6 +155,21 @@ async fn main() {
         .await
     {
         Ok(response) => println!("DeepSeek response: {:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Get answer using xAI Grok
+    let xai_api_key: String = std::env::var("XAI_API_KEY").expect("XAI_API_KEY not set");
+    let model = XAIModels::try_from_str("grok-3-mini").unwrap_or(XAIModels::Grok3Mini); // Choose the model
+    println!("xAI Grok model: {:#?}", model.as_str());
+
+    let xai_completion = Completions::new(model, &xai_api_key, None, None);
+
+    match xai_completion
+        .get_answer::<TranslationResponse>(instructions)
+        .await
+    {
+        Ok(response) => println!("xAI Grok response: {:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 }
