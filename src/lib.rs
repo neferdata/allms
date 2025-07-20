@@ -1,3 +1,4 @@
+pub mod apis;
 pub mod assistants;
 mod completions;
 mod constants;

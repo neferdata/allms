@@ -20,3 +20,7 @@ pub use openai::OpenAIModels;
 pub use perplexity::PerplexityModels;
 pub use tools::LLMTools;
 pub use xai::XAIModels;
+
+// Re-export structs for backwards compatibility
+pub use crate::apis::GoogleApiEndpoints;
+pub use crate::apis::{OpenAiApiEndpoints, OpenAICompletionsAPI,OpenAIAssistantResource, OpenAIAssistantVersion};

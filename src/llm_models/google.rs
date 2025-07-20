@@ -8,6 +8,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::apis::GoogleApiEndpoints;
 use crate::constants::{
     GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL,
     GOOGLE_VERTEX_ENDPOINT_API_URL,
@@ -647,35 +648,5 @@ impl GoogleModels {
             });
 
         Ok(self.sanitize_json_response(&data))
-    }
-}
-
-// Enum of supported Completions APIs
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-pub enum GoogleApiEndpoints {
-    GoogleStudio,
-    GoogleVertex,
-}
-
-impl GoogleApiEndpoints {
-    /// Defaulting to OpenAICompletions
-    fn default() -> Self {
-        GoogleApiEndpoints::GoogleStudio
-    }
-
-    /// Parses a string into `GoogleApiEndpoints`.
-    ///
-    /// Supported formats (case-insensitive):
-    /// - `"google-studio"` -> `GoogleApiEndpoints::GoogleStudio`
-    /// - `"google-vertex"` -> `GoogleApiEndpoints::GoogleVertex`
-    ///
-    /// Returns default for others.
-    fn from_str(s: &str) -> Self {
-        let s_lower = s.to_lowercase();
-        match s_lower.as_str() {
-            "google-studio" => GoogleApiEndpoints::GoogleStudio,
-            "google-vertex" => GoogleApiEndpoints::GoogleVertex,
-            _ => GoogleApiEndpoints::default(),
-        }
     }
 }
