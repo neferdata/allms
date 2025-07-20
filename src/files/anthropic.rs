@@ -177,8 +177,8 @@ impl LLMFiles for AnthropicFile {
                 error!("{:?}", error);
                 anyhow!("{:?}", error)
             })
-            .and_then(|response| match response.result_type {
-                AnthropicDeleteResultType::FileDeleted => Ok(()),
+            .map(|response| match response.result_type {
+                AnthropicDeleteResultType::FileDeleted => (),
             })
     }
 
