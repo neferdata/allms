@@ -11,10 +11,11 @@ use crate::constants::{DEFAULT_AZURE_VERSION, OPENAI_API_URL};
 ///
 /// Enum of supported Completions and Responses APIs (non-Assistant APIs)
 ///
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
 pub enum OpenAiApiEndpoints {
     #[deprecated(note = "Use OpenAICompletions instead")]
     OpenAI,
+    #[default]
     OpenAICompletions,
     OpenAIResponses,
     #[deprecated(note = "Use AzureCompletions instead")]
@@ -33,11 +34,6 @@ pub enum OpenAiApiEndpoints {
 pub type OpenAICompletionsAPI = OpenAiApiEndpoints;
 
 impl OpenAiApiEndpoints {
-    /// Defaulting to OpenAICompletions
-    pub fn default() -> Self {
-        OpenAiApiEndpoints::OpenAICompletions
-    }
-
     /// Default version of Azure set to `2025-01-01-preview` as of 5/9/2025
     pub fn default_azure_version() -> String {
         "2025-01-01-preview".to_string()
@@ -52,6 +48,7 @@ impl OpenAiApiEndpoints {
     /// - `"azure_responses:<version>"` -> `OpenAiApiEndpoints::AzureResponses { version }`
     ///
     /// Returns default for others.
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         let s_lower = s.to_lowercase();
         match s_lower.as_str() {

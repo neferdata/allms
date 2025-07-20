@@ -290,7 +290,7 @@ impl LLMModel for AnthropicModels {
                     .filter_map(|item| item.text.clone())
                     // Sanitize the response to remove the json schema wrapper
                     .map(|text| self.sanitize_json_response(&text))
-                    .last()
+                    .next_back()
                     .ok_or(anyhow::anyhow!("No assistant response found"))?;
 
                 //Return completions text

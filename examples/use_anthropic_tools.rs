@@ -23,6 +23,21 @@ struct AINewsArticles {
     pub articles: Vec<AINewsArticle>,
 }
 
+#[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
+struct AINewsArticle {
+    pub title: String,
+    pub url: String,
+    pub description: String,
+}
+
+// Example 2: Code interpreter example
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct CodeInterpreterResponse {
+    pub problem: String,
+    pub code: String,
+    pub solution: String,
+}
+
 // Example 3: File search
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct ConcertInfo {
@@ -42,21 +57,6 @@ const BANDS_GENRES: &[(&str, &str)] = &[
     ("Miles Davis", "Jazz"),
     ("Johnny Cash", "Country"),
 ];
-
-#[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
-struct AINewsArticle {
-    pub title: String,
-    pub url: String,
-    pub description: String,
-}
-
-// Example 2: Code interpreter example
-#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
-pub struct CodeInterpreterResponse {
-    pub problem: String,
-    pub code: String,
-    pub solution: String,
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
