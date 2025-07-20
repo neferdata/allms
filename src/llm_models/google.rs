@@ -257,12 +257,14 @@ impl LLMModel for GoogleModels {
             "text": self.get_base_instructions(Some(function_call))
         });
 
-        let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-        let output_instructions_json =
-            json!({ "text": format!("'Output Json schema': {schema_string}") });
+        let output_instructions_json = json!({ "text": format!("<output json schema>
+                {json_schema}
+                </output json schema>") });
 
         let user_instructions_json = json!({
-            "text": instructions,
+            "text": format!("<instructions>
+                {instructions}
+                </instructions>"),
         });
 
         let contents = json!({

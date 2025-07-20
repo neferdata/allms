@@ -196,12 +196,7 @@ impl<T: LLMModel> Completions<T> {
             .map(|context| format!("\n\n{}", &context))
             .unwrap_or_default();
 
-        let prompt = format!(
-            "Instructions:,
-            {instructions}{context_text}
-            
-            Respond ONLY with the data portion of a valid Json object. No schema definition required. No other words.", 
-        );
+        let prompt = format!("{instructions}{context_text}");
 
         //Validate how many tokens remain for the response (and how many are used for prompt)
         let prompt_tokens = self

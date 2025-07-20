@@ -127,9 +127,12 @@ impl LLMModel for AwsBedrockModels {
         let user_instructions = json_schema_opt
             .map(|schema| {
                 format!(
-                    "Output Json schema:\n
-                {schema}\n\n
-                {instructions}"
+                    "<instructions>
+                    {instructions}
+                    </instructions>
+                    <output json schema>
+                    {schema}
+                    </output json schema>"
                 )
             })
             .unwrap_or(instructions);

@@ -9,7 +9,10 @@ use crate::apis::AnthropicApiEndpoints;
 use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::{
-    tools::{AnthropicCodeExecutionConfig, AnthropicComputerUseConfig, AnthropicWebSearchConfig},
+    tools::{
+        AnthropicCodeExecutionConfig, AnthropicComputerUseConfig, AnthropicFileSearchConfig,
+        AnthropicWebSearchConfig,
+    },
     LLMModel, LLMTools,
 };
 
@@ -130,19 +133,64 @@ impl LLMModel for AnthropicModels {
             ),
         });
 
+        let base_message = json!({
+            "role": "user",
+            "content": format!(
+                "{base_instructions}"
+            )
+        });
+
+        let user_instructions = format!(
+            "<instructions>
+            {instructions}
+            </instructions>
+            <output json schema>
+            {schema_string}
+            </output json schema>"
+        );
+
+        // The file search tool, if attached, is added to the body of the message
+        // We check if the tool is added and if so use it to get the message content to be sent to the model
+        let messages = if let Some(file_search_tool_config) = tools.and_then(|tools_inner| {
+            tools_inner
+                .iter()
+                // Check if the tool is supported by the model
+                //.filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
+                // Find the file search tool
+                .find(|tool| matches!(tool, LLMTools::AnthropicFileSearch(_)))
+                // Extract the file search tool config
+                .and_then(|tool| {
+                    tool.get_config_json().and_then(|config_json| {
+                        serde_json::from_value::<AnthropicFileSearchConfig>(config_json).ok()
+                    })
+                })
+        }) {
+            json!([
+                base_message,
+                {
+                    "role": "user",
+                    "content": [
+                        // Use the file search tool config to get the content to be sent to the model
+                        file_search_tool_config.content(),
+                        {
+                            "type": "text",
+                            "text": user_instructions
+                        }
+                    ]
+                }
+            ])
+        } else {
+            json!([base_message, {
+                "role": "user",
+                "content": user_instructions
+            }])
+        };
+
         let message_body = json!({
             "model": self.as_str(),
             "max_tokens": max_tokens,
             "temperature": temperature,
-            "messages": [{
-                "role": "user",
-                "content": format!(
-                    "{base_instructions}\n\n
-                    Output Json schema:\n
-                    {schema_string}\n\n
-                    {instructions}"
-                )
-            }],
+            "messages": messages,
             "tools": tools.map(|tools_inner| tools_inner
                         .iter()
                         .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
@@ -240,6 +288,8 @@ impl LLMModel for AnthropicModels {
                     .iter()
                     .filter(|item| item.content_type == "text")
                     .filter_map(|item| item.text.clone())
+                    // Sanitize the response to remove the json schema wrapper
+                    .map(|text| self.sanitize_json_response(&text))
                     .last()
                     .ok_or(anyhow::anyhow!("No assistant response found"))?;
 
@@ -294,6 +344,17 @@ impl AnthropicModels {
             (AnthropicModels::Claude3_5Sonnet, LLMTools::AnthropicComputerUse(_)) => {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
+            (
+                AnthropicModels::Claude4Sonnet
+                | AnthropicModels::Claude4Opus
+                | AnthropicModels::Claude3_7Sonnet
+                | AnthropicModels::Claude3_5Sonnet
+                | AnthropicModels::Claude3_5Haiku,
+                LLMTools::AnthropicFileSearch(_),
+            ) => Some((
+                "anthropic-beta",
+                AnthropicApiEndpoints::files_default().version_static(),
+            )),
             _ => {
                 // Return None for tools that don't require a header
                 None

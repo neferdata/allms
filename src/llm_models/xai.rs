@@ -182,7 +182,7 @@ impl LLMModel for XAIModels {
                     .or(message.reasoning_content.as_ref())
             })
             .fold(String::new(), |mut acc, content| {
-                acc.push_str(content);
+                acc.push_str(&self.sanitize_json_response(content));
                 acc
             });
 

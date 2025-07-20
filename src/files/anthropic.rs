@@ -50,7 +50,15 @@ impl LLMFiles for AnthropicFile {
     async fn upload(mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<Self> {
         let files_url = ANTHROPIC_FILES_API_URL.to_string();
 
-        let mime_type = get_mime_type(file_name).ok_or_else(|| anyhow!("Unsupported file type"))?;
+        let mime_type = get_mime_type(file_name)
+            .and_then(|mime_type| {
+                if mime_type != "application/pdf" {
+                    None
+                } else {
+                    Some(mime_type)
+                }
+            })
+            .ok_or_else(|| anyhow!("Only PDF files (application/pdf) are supported"))?;
 
         let form = multipart::Form::new().part(
             "file",

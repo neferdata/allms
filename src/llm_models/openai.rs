@@ -430,9 +430,12 @@ impl LLMModel for OpenAIModels {
                         let user_message = json!({
                             "role": "user",
                             "content": format!(
-                                "Output Json schema:\n
-                                {schema_string}\n\n
-                                {instructions}"
+                                "<instructions>
+                                {instructions}
+                                </instructions>
+                                <output json schema>
+                                    {schema_string}
+                                </output json schema>"
                             ),
                         });
                         //For ChatGPT we ignore max_tokens. It will default to 'inf'
@@ -470,14 +473,15 @@ impl LLMModel for OpenAIModels {
                     "content": base_instructions,
                 });
 
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-
                 let user_message = json!({
                     "role": "user",
                     "content": format!(
-                        "Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}"
+                        "<instructions>
+                        {instructions}
+                        </instructions>
+                        <output json schema>
+                        {json_schema}
+                        </output json schema>"
                     ),
                 });
                 json!({
@@ -511,9 +515,12 @@ impl LLMModel for OpenAIModels {
                 json!({
                     "model": self.as_str(),
                     "input": format!(
-                        "{instructions}\n\n
-                        Output Json schema:\n
-                        {json_schema}"
+                        "<instructions>
+                        {instructions}
+                        </instructions>
+                        <output json schema>
+                        {json_schema}
+                        </output json schema>"
                     ),
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
@@ -570,9 +577,12 @@ impl LLMModel for OpenAIModels {
                 json!({
                     "model": self.as_str(),
                     "input": format!(
-                        "{instructions}\n\n
-                        Output Json schema:\n
-                        {json_schema}"
+                        "<instructions>
+                        {instructions}
+                        </instructions>
+                        <output json schema>
+                        {json_schema}
+                        </output json schema>"
                     ),
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
@@ -606,10 +616,13 @@ impl LLMModel for OpenAIModels {
                     "max_tokens": max_tokens,
                     "temperature": temperature,
                     "prompt": format!(
-                        "{base_instructions}\n\n
-                        Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}",
+                        "{base_instructions}
+                        <instructions>
+                        {instructions}
+                        </instructions>
+                        <output json schema>
+                            {schema_string}
+                        </output json schema>"
                     ),
                 })
             }

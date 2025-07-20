@@ -35,4 +35,11 @@ impl AnthropicApiEndpoints {
             AnthropicApiEndpoints::Files { version } => version.to_string(),
         }
     }
+
+    pub fn version_static(&self) -> &'static str {
+        match self {
+            AnthropicApiEndpoints::Messages { .. } => ANTHROPIC_MESSAGES_VERSION.as_str(),
+            AnthropicApiEndpoints::Files { .. } => ANTHROPIC_FILES_VERSION.as_str(),
+        }
+    }
 }

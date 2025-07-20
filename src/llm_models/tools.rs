@@ -1,6 +1,6 @@
 use log::warn;
 use serde::{Deserialize, Serialize};
-use serde_json::{to_value, Value};
+use serde_json::{json, to_value, Value};
 
 use crate::domain::XAISearchMode;
 
@@ -20,6 +20,7 @@ pub enum LLMTools {
     OpenAICodeInterpreter(OpenAICodeInterpreterConfig),
     AnthropicCodeExecution(AnthropicCodeExecutionConfig),
     AnthropicComputerUse(AnthropicComputerUseConfig),
+    AnthropicFileSearch(AnthropicFileSearchConfig),
     AnthropicWebSearch(AnthropicWebSearchConfig),
     XAIWebSearch(XAIWebSearchConfig),
 }
@@ -34,6 +35,7 @@ impl LLMTools {
             LLMTools::OpenAICodeInterpreter(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicCodeExecution(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicComputerUse(cfg) => to_value(cfg).ok(),
+            LLMTools::AnthropicFileSearch(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIWebSearch(cfg) => to_value(cfg).ok(),
         }
@@ -342,6 +344,31 @@ impl AnthropicComputerUseConfig {
     }
 }
 
+///
+/// Anthropic File Search tool config
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct AnthropicFileSearchConfig {
+    pub file_id: String,
+}
+
+impl AnthropicFileSearchConfig {
+    pub fn new(file_id: String) -> Self {
+        Self { file_id }
+    }
+
+    pub fn content(&self) -> Value {
+        json!({
+            "type": "document",
+            "source": {
+                "type": "file",
+                "file_id": self.file_id,
+            },
+        })
+    }
+}
+
+///
 /// xAI Web Search tool config
 ///
 impl Default for XAIWebSearchConfig {
