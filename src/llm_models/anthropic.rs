@@ -155,7 +155,11 @@ impl LLMModel for AnthropicModels {
             tools_inner
                 .iter()
                 // Check if the tool is supported by the model
-                //.filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
+                .filter(|tool| {
+                    self.get_supported_tools().iter().any(|supported| {
+                        std::mem::discriminant(*tool) == std::mem::discriminant(supported)
+                    })
+                })
                 // Find the file search tool
                 .find(|tool| matches!(tool, LLMTools::AnthropicFileSearch(_)))
                 // Extract the file search tool config
@@ -193,6 +197,8 @@ impl LLMModel for AnthropicModels {
             "messages": messages,
             "tools": tools.map(|tools_inner| tools_inner
                         .iter()
+                        // File search is handled separately
+                        .filter(|tool| !matches!(tool, LLMTools::AnthropicFileSearch(_)))
                         .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
                         .filter_map(LLMTools::get_config_json)
                         .collect::<Vec<Value>>()
@@ -318,7 +324,14 @@ impl AnthropicModels {
                 vec![
                     LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new()),
                     LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
+                    LLMTools::AnthropicFileSearch(AnthropicFileSearchConfig::new("".to_string())),
                     LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
+                ]
+            }
+            AnthropicModels::Claude3_5Sonnet => {
+                vec![
+                    LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
+                    LLMTools::AnthropicFileSearch(AnthropicFileSearchConfig::new("".to_string())),
                 ]
             }
             _ => vec![],
