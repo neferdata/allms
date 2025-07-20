@@ -147,7 +147,7 @@ impl LLMModel for OpenAIModels {
         // If no version provided default to OpenAI Completions API
         let version = version
             .map(|version| OpenAiApiEndpoints::from_str(&version))
-            .unwrap_or(OpenAiApiEndpoints::default());
+            .unwrap_or_default();
 
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match (version, self) {
@@ -354,7 +354,7 @@ impl LLMModel for OpenAIModels {
         // If no version provided default to OpenAI Completions API
         let version = version
             .map(|version| OpenAiApiEndpoints::from_str(&version))
-            .unwrap_or(OpenAiApiEndpoints::default());
+            .unwrap_or_default();
 
         // Get the base instructions
         let base_instructions = self.get_base_instructions(Some(function_call));
@@ -679,7 +679,7 @@ impl LLMModel for OpenAIModels {
         // If no version provided default to OpenAI Completions API
         let version = version
             .map(|version| OpenAiApiEndpoints::from_str(&version))
-            .unwrap_or(OpenAiApiEndpoints::default());
+            .unwrap_or_default();
 
         match (version, self) {
             // Chat Completions API Data

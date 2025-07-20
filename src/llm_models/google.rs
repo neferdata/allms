@@ -154,7 +154,7 @@ impl LLMModel for GoogleModels {
         // If no version provided default to Google Studio API
         let version = version
             .map(|version| GoogleApiEndpoints::from_str(&version))
-            .unwrap_or(GoogleApiEndpoints::default());
+            .unwrap_or_default();
 
         match (self, version) {
             // Google Studio API
@@ -303,7 +303,7 @@ impl LLMModel for GoogleModels {
         let api_version = version
             .as_ref()
             .map(|version| GoogleApiEndpoints::from_str(version))
-            .unwrap_or(GoogleApiEndpoints::default());
+            .unwrap_or_default();
 
         match (self, api_version) {
             // Google Studio API
@@ -371,7 +371,7 @@ impl LLMModel for GoogleModels {
         // If no version provided default to Google Studio API
         let version = version
             .map(|version| GoogleApiEndpoints::from_str(&version))
-            .unwrap_or(GoogleApiEndpoints::default());
+            .unwrap_or_default();
 
         match (self, version) {
             // Google Studio API
