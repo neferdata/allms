@@ -5,6 +5,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::apis::AnthropicApiEndpoints;
 use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::{
@@ -189,7 +190,10 @@ impl LLMModel for AnthropicModels {
             //Anthropic-specific way of passing API key
             .header("x-api-key", api_key)
             //Required as per documentation
-            .header("anthropic-version", "2023-06-01");
+            .header(
+                "anthropic-version",
+                AnthropicApiEndpoints::messages_default().version(),
+            );
 
         // Add tool-specific headers
         if let Some(tools_list) = tools {

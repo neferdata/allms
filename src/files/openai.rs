@@ -3,11 +3,11 @@ use async_trait::async_trait;
 use log::{error, info};
 use reqwest::{header, multipart, Client};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion};
 use crate::domain::AllmsError;
 use crate::files::LLMFiles;
+use crate::utils::get_mime_type;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIFile {
@@ -60,42 +60,7 @@ impl LLMFiles for OpenAIFile {
         version_headers.remove(header::CONTENT_TYPE);
 
         // Determine MIME type based on file extension
-        // OpenAI documentation: https://platform.openai.com/docs/assistants/tools/supported-files
-        let mime_type = match Path::new(file_name)
-            .extension()
-            .and_then(std::ffi::OsStr::to_str)
-        {
-            Some("pdf") => "application/pdf",
-            Some("json") => "application/json",
-            Some("txt") => "text/plain",
-            Some("html") => "text/html",
-            Some("c") => "text/x-c",
-            Some("cpp") => "text/x-c++",
-            Some("docx") => {
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            }
-            Some("java") => "text/x-java",
-            Some("md") => "text/markdown",
-            Some("php") => "text/x-php",
-            Some("pptx") => {
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            }
-            Some("py") => "text/x-python",
-            Some("rb") => "text/x-ruby",
-            Some("tex") => "text/x-tex",
-            //The below are currently only supported for Code Interpreter but NOT Retrieval
-            Some("css") => "text/css",
-            Some("jpeg") | Some("jpg") => "image/jpeg",
-            Some("js") => "text/javascript",
-            Some("gif") => "image/gif",
-            Some("png") => "image/png",
-            Some("tar") => "application/x-tar",
-            Some("ts") => "application/typescript",
-            Some("xlsx") => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            Some("xml") => "application/xml",
-            Some("zip") => "application/zip",
-            _ => anyhow::bail!("Unsupported file type"),
-        };
+        let mime_type = get_mime_type(file_name).ok_or_else(|| anyhow!("Unsupported file type"))?;
 
         let form = multipart::Form::new().text("purpose", "assistants").part(
             "file",

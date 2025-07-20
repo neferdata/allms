@@ -23,4 +23,6 @@ pub use xai::XAIModels;
 
 // Re-export structs for backwards compatibility
 pub use crate::apis::GoogleApiEndpoints;
-pub use crate::apis::{OpenAiApiEndpoints, OpenAICompletionsAPI,OpenAIAssistantResource, OpenAIAssistantVersion};
+pub use crate::apis::{
+    OpenAIAssistantResource, OpenAIAssistantVersion, OpenAICompletionsAPI, OpenAiApiEndpoints,
+};

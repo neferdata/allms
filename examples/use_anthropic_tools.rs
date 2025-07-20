@@ -1,9 +1,12 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
+use std::ffi::OsStr;
+use std::path::Path;
 
 use allms::{
+    files::{AnthropicFile, LLMFiles},
     llm::{
         tools::{AnthropicCodeExecutionConfig, AnthropicWebSearchConfig, LLMTools},
         AnthropicModels,
@@ -16,6 +19,26 @@ use allms::{
 struct AINewsArticles {
     pub articles: Vec<AINewsArticle>,
 }
+
+// Example 2: File search
+#[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
+pub struct ConcertInfo {
+    dates: Vec<String>,
+    band: String,
+    genre: String,
+    venue: String,
+    city: String,
+    country: String,
+    ticket_price: String,
+}
+
+const BANDS_GENRES: &[(&str, &str)] = &[
+    ("Metallica", "Metal"),
+    ("The Beatles", "Rock"),
+    ("Daft Punk", "Electronic"),
+    ("Miles Davis", "Jazz"),
+    ("Johnny Cash", "Country"),
+];
 
 #[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
 struct AINewsArticle {
@@ -79,6 +102,47 @@ async fn main() -> Result<()> {
         Ok(response) => println!("Code interpreter response:\n{:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
+
+    // Example 2: File search example
+
+    // Read the concert file and upload it to Anthropic
+    let path = Path::new("metallica.pdf");
+    let bytes = std::fs::read(path)?;
+    let file_name = path
+        .file_name()
+        .and_then(OsStr::to_str)
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("Failed to extract file name"))?;
+
+    let anthropic_file = AnthropicFile::new(None, &anthropic_api_key)
+        .debug()
+        .upload(&file_name, bytes)
+        .await?;
+
+    // Extract concert information using Anthropic API with file search tool
+    /*let file_search_tool =
+        LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![openai_vector_store
+            .id
+            .clone()
+            .unwrap_or_default()]));
+
+    let openai_responses = Completions::new(OpenAIModels::O4Mini, &openai_api_key, None, None)
+        .version("openai_responses")
+        .set_context("bands_genres", &BANDS_GENRES)?
+        .add_tool(file_search_tool);
+
+    match openai_responses
+        .get_answer::<ConcertInfo>("Extract the information requested in the response type from the attached concert information.
+            The response should include the genre of the music the 'band' represents.
+            The mapping of bands to genres was provided in 'bands_genres' list.")
+        .await
+    {
+        Ok(response) => println!("Concert Info:\n{:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }*/
+
+    // Cleanup
+    anthropic_file.delete().await?;
 
     Ok(())
 }

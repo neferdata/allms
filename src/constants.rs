@@ -11,6 +11,13 @@ lazy_static! {
     pub(crate) static ref ANTHROPIC_MESSAGES_API_URL: String =
         std::env::var("ANTHROPIC_MESSAGES_API_URL")
             .unwrap_or("https://api.anthropic.com/v1/messages".to_string());
+    pub(crate) static ref ANTHROPIC_MESSAGES_VERSION: String =
+        std::env::var("ANTHROPIC_MESSAGES_VERSION").unwrap_or("2023-06-01".to_string());
+    pub(crate) static ref ANTHROPIC_FILES_VERSION: String =
+        std::env::var("ANTHROPIC_FILES_VERSION").unwrap_or("files-api-2025-04-14".to_string());
+    pub(crate) static ref ANTHROPIC_FILES_API_URL: String =
+        std::env::var("ANTHROPIC_FILES_API_URL")
+            .unwrap_or("https://api.anthropic.com/v1/files".to_string());
 }
 
 lazy_static! {
