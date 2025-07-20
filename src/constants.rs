@@ -32,6 +32,9 @@ lazy_static! {
 
         format!("https://{region}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{region}/endpoints")
     };
+}
+
+lazy_static! {
     pub(crate) static ref GOOGLE_GEMINI_API_URL: String = std::env::var("GOOGLE_GEMINI_API_URL")
         .unwrap_or("https://generativelanguage.googleapis.com/v1/models".to_string());
     pub(crate) static ref GOOGLE_GEMINI_BETA_API_URL: String =
@@ -62,6 +65,11 @@ lazy_static! {
 lazy_static! {
     pub(crate) static ref DEEPSEEK_API_URL: String = std::env::var("DEEPSEEK_API_URL")
         .unwrap_or("https://api.deepseek.com/chat/completions".to_string());
+}
+
+lazy_static! {
+    pub(crate) static ref XAI_API_URL: String =
+        std::env::var("XAI_API_URL").unwrap_or("https://api.x.ai/v1/chat/completions".to_string());
 }
 
 //Generic OpenAI instructions

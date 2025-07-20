@@ -56,6 +56,10 @@ Perplexity:
 - Models: Sonar, Sonar Pro, Sonar Reasoning 
     - The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
+xAI:
+- APIs: Chat Completions
+- Models: Grok 4, Grok 3, Grok 3 Mini, Grok 3 Fast, Grok 3 Mini Fast
+
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)
 - AWS Bedrock: environment variables `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and `AWS_REGION` set as per AWS settings.
@@ -66,6 +70,7 @@ Perplexity:
 - Mistral: API key (passed in model constructor)
 - OpenAI: API key (passed in model constructor)
 - Perplexity: API key (passed in model constructor)
+- xAI: API key (passed in model constructor)
 
 ### Examples
 Explore the `examples` directory to see more use cases and how to use different LLM providers and endpoint types.
@@ -101,7 +106,11 @@ let openai_responses_answer = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KE
     .get_answer::<T>(instructions)
     .await?
 
-let perplexity_answer = Completions::new(PerplexityModels::Llama3_1SonarSmall, &API_KEY, None, None)
+let perplexity_answer = Completions::new(PerplexityModels::SonarPro, &API_KEY, None, None)
+    .get_answer::<T>(instructions)
+    .await?
+
+let xai_answer = Completions::new(XAIModels::Grok3Mini, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 ```

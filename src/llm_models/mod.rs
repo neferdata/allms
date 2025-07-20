@@ -7,6 +7,7 @@ pub mod mistral;
 pub mod openai;
 pub mod perplexity;
 pub mod tools;
+pub mod xai;
 
 pub use anthropic::AnthropicModels;
 pub use aws::AwsBedrockModels;
@@ -18,3 +19,4 @@ pub use mistral::MistralModels;
 pub use openai::OpenAIModels;
 pub use perplexity::PerplexityModels;
 pub use tools::LLMTools;
+pub use xai::XAIModels;
