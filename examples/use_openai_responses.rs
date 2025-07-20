@@ -7,6 +7,7 @@ use std::path::Path;
 
 use allms::{
     assistants::{OpenAIFile, OpenAIVectorStore},
+    files::LLMFiles,
     llm::{
         tools::{
             LLMTools, OpenAICodeInterpreterConfig, OpenAIFileSearchConfig, OpenAIReasoningConfig,
