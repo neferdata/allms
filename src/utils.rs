@@ -3,6 +3,7 @@ use regex::Regex;
 use schemars::{schema_for, JsonSchema};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
+use std::path::Path;
 use tiktoken_rs::{cl100k_base, get_bpe_from_model, CoreBPE};
 
 use crate::llm_models::LLMModel;
@@ -186,6 +187,46 @@ pub(crate) fn map_to_range_f32(min: f32, max: f32, target: u32) -> f32 {
     let range = max - min;
     let percentage = capped_target as f32 / 100.0;
     min + (range * percentage)
+}
+
+/// Determine MIME type based on file extension
+/// OpenAI documentation: https://platform.openai.com/docs/assistants/tools/supported-files
+pub(crate) fn get_mime_type(file_name: &str) -> Option<&str> {
+    match Path::new(file_name)
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)
+    {
+        Some("pdf") => Some("application/pdf"),
+        Some("json") => Some("application/json"),
+        Some("txt") => Some("text/plain"),
+        Some("html") => Some("text/html"),
+        Some("c") => Some("text/x-c"),
+        Some("cpp") => Some("text/x-c++"),
+        Some("docx") => {
+            Some("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        }
+        Some("java") => Some("text/x-java"),
+        Some("md") => Some("text/markdown"),
+        Some("php") => Some("text/x-php"),
+        Some("pptx") => {
+            Some("application/vnd.openxmlformats-officedocument.presentationml.presentation")
+        }
+        Some("py") => Some("text/x-python"),
+        Some("rb") => Some("text/x-ruby"),
+        Some("tex") => Some("text/x-tex"),
+        //The below are currently only supported for Code Interpreter but NOT Retrieval
+        Some("css") => Some("text/css"),
+        Some("jpeg") | Some("jpg") => Some("image/jpeg"),
+        Some("js") => Some("text/javascript"),
+        Some("gif") => Some("image/gif"),
+        Some("png") => Some("image/png"),
+        Some("tar") => Some("application/x-tar"),
+        Some("ts") => Some("application/typescript"),
+        Some("xlsx") => Some("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        Some("xml") => Some("application/xml"),
+        Some("zip") => Some("application/zip"),
+        _ => None,
+    }
 }
 
 #[cfg(test)]

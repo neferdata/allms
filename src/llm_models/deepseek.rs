@@ -61,13 +61,15 @@ impl LLMModel for DeepSeekModels {
             "role": "system",
             "content": base_instructions,
         });
-        let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
         let user_message = json!({
             "role": "user",
             "content": format!(
-                "Output Json schema:\n
-                {schema_string}\n\n
-                {instructions}"
+                "<instructions>
+                {instructions}
+                </instructions>
+                <output json schema>
+                {json_schema}
+                </output json schema>"
             ),
         });
         json!({
@@ -91,6 +93,7 @@ impl LLMModel for DeepSeekModels {
         _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         //Get the API url
         let model_url = self.get_endpoint();

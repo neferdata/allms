@@ -83,6 +83,7 @@ pub trait LLMModel {
         version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        tools: Option<&[LLMTools]>,
     ) -> Result<String>;
     ///Based on the model type extracts the data portion of the API response
     fn get_data(&self, response_text: &str, function_call: bool) -> Result<String> {

@@ -11,6 +11,13 @@ lazy_static! {
     pub(crate) static ref ANTHROPIC_MESSAGES_API_URL: String =
         std::env::var("ANTHROPIC_MESSAGES_API_URL")
             .unwrap_or("https://api.anthropic.com/v1/messages".to_string());
+    pub(crate) static ref ANTHROPIC_MESSAGES_VERSION: String =
+        std::env::var("ANTHROPIC_MESSAGES_VERSION").unwrap_or("2023-06-01".to_string());
+    pub(crate) static ref ANTHROPIC_FILES_VERSION: String =
+        std::env::var("ANTHROPIC_FILES_VERSION").unwrap_or("files-api-2025-04-14".to_string());
+    pub(crate) static ref ANTHROPIC_FILES_API_URL: String =
+        std::env::var("ANTHROPIC_FILES_API_URL")
+            .unwrap_or("https://api.anthropic.com/v1/files".to_string());
 }
 
 lazy_static! {
@@ -74,21 +81,19 @@ lazy_static! {
 
 //Generic OpenAI instructions
 pub(crate) const OPENAI_BASE_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
-Step 1: Review and understand the 'instructions' from the *Instructions* section.
-Step 2: Based on the 'instructions' process the data provided in the *Input data* section using your language model.
-Step 3: Prepare a response by processing the 'input data' as per the 'instructions'. 
-Step 4: Convert the response to a Json object. The Json object must match the schema provided in the *Output Json schema* section.
-Step 5: Validate that the Json object matches the 'output Json schema' and correct if needed. If you are not able to generate a valid Json based on the 'input data' and 'instructions' please respond with "Error calculating the answer."
-Step 6: Respond ONLY with properly formatted Json object. No other words or text, only valid Json in the answer.
+Step 1: Review and understand the 'instructions'.
+Step 2: Prepare a response by processing the provided data as per the 'instructions'. 
+Step 3: Convert the response to a Json object. The Json object must match the schema provided as the `output json schema`.
+Step 4: Validate that the Json object matches the 'output json schema' and correct if needed. If you are not able to generate a valid Json, respond with "Error calculating the answer."
+Step 5: Respond ONLY with properly formatted Json object. No other words or text, only valid Json in the answer.
 "#;
 
 pub(crate) const OPENAI_FUNCTION_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:
-Step 1: Review and understand the 'instructions' from the *Instructions* section.
-Step 2: Based on the 'instructions' process the data provided in the *Input data* section using your language model.
-Step 3: Prepare a response by processing the 'input data' as per the 'instructions'. 
-Step 4: Convert the response to a Json object. The Json object must match the schema provided in the function definition.
-Step 5: Validate that the Json object matches the function properties and correct if needed. If you are not able to generate a valid Json based on the 'input data' and 'instructions' please respond with "Error calculating the answer."
-Step 6: Respond ONLY with properly formatted Json object. No other words or text, only valid Json in the answer.
+Step 1: Review and understand the 'instructions'.
+Step 2: Prepare a response by processing the provided data as per the 'instructions'. 
+Step 3: Convert the response to a Json object. The Json object must match the schema provided in the function definition.
+Step 4: Validate that the Json object matches the function properties and correct if needed. If you are not able to generate a valid Json, respond with "Error calculating the answer."
+Step 5: Respond ONLY with properly formatted Json object. No other words or text, only valid Json in the answer.
 "#;
 
 pub(crate) const OPENAI_ASSISTANT_INSTRUCTIONS: &str = r#"You are a computer function. You are expected to perform the following tasks:

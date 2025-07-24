@@ -134,6 +134,7 @@ impl LLMModel for XAIModels {
         _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         //Get the API url
         let model_url = self.get_endpoint();
@@ -181,7 +182,7 @@ impl LLMModel for XAIModels {
                     .or(message.reasoning_content.as_ref())
             })
             .fold(String::new(), |mut acc, content| {
-                acc.push_str(content);
+                acc.push_str(&self.sanitize_json_response(content));
                 acc
             });
 

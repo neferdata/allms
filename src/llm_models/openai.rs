@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, to_value, Value};
 
 use crate::{
+    apis::OpenAiApiEndpoints,
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{
         OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesContentType,
@@ -146,7 +147,7 @@ impl LLMModel for OpenAIModels {
         // If no version provided default to OpenAI Completions API
         let version = version
             .map(|version| OpenAiApiEndpoints::from_str(&version))
-            .unwrap_or(OpenAiApiEndpoints::default());
+            .unwrap_or_default();
 
         //OpenAI documentation: https://platform.openai.com/docs/models/model-endpoint-compatibility
         match (version, self) {
@@ -353,10 +354,20 @@ impl LLMModel for OpenAIModels {
         // If no version provided default to OpenAI Completions API
         let version = version
             .map(|version| OpenAiApiEndpoints::from_str(&version))
-            .unwrap_or(OpenAiApiEndpoints::default());
+            .unwrap_or_default();
 
         // Get the base instructions
         let base_instructions = self.get_base_instructions(Some(function_call));
+
+        // Build the main user message
+        let user_message_str = format!(
+            "<instructions>
+            {instructions}
+            </instructions>
+            <output json schema>
+            {json_schema}
+            </output json schema>"
+        );
 
         match (version, self) {
             // Chat Completions API Body
@@ -424,15 +435,9 @@ impl LLMModel for OpenAIModels {
                     }
                     //https://platform.openai.com/docs/guides/chat/introduction
                     false => {
-                        let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-
                         let user_message = json!({
                             "role": "user",
-                            "content": format!(
-                                "Output Json schema:\n
-                                {schema_string}\n\n
-                                {instructions}"
-                            ),
+                            "content": user_message_str,
                         });
                         //For ChatGPT we ignore max_tokens. It will default to 'inf'
                         json!({
@@ -469,15 +474,9 @@ impl LLMModel for OpenAIModels {
                     "content": base_instructions,
                 });
 
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-
                 let user_message = json!({
                     "role": "user",
-                    "content": format!(
-                        "Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}"
-                    ),
+                    "content": user_message_str,
                 });
                 json!({
                     "model": self.as_str(),
@@ -509,11 +508,7 @@ impl LLMModel for OpenAIModels {
             ) => {
                 json!({
                     "model": self.as_str(),
-                    "input": format!(
-                        "{instructions}\n\n
-                        Output Json schema:\n
-                        {json_schema}"
-                    ),
+                    "input": user_message_str,
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     "temperature": temperature,
@@ -568,11 +563,7 @@ impl LLMModel for OpenAIModels {
                 });
                 json!({
                     "model": self.as_str(),
-                    "input": format!(
-                        "{instructions}\n\n
-                        Output Json schema:\n
-                        {json_schema}"
-                    ),
+                    "input": user_message_str,
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     "reasoning": reasoning_opt,
@@ -599,17 +590,11 @@ impl LLMModel for OpenAIModels {
             // Legacy Completions API Body
             // For DaVinci model all text goes into the 'prompt' filed of the body
             (_, OpenAIModels::TextDavinci003) => {
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
                 json!({
                     "model": self.as_str(),
                     "max_tokens": max_tokens,
                     "temperature": temperature,
-                    "prompt": format!(
-                        "{base_instructions}\n\n
-                        Output Json schema:\n
-                        {schema_string}\n\n
-                        {instructions}",
-                    ),
+                    "prompt": format!("{base_instructions}{user_message_str}"),
                 })
             }
         }
@@ -625,6 +610,7 @@ impl LLMModel for OpenAIModels {
         version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         //Get the API url
         let model_url = self.get_version_endpoint(version);
@@ -664,7 +650,7 @@ impl LLMModel for OpenAIModels {
         // If no version provided default to OpenAI Completions API
         let version = version
             .map(|version| OpenAiApiEndpoints::from_str(&version))
-            .unwrap_or(OpenAiApiEndpoints::default());
+            .unwrap_or_default();
 
         match (version, self) {
             // Chat Completions API Data
@@ -970,75 +956,6 @@ impl OpenAIModels {
             ]
         } else {
             vec![]
-        }
-    }
-}
-
-// Enum of supported Completions APIs
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
-pub enum OpenAiApiEndpoints {
-    #[deprecated(note = "Use OpenAICompletions instead")]
-    OpenAI,
-    OpenAICompletions,
-    OpenAIResponses,
-    #[deprecated(note = "Use AzureCompletions instead")]
-    Azure {
-        version: String,
-    },
-    AzureCompletions {
-        version: String,
-    },
-    AzureResponses {
-        version: String,
-    },
-}
-
-/// Type alias for backward compatibility
-pub type OpenAICompletionsAPI = OpenAiApiEndpoints;
-
-impl OpenAiApiEndpoints {
-    /// Defaulting to OpenAICompletions
-    fn default() -> Self {
-        OpenAiApiEndpoints::OpenAICompletions
-    }
-
-    /// Default version of Azure set to `2025-01-01-preview` as of 5/9/2025
-    fn default_azure_version() -> String {
-        "2025-01-01-preview".to_string()
-    }
-
-    /// Parses a string into `OpenAiApiEndpoints`.
-    ///
-    /// Supported formats (case-insensitive):
-    /// - `"OpenAI"` or `"openai_completions"` -> `OpenAiApiEndpoints::OpenAICompletions`
-    /// - `"openai_responses"` -> `OpenAiApiEndpoints::OpenAIResponses`
-    /// - `"azure:<version>"` or `"azure_completions:<version>"` -> `OpenAiApiEndpoints::AzureCompletions { version }`
-    /// - `"azure_responses:<version>"` -> `OpenAiApiEndpoints::AzureResponses { version }`
-    ///
-    /// Returns default for others.
-    fn from_str(s: &str) -> Self {
-        let s_lower = s.to_lowercase();
-        match s_lower.as_str() {
-            "openai" | "openai_completions" => OpenAiApiEndpoints::OpenAICompletions,
-            "openai_responses" => OpenAiApiEndpoints::OpenAIResponses,
-            _ if s_lower.starts_with("azure") || s_lower.starts_with("azure_completions") => {
-                let version = s_lower
-                    .strip_prefix("azure:")
-                    .or_else(|| s_lower.strip_prefix("azure_completions:"))
-                    .map(|v| v.trim().to_string())
-                    .unwrap_or_else(OpenAICompletionsAPI::default_azure_version);
-
-                OpenAICompletionsAPI::AzureCompletions { version }
-            }
-            _ if s_lower.starts_with("azure_responses") => {
-                let version = s_lower
-                    .strip_prefix("azure_responses:")
-                    .map(|v| v.trim().to_string())
-                    .unwrap_or_else(OpenAICompletionsAPI::default_azure_version);
-
-                OpenAICompletionsAPI::AzureResponses { version }
-            }
-            _ => OpenAiApiEndpoints::default(),
         }
     }
 }

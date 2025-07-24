@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use anyhow::{anyhow, Result};
 use reqwest::header::{self, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
@@ -6,6 +8,77 @@ use std::str::FromStr;
 
 use crate::constants::{DEFAULT_AZURE_VERSION, OPENAI_API_URL};
 
+///
+/// Enum of supported Completions and Responses APIs (non-Assistant APIs)
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum OpenAiApiEndpoints {
+    #[deprecated(note = "Use OpenAICompletions instead")]
+    OpenAI,
+    #[default]
+    OpenAICompletions,
+    OpenAIResponses,
+    #[deprecated(note = "Use AzureCompletions instead")]
+    Azure {
+        version: String,
+    },
+    AzureCompletions {
+        version: String,
+    },
+    AzureResponses {
+        version: String,
+    },
+}
+
+/// Type alias for backward compatibility
+pub type OpenAICompletionsAPI = OpenAiApiEndpoints;
+
+impl OpenAiApiEndpoints {
+    /// Default version of Azure set to `2025-01-01-preview` as of 5/9/2025
+    pub fn default_azure_version() -> String {
+        "2025-01-01-preview".to_string()
+    }
+
+    /// Parses a string into `OpenAiApiEndpoints`.
+    ///
+    /// Supported formats (case-insensitive):
+    /// - `"OpenAI"` or `"openai_completions"` -> `OpenAiApiEndpoints::OpenAICompletions`
+    /// - `"openai_responses"` -> `OpenAiApiEndpoints::OpenAIResponses`
+    /// - `"azure:<version>"` or `"azure_completions:<version>"` -> `OpenAiApiEndpoints::AzureCompletions { version }`
+    /// - `"azure_responses:<version>"` -> `OpenAiApiEndpoints::AzureResponses { version }`
+    ///
+    /// Returns default for others.
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(s: &str) -> Self {
+        let s_lower = s.to_lowercase();
+        match s_lower.as_str() {
+            "openai" | "openai_completions" => OpenAiApiEndpoints::OpenAICompletions,
+            "openai_responses" => OpenAiApiEndpoints::OpenAIResponses,
+            _ if s_lower.starts_with("azure") || s_lower.starts_with("azure_completions") => {
+                let version = s_lower
+                    .strip_prefix("azure:")
+                    .or_else(|| s_lower.strip_prefix("azure_completions:"))
+                    .map(|v| v.trim().to_string())
+                    .unwrap_or_else(OpenAICompletionsAPI::default_azure_version);
+
+                OpenAICompletionsAPI::AzureCompletions { version }
+            }
+            _ if s_lower.starts_with("azure_responses") => {
+                let version = s_lower
+                    .strip_prefix("azure_responses:")
+                    .map(|v| v.trim().to_string())
+                    .unwrap_or_else(OpenAICompletionsAPI::default_azure_version);
+
+                OpenAICompletionsAPI::AzureResponses { version }
+            }
+            _ => OpenAiApiEndpoints::default(),
+        }
+    }
+}
+
+///
+/// OpenAI Assistant Version
+///
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIAssistantVersion {
     V1,

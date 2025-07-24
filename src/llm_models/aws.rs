@@ -90,6 +90,7 @@ impl LLMModel for AwsBedrockModels {
         _version: Option<String>,
         body: &serde_json::Value,
         debug: bool,
+        _tools: Option<&[LLMTools]>,
     ) -> Result<String> {
         let sdk_config = aws_config::defaults(BehaviorVersion::latest())
             .region(&**AWS_REGION)
@@ -126,9 +127,12 @@ impl LLMModel for AwsBedrockModels {
         let user_instructions = json_schema_opt
             .map(|schema| {
                 format!(
-                    "Output Json schema:\n
-                {schema}\n\n
-                {instructions}"
+                    "<instructions>
+                    {instructions}
+                    </instructions>
+                    <output json schema>
+                    {schema}
+                    </output json schema>"
                 )
             })
             .unwrap_or(instructions);

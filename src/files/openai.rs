@@ -1,11 +1,13 @@
 use anyhow::{anyhow, Context, Result};
+use async_trait::async_trait;
 use log::{error, info};
 use reqwest::{header, multipart, Client};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion};
 use crate::domain::AllmsError;
+use crate::files::LLMFiles;
+use crate::utils::get_mime_type;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct OpenAIFile {
@@ -27,9 +29,10 @@ pub struct OpenAIDFileDeleteResp {
     deleted: bool,
 }
 
-impl OpenAIFile {
+#[async_trait(?Send)]
+impl LLMFiles for OpenAIFile {
     /// Constructor
-    pub fn new(id: Option<String>, open_ai_key: &str) -> Self {
+    fn new(id: Option<String>, open_ai_key: &str) -> Self {
         OpenAIFile {
             id,
             debug: false,
@@ -41,29 +44,15 @@ impl OpenAIFile {
     ///
     /// This method can be used to turn on debug mode for the OpenAIFile struct
     ///
-    pub fn debug(mut self) -> Self {
+    fn debug(mut self) -> Self {
         self.debug = true;
-        self
-    }
-
-    ///
-    /// This method can be used to set the version of Assistants API Beta
-    /// Current default is V1
-    ///
-    pub fn version(mut self, version: OpenAIAssistantVersion) -> Self {
-        // Files endpoint currently requires v1 so if v2 is selected we overwrite
-        let version = match version {
-            OpenAIAssistantVersion::V2 => OpenAIAssistantVersion::V1,
-            _ => version,
-        };
-        self.version = version;
         self
     }
 
     ///
     /// This function uploads a file to OpenAI and assigns it for use with Assistant API
     ///
-    pub async fn upload(mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<Self> {
+    async fn upload(mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<Self> {
         let files_url = self.version.get_endpoint(&OpenAIAssistantResource::Files);
 
         // This API sends a form so content type is automatically set by multipart method
@@ -71,42 +60,7 @@ impl OpenAIFile {
         version_headers.remove(header::CONTENT_TYPE);
 
         // Determine MIME type based on file extension
-        // OpenAI documentation: https://platform.openai.com/docs/assistants/tools/supported-files
-        let mime_type = match Path::new(file_name)
-            .extension()
-            .and_then(std::ffi::OsStr::to_str)
-        {
-            Some("pdf") => "application/pdf",
-            Some("json") => "application/json",
-            Some("txt") => "text/plain",
-            Some("html") => "text/html",
-            Some("c") => "text/x-c",
-            Some("cpp") => "text/x-c++",
-            Some("docx") => {
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            }
-            Some("java") => "text/x-java",
-            Some("md") => "text/markdown",
-            Some("php") => "text/x-php",
-            Some("pptx") => {
-                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            }
-            Some("py") => "text/x-python",
-            Some("rb") => "text/x-ruby",
-            Some("tex") => "text/x-tex",
-            //The below are currently only supported for Code Interpreter but NOT Retrieval
-            Some("css") => "text/css",
-            Some("jpeg") | Some("jpg") => "image/jpeg",
-            Some("js") => "text/javascript",
-            Some("gif") => "image/gif",
-            Some("png") => "image/png",
-            Some("tar") => "application/x-tar",
-            Some("ts") => "application/typescript",
-            Some("xlsx") => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            Some("xml") => "application/xml",
-            Some("zip") => "application/zip",
-            _ => anyhow::bail!("Unsupported file type"),
-        };
+        let mime_type = get_mime_type(file_name).ok_or_else(|| anyhow!("Unsupported file type"))?;
 
         let form = multipart::Form::new().text("purpose", "assistants").part(
             "file",
@@ -154,10 +108,10 @@ impl OpenAIFile {
         Ok(self)
     }
 
-    /*
-     * This function deletes a file from OpenAI
-     */
-    pub async fn delete(&self) -> Result<()> {
+    ///
+    /// This function deletes a file from OpenAI
+    ///
+    async fn delete(&self) -> Result<()> {
         let file_id = if let Some(id) = &self.id {
             id
         } else {
@@ -210,5 +164,35 @@ impl OpenAIFile {
                 true => Ok(()),
                 false => Err(anyhow!("[OpenAIAssistant] Failed to delete the file.")),
             })
+    }
+
+    ///
+    /// This function returns the ID of the file if it exists
+    ///
+    fn get_id(&self) -> Option<&String> {
+        self.id.as_ref()
+    }
+
+    ///
+    /// This function returns the debug mode of the file
+    ///
+    fn is_debug(&self) -> bool {
+        self.debug
+    }
+}
+
+impl OpenAIFile {
+    ///
+    /// This method can be used to set the version of Assistants API Beta
+    /// Current default is V1
+    ///
+    pub fn version(mut self, version: OpenAIAssistantVersion) -> Self {
+        // Files endpoint currently requires v1 so if v2 is selected we overwrite
+        let version = match version {
+            OpenAIAssistantVersion::V2 => OpenAIAssistantVersion::V1,
+            _ => version,
+        };
+        self.version = version;
+        self
     }
 }
