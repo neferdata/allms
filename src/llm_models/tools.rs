@@ -249,6 +249,29 @@ pub enum AnthropicCodeExecutionToolType {
     CodeExecution20250522,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct AnthropicCacheControl {
+    #[serde(rename = "type")]
+    pub cache_type: AnthropicCacheControlType,
+    pub ttl: AnthropicCacheControllTTL,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum AnthropicCacheControlType {
+    #[serde(rename = "ephemeral")]
+    #[default]
+    Ephemeral,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum AnthropicCacheControllTTL {
+    #[serde(rename = "5m")]
+    #[default]
+    FiveMinutes,
+    #[serde(rename = "1h")]
+    OneHour,
+}
+
 impl AnthropicCodeExecutionConfig {
     pub fn new() -> Self {
         Self {
@@ -293,29 +316,6 @@ pub enum AnthropicComputerUseToolType {
     #[serde(rename = "computer_20241022")]
     #[default]
     Computer20241022,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
-pub struct AnthropicCacheControl {
-    #[serde(rename = "type")]
-    pub cache_type: AnthropicCacheControlType,
-    pub ttl: AnthropicCacheControllTTL,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
-pub enum AnthropicCacheControlType {
-    #[serde(rename = "ephemeral")]
-    #[default]
-    Ephemeral,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
-pub enum AnthropicCacheControllTTL {
-    #[serde(rename = "5m")]
-    #[default]
-    FiveMinutes,
-    #[serde(rename = "1h")]
-    OneHour,
 }
 
 impl AnthropicComputerUseConfig {
@@ -495,13 +495,19 @@ impl AnthropicWebSearchConfig {
 
     pub fn allowed_domains(mut self, allowed_domains: Vec<String>) -> Self {
         self.allowed_domains = Some(allowed_domains);
-        self.blocked_domains = None;
+        if self.blocked_domains.is_some() {
+            warn!("[allms][Anthropic][Tools] Allowed domains will clear any blocked domains");
+            self.blocked_domains = None;
+        }
         self
     }
 
     pub fn blocked_domains(mut self, blocked_domains: Vec<String>) -> Self {
         self.blocked_domains = Some(blocked_domains);
-        self.allowed_domains = None;
+        if self.allowed_domains.is_some() {
+            warn!("[allms][Anthropic][Tools] Blocked domains will clear any allowed domains");
+            self.allowed_domains = None;
+        }
         self
     }
 

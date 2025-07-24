@@ -359,6 +359,16 @@ impl LLMModel for OpenAIModels {
         // Get the base instructions
         let base_instructions = self.get_base_instructions(Some(function_call));
 
+        // Build the main user message
+        let user_message_str = format!(
+            "<instructions>
+            {instructions}
+            </instructions>
+            <output json schema>
+            {json_schema}
+            </output json schema>"
+        );
+
         match (version, self) {
             // Chat Completions API Body
             // Docs: https://platform.openai.com/docs/api-reference/completions/create
@@ -425,18 +435,9 @@ impl LLMModel for OpenAIModels {
                     }
                     //https://platform.openai.com/docs/guides/chat/introduction
                     false => {
-                        let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
-
                         let user_message = json!({
                             "role": "user",
-                            "content": format!(
-                                "<instructions>
-                                {instructions}
-                                </instructions>
-                                <output json schema>
-                                    {schema_string}
-                                </output json schema>"
-                            ),
+                            "content": user_message_str,
                         });
                         //For ChatGPT we ignore max_tokens. It will default to 'inf'
                         json!({
@@ -475,14 +476,7 @@ impl LLMModel for OpenAIModels {
 
                 let user_message = json!({
                     "role": "user",
-                    "content": format!(
-                        "<instructions>
-                        {instructions}
-                        </instructions>
-                        <output json schema>
-                        {json_schema}
-                        </output json schema>"
-                    ),
+                    "content": user_message_str,
                 });
                 json!({
                     "model": self.as_str(),
@@ -514,14 +508,7 @@ impl LLMModel for OpenAIModels {
             ) => {
                 json!({
                     "model": self.as_str(),
-                    "input": format!(
-                        "<instructions>
-                        {instructions}
-                        </instructions>
-                        <output json schema>
-                        {json_schema}
-                        </output json schema>"
-                    ),
+                    "input": user_message_str,
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     "temperature": temperature,
@@ -576,14 +563,7 @@ impl LLMModel for OpenAIModels {
                 });
                 json!({
                     "model": self.as_str(),
-                    "input": format!(
-                        "<instructions>
-                        {instructions}
-                        </instructions>
-                        <output json schema>
-                        {json_schema}
-                        </output json schema>"
-                    ),
+                    "input": user_message_str,
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     "reasoning": reasoning_opt,
@@ -610,20 +590,11 @@ impl LLMModel for OpenAIModels {
             // Legacy Completions API Body
             // For DaVinci model all text goes into the 'prompt' filed of the body
             (_, OpenAIModels::TextDavinci003) => {
-                let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
                 json!({
                     "model": self.as_str(),
                     "max_tokens": max_tokens,
                     "temperature": temperature,
-                    "prompt": format!(
-                        "{base_instructions}
-                        <instructions>
-                        {instructions}
-                        </instructions>
-                        <output json schema>
-                            {schema_string}
-                        </output json schema>"
-                    ),
+                    "prompt": format!("{base_instructions}{user_message_str}"),
                 })
             }
         }
