@@ -1,6 +1,7 @@
 pub mod openai;
 
+pub use crate::files::LLMFiles;
 pub use openai::{
-    LLMFiles, OpenAIAssistant, OpenAIAssistantResource, OpenAIAssistantVersion, OpenAIFile,
+    OpenAIAssistant, OpenAIAssistantResource, OpenAIAssistantVersion, OpenAIFile,
     OpenAIVectorStore, OpenAIVectorStoreFileCounts, OpenAIVectorStoreStatus,
 };
