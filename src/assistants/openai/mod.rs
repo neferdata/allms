@@ -8,4 +8,4 @@ pub use openai_vector_store::{
 
 // Re-export structs for backwards compatibility
 pub use crate::apis::{OpenAIAssistantResource, OpenAIAssistantVersion};
-pub use crate::files::OpenAIFile;
+pub use crate::files::{LLMFiles, OpenAIFile};
