@@ -6,8 +6,8 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 use allms::{
-    assistants::{OpenAIFile, OpenAIVectorStore},
-    files::LLMFiles,
+    assistants::OpenAIVectorStore,
+    files::OpenAIFile,
     llm::{
         tools::{
             LLMTools, OpenAICodeInterpreterConfig, OpenAIFileSearchConfig, OpenAIReasoningConfig,
