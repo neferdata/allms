@@ -39,6 +39,9 @@ pub enum OpenAIModels {
     Gpt4_1Nano,
     Gpt4oMini,
     Gpt4_5Preview,
+    Gpt5,
+    Gpt5Mini,
+    Gpt5Nano,
     // Reasoning models
     O1,
     O1Preview, // Deprecated
@@ -57,6 +60,9 @@ pub enum OpenAIModels {
 impl LLMModel for OpenAIModels {
     fn as_str(&self) -> &str {
         match self {
+            OpenAIModels::Gpt5 => "gpt-5",
+            OpenAIModels::Gpt5Mini => "gpt-5-mini",
+            OpenAIModels::Gpt5Nano => "gpt-5-nano",
             OpenAIModels::Gpt3_5Turbo => "gpt-3.5-turbo",
             OpenAIModels::Gpt3_5Turbo0613 => "gpt-3.5-turbo-0613",
             OpenAIModels::Gpt3_5Turbo16k => "gpt-3.5-turbo-16k",
@@ -85,6 +91,12 @@ impl LLMModel for OpenAIModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "gpt-5" => Some(OpenAIModels::Gpt5),
+            "gpt-5-2025-08-07" => Some(OpenAIModels::Gpt5),
+            "gpt-5-mini" => Some(OpenAIModels::Gpt5Mini),
+            "gpt-5-mini-2025-08-07" => Some(OpenAIModels::Gpt5Mini),
+            "gpt-5-nano" => Some(OpenAIModels::Gpt5Nano),
+            "gpt-5-nano-2025-08-07" => Some(OpenAIModels::Gpt5Nano),
             "gpt-3.5-turbo" => Some(OpenAIModels::Gpt3_5Turbo),
             "gpt-3.5-turbo-0613" => Some(OpenAIModels::Gpt3_5Turbo0613),
             "gpt-3.5-turbo-16k" => Some(OpenAIModels::Gpt3_5Turbo16k),
@@ -117,6 +129,9 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5 => 400_000,
+            OpenAIModels::Gpt5Mini => 400_000,
+            OpenAIModels::Gpt5Nano => 400_000,
             OpenAIModels::Gpt3_5Turbo => 4096,
             OpenAIModels::Gpt3_5Turbo0613 => 4096,
             OpenAIModels::Gpt3_5Turbo16k => 16384,
@@ -174,6 +189,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -197,6 +215,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -245,6 +266,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -277,6 +301,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4o20240806
                 | OpenAIModels::Gpt4oMini
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -335,6 +362,9 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt4_1Mini
             | OpenAIModels::Gpt4_1Nano
             | OpenAIModels::Gpt4_5Preview
+            | OpenAIModels::Gpt5
+            | OpenAIModels::Gpt5Mini
+            | OpenAIModels::Gpt5Nano
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -392,6 +422,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Custom { .. },
             ) => {
                 let system_message = json!({
@@ -504,6 +537,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Custom { .. },
             ) => {
                 json!({
@@ -675,6 +711,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::O1
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1Preview
@@ -724,6 +763,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
                 | OpenAIModels::Gpt4_32k
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -782,6 +824,18 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/account/rate-limits
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5 => RateLimit {
+                tpm: 40_000_000,
+                rpm: 15_000,
+            },
+            OpenAIModels::Gpt5Mini => RateLimit {
+                tpm: 180_000_000,
+                rpm: 30_000,
+            },
+            OpenAIModels::Gpt5Nano => RateLimit {
+                tpm: 180_000_000,
+                rpm: 30_000,
+            },
             OpenAIModels::Gpt3_5Turbo => RateLimit {
                 tpm: 50_000_000,
                 rpm: 10_000,
@@ -903,6 +957,9 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4_1Mini
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -919,6 +976,9 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt4_1Mini
                 | OpenAIModels::Gpt4_1Nano
                 | OpenAIModels::Gpt4_5Preview
+                | OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Custom { .. }
         )
     }
