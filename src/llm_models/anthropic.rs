@@ -190,20 +190,27 @@ impl LLMModel for AnthropicModels {
             }])
         };
 
-        let message_body = json!({
+        let mut message_body = json!({
             "model": self.as_str(),
             "max_tokens": max_tokens,
             "temperature": temperature,
             "messages": messages,
-            "tools": tools.map(|tools_inner| tools_inner
-                        .iter()
-                        // File search is handled separately
-                        .filter(|tool| !matches!(tool, LLMTools::AnthropicFileSearch(_)))
-                        .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
-                        .filter_map(LLMTools::get_config_json)
-                        .collect::<Vec<Value>>()
-                    ),
         });
+
+        // Add tools if provided
+        if tools.is_some() {
+            message_body["tools"] = json!(tools.map(|tools_inner| tools_inner
+                .iter()
+                // File search is handled separately
+                .filter(|tool| !matches!(tool, LLMTools::AnthropicFileSearch(_)))
+                .filter(|tool| self
+                    .get_supported_tools()
+                    .iter()
+                    .any(|supported| std::mem::discriminant(*tool)
+                        == std::mem::discriminant(supported)))
+                .filter_map(LLMTools::get_config_json)
+                .collect::<Vec<Value>>()));
+        }
 
         match self {
             AnthropicModels::Claude4Sonnet
