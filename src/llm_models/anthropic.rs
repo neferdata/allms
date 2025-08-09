@@ -198,18 +198,23 @@ impl LLMModel for AnthropicModels {
         });
 
         // Add tools if provided
-        if tools.is_some() {
-            message_body["tools"] = json!(tools.map(|tools_inner| tools_inner
+        if let Some(tools_inner) = tools {
+            let processed_tools: Vec<Value> = tools_inner
                 .iter()
                 // File search is handled separately
                 .filter(|tool| !matches!(tool, LLMTools::AnthropicFileSearch(_)))
-                .filter(|tool| self
-                    .get_supported_tools()
-                    .iter()
-                    .any(|supported| std::mem::discriminant(*tool)
-                        == std::mem::discriminant(supported)))
+                .filter(|tool| {
+                    self.get_supported_tools().iter().any(|supported| {
+                        std::mem::discriminant(*tool) == std::mem::discriminant(supported)
+                    })
+                })
                 .filter_map(LLMTools::get_config_json)
-                .collect::<Vec<Value>>()));
+                .collect::<Vec<Value>>();
+
+            // Only add tools if the processed vector is not empty
+            if !processed_tools.is_empty() {
+                message_body["tools"] = json!(processed_tools);
+            }
         }
 
         match self {
