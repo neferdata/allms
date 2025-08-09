@@ -432,7 +432,7 @@ impl LLMModel for OpenAIModels {
                     "content": base_instructions,
                 });
 
-                match function_call {
+                let mut json_body = match function_call {
                     //If we choose to use function calling
                     //https://platform.openai.com/docs/guides/gpt/function-calling
                     true => {
@@ -454,7 +454,6 @@ impl LLMModel for OpenAIModels {
                         //For ChatGPT we ignore max_tokens. It will default to 'inf'
                         json!({
                             "model": self.as_str(),
-                            "temperature": temperature,
                             "messages": vec![
                                 system_message,
                                 user_message,
@@ -472,17 +471,22 @@ impl LLMModel for OpenAIModels {
                             "role": "user",
                             "content": user_message_str,
                         });
-                        //For ChatGPT we ignore max_tokens. It will default to 'inf'
+
                         json!({
                             "model": self.as_str(),
-                            "temperature": temperature,
+                            // GPT-5 models don't support `temperature`
                             "messages": vec![
                                 system_message,
                                 user_message,
                             ],
                         })
                     }
+                };
+                // For models other than GPT-5, add temperature (GPT-5 models don't support `temperature`)
+                if !self.is_gpt5_model() {
+                    json_body["temperature"] = json!(temperature);
                 }
+                json_body
             }
             // Review https://platform.openai.com/docs/guides/reasoning for beta limitations:
             // - Message types: user and assistant messages only, system messages are not supported.
@@ -547,7 +551,8 @@ impl LLMModel for OpenAIModels {
                     "input": user_message_str,
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
-                    "temperature": temperature,
+                    // GPT-5 models don't support `temperature`
+                    "temperature": if self.is_gpt5_model() { json!(null) } else { json!(temperature) },
                     // If tools are provided we add them to the body
                     "tools": tools.map(|tools_inner| tools_inner
                         .iter()
@@ -995,6 +1000,14 @@ impl OpenAIModels {
                 | OpenAIModels::O3
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
+        )
+    }
+
+    // This function checks if a model is a GPT-5 model
+    pub fn is_gpt5_model(&self) -> bool {
+        matches!(
+            self,
+            OpenAIModels::Gpt5 | OpenAIModels::Gpt5Mini | OpenAIModels::Gpt5Nano
         )
     }
 
