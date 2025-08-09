@@ -474,7 +474,6 @@ impl LLMModel for OpenAIModels {
 
                         json!({
                             "model": self.as_str(),
-                            // GPT-5 models don't support `temperature`
                             "messages": vec![
                                 system_message,
                                 user_message,
