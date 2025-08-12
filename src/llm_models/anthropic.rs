@@ -56,6 +56,7 @@ impl LLMModel for AnthropicModels {
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
             "claude-opus-4-1-20250805" => Some(AnthropicModels::Claude4_1Opus),
+            "claude-opus-4-1" => Some(AnthropicModels::Claude4_1Opus),
             "claude-sonnet-4-20250514" => Some(AnthropicModels::Claude4Sonnet),
             "claude-sonnet-4-0" => Some(AnthropicModels::Claude4Sonnet),
             "claude-opus-4-20250514" => Some(AnthropicModels::Claude4Opus),
