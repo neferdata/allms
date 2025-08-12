@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
 
     let reasoning_tool = LLMTools::OpenAIReasoning(OpenAIReasoningConfig::default());
 
-    let openai_responses = Completions::new(OpenAIModels::O3Mini, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt5Mini, &openai_api_key, None, None)
         .add_tool(reasoning_tool)
         .version("openai_responses");
 
@@ -94,7 +94,7 @@ async fn main() -> Result<()> {
 
     // Example 2: Web search example
     let web_search_tool = LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new());
-    let openai_responses = Completions::new(OpenAIModels::Gpt4_1Mini, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt5, &openai_api_key, None, None)
         .version("openai_responses")
         .add_tool(web_search_tool);
 
@@ -131,7 +131,7 @@ async fn main() -> Result<()> {
             .clone()
             .unwrap_or_default()]));
 
-    let openai_responses = Completions::new(OpenAIModels::O4Mini, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt5Mini, &openai_api_key, None, None)
         .version("openai_responses")
         .set_context("bands_genres", &BANDS_GENRES)?
         .add_tool(file_search_tool);
@@ -153,7 +153,7 @@ async fn main() -> Result<()> {
     // Example 4: Code interpreter example
 
     let code_interpreter_tool = LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new());
-    let openai_responses = Completions::new(OpenAIModels::O3, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt5Nano, &openai_api_key, None, None)
         .version("openai_responses")
         .set_context("Code Interpreter", &"You are a personal math tutor. When asked a math question, write and run code to answer the question.".to_string())?
         .add_tool(code_interpreter_tool);

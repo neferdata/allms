@@ -2,7 +2,7 @@
 [![crates.io](https://img.shields.io/crates/v/allms.svg)](https://crates.io/crates/allms)
 [![docs.rs](https://docs.rs/allms/badge.svg)](https://docs.rs/allms)
 
-This Rust library is specialized in providing type-safe interactions with APIs of the following LLM providers: OpenAI, Anthropic, Mistral, Google Gemini, Perplexity. (More providers to be added in the future.) It's designed to simplify the process of experimenting with different models. It de-risks the process of migrating between providers reducing vendor lock-in issues. It also standardizes serialization of sending requests to LLM APIs and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. With allms you can focus on creating effective prompts and providing LLM with the right context, instead of worrying about differences in API implementations.
+This Rust library is specialized in providing type-safe interactions with APIs of the following LLM providers: Anthropic, AWS Bedrock, Azure, DeepSeek, Google Gemini, Mistral, OpenAI, Perplexity, xAI. (More providers to be added in the future.) It's designed to simplify the process of experimenting with different models. It de-risks the process of migrating between providers reducing vendor lock-in issues. It also standardizes serialization of sending requests to LLM APIs and interpreting the responses, ensuring that the JSON data is handled in a type-safe manner. With allms you can focus on creating effective prompts and providing LLM with the right context, instead of worrying about differences in API implementations.
 
 ## Features
 
@@ -49,7 +49,7 @@ OpenAI:
 - APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file search, web search, code interpreter)
 - Models: 
     - Chat Completions & Responses only: o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini 
-    - Chat Completions, Responses & Assistants: GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
+    - Chat Completions, Responses & Assistants: GPT-5, GPT-5-mini, GPT-5-nano, GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 
 Perplexity:
 - APIs: Chat Completions
