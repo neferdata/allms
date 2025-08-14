@@ -337,7 +337,8 @@ impl LLMModel for AnthropicModels {
 impl AnthropicModels {
     pub fn get_supported_tools(&self) -> Vec<LLMTools> {
         match self {
-            AnthropicModels::Claude4Sonnet
+            AnthropicModels::Claude4_1Opus
+            | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
             | AnthropicModels::Claude3_7Sonnet
             | AnthropicModels::Claude3_5Haiku => {
@@ -362,14 +363,16 @@ impl AnthropicModels {
     pub fn get_tool_header(&self, tool: &LLMTools) -> Option<(&'static str, &'static str)> {
         match (self, tool) {
             (
-                AnthropicModels::Claude4Sonnet
+                AnthropicModels::Claude4_1Opus
+                | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet
                 | AnthropicModels::Claude3_5Haiku,
                 LLMTools::AnthropicCodeExecution(_),
             ) => Some(("anthropic-beta", "code-execution-2025-05-22")),
             (
-                AnthropicModels::Claude4Sonnet
+                AnthropicModels::Claude4_1Opus
+                | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet,
                 LLMTools::AnthropicComputerUse(_),
@@ -378,7 +381,8 @@ impl AnthropicModels {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
             (
-                AnthropicModels::Claude4Sonnet
+                AnthropicModels::Claude4_1Opus
+                | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet
                 | AnthropicModels::Claude3_5Sonnet
