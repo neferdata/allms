@@ -302,7 +302,7 @@ impl LLMModel for GoogleModels {
                     self.get_supported_tools()
                         .iter()
                         .find(|supported| {
-                            std::mem::discriminant(&*tool) == std::mem::discriminant(supported)
+                            std::mem::discriminant(tool) == std::mem::discriminant(supported)
                         })
                         .and_then(|tool| tool.get_config_json())
                 })
