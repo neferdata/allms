@@ -14,6 +14,7 @@ use crate::constants::{
     GOOGLE_VERTEX_ENDPOINT_API_URL,
 };
 use crate::domain::{GoogleGeminiProApiResp, RateLimit};
+use crate::llm_models::tools::{GeminiCodeInterpreterConfig, GeminiWebSearchConfig};
 use crate::llm_models::{LLMModel, LLMTools};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -94,8 +95,8 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => {
                 "gemini-2.0-flash-thinking-exp-01-21"
             }
-            GoogleModels::Gemini2_5Flash => "gemini-2.5-flash-preview-05-20",
-            GoogleModels::Gemini2_5Pro => "gemini-2.5-pro-preview-05-06",
+            GoogleModels::Gemini2_5Flash => "gemini-2.5-flash",
+            GoogleModels::Gemini2_5Pro => "gemini-2.5-pro",
             GoogleModels::FineTunedEndpoint { name } => name,
         }
     }
@@ -250,7 +251,7 @@ impl LLMModel for GoogleModels {
         function_call: bool,
         _max_tokens: &usize,
         temperature: &f32,
-        _tools: Option<&[LLMTools]>,
+        tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions_json = json!({
@@ -280,10 +281,31 @@ impl LLMModel for GoogleModels {
             "temperature": temperature,
         });
 
-        json!({
+        let mut body = json!({
             "contents": contents,
             "generationConfig": generation_config,
-        })
+        });
+
+        // Include tools if provided
+        if let Some(tools_inner) = tools {
+            let processed_tools: Vec<Value> = tools_inner
+                .iter()
+                .filter_map(|tool| {
+                    self.get_supported_tools()
+                        .iter()
+                        .find(|supported| {
+                            std::mem::discriminant(&*tool) == std::mem::discriminant(supported)
+                        })
+                        .and_then(|tool| tool.get_config_json())
+                })
+                .collect();
+
+            if !processed_tools.is_empty() {
+                body["tools"] = json!(processed_tools);
+            }
+        }
+
+        body
     }
 
     /*
@@ -392,7 +414,7 @@ impl LLMModel for GoogleModels {
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleStudio) => {
                 self.get_generate_content_data(response_text)
             }
-            //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
+            // Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
             (
                 GoogleModels::Gemini1_5Pro
                 | GoogleModels::Gemini1_5Flash
@@ -567,7 +589,7 @@ impl GoogleModels {
                     .iter()
                     .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
                     .flat_map(|candidate| &candidate.content.parts)
-                    .map(|part| &part.text)
+                    .filter_map(|part| part.text.as_ref())
                     .fold(String::new(), |mut acc, text| {
                         acc.push_str(text);
                         acc
@@ -643,12 +665,24 @@ impl GoogleModels {
             .iter()
             .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
             .flat_map(|candidate| &candidate.content.parts)
-            .map(|part| &part.text)
+            .filter_map(|part| part.text.as_ref())
             .fold(String::new(), |mut acc, text| {
                 acc.push_str(text);
                 acc
             });
 
         Ok(self.sanitize_json_response(&data))
+    }
+
+    fn get_supported_tools(&self) -> Vec<LLMTools> {
+        match self {
+            GoogleModels::Gemini2_5Pro
+            | GoogleModels::Gemini2_5Flash
+            | GoogleModels::Gemini2_0Flash => vec![
+                LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new()),
+                LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new()),
+            ],
+            _ => vec![],
+        }
     }
 }

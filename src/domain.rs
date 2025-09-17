@@ -247,7 +247,23 @@ pub struct GoogleGeminiProContent {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleGeminiProPart {
-    pub text: String,
+    pub text: Option<String>,
+    #[serde(rename = "executableCode")]
+    pub executable_code: Option<GoogleGeminiExecutableCode>,
+    #[serde(rename = "codeExecutionResult")]
+    pub code_execution_result: Option<GoogleGeminiCodeExecutionResult>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiExecutableCode {
+    pub language: String,
+    pub code: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiCodeExecutionResult {
+    pub outcome: String,
+    pub output: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -23,6 +23,8 @@ pub enum LLMTools {
     AnthropicFileSearch(AnthropicFileSearchConfig),
     AnthropicWebSearch(AnthropicWebSearchConfig),
     XAIWebSearch(XAIWebSearchConfig),
+    GeminiCodeInterpreter(GeminiCodeInterpreterConfig),
+    GeminiWebSearch(GeminiWebSearchConfig),
 }
 
 impl LLMTools {
@@ -38,6 +40,8 @@ impl LLMTools {
             LLMTools::AnthropicFileSearch(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIWebSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::GeminiCodeInterpreter(cfg) => to_value(cfg).ok(),
+            LLMTools::GeminiWebSearch(cfg) => to_value(cfg).ok(),
         }
     }
 }
@@ -554,6 +558,7 @@ impl AnthropicWebSearchUserLocation {
     }
 }
 
+///
 /// XAISearchSource constructors and helper methods
 ///
 impl XAISearchSource {
@@ -691,5 +696,43 @@ impl XAISearchSource {
             x_source.post_view_count = Some(post_view_count);
         }
         self
+    }
+}
+
+///
+/// Gemini Code Interpreter
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct GeminiCodeInterpreterConfig {
+    pub code_execution: GeminiCodeExecutionTool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct GeminiCodeExecutionTool {}
+
+impl GeminiCodeInterpreterConfig {
+    pub fn new() -> Self {
+        Self {
+            code_execution: GeminiCodeExecutionTool {},
+        }
+    }
+}
+
+///
+/// Gemini Web Search
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct GeminiWebSearchConfig {
+    pub google_search: GeminiGoogleSearchTool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct GeminiGoogleSearchTool {}
+
+impl GeminiWebSearchConfig {
+    pub fn new() -> Self {
+        Self {
+            google_search: GeminiGoogleSearchTool {},
+        }
     }
 }
