@@ -180,7 +180,9 @@ impl LLMModel for GoogleModels {
             ),
             // 2.5 models are only available in the beta API
             (
-                GoogleModels::Gemini2_5Flash | GoogleModels::Gemini2_5Pro | GoogleModels::Gemini2_5FlashLite,
+                GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleStudio,
             ) => format!(
                 "{}/{}:generateContent",
