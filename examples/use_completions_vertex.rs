@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
         "Translate the following English sentence to all the languages in the response type: Rust is best for working with LLMs";
 
     // Get answer using Google GeminiPro via Vertex AI
-    let model = GoogleModels::Gemini2_5Flash;
+    let model = GoogleModels::Gemini2_5FlashLite;
 
     // **Pre-requisite**: GeminiPro request through Vertex AI require `GOOGLE_PROJECT_ID` environment variable defined
     let gemini_completion =
