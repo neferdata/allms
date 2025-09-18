@@ -284,22 +284,20 @@ impl LLMModel for GoogleModels {
 
         // If the `URL context` tool was configured we include a part with the URLs to be used as context
         if let Some(tools_inner) = tools {
-            tools_inner.iter().find_map(|tool| {
-                if let LLMTools::GeminiWebSearch(config) = tool {
-                    let urls = config.get_context_urls();
-                    if !urls.is_empty() {
-                        message_parts.push(json!({
-                            "text": format!("<url_context>
-                                {:?}
-                                </url_context>",
-                            urls),
-                        }));
-                    }
-                    Some(())
-                } else {
-                    None
+            if let Some(LLMTools::GeminiWebSearch(config)) = tools_inner
+                .iter()
+                .find(|tool| matches!(tool, LLMTools::GeminiWebSearch(_)))
+            {
+                let urls = config.get_context_urls();
+                if !urls.is_empty() {
+                    message_parts.push(json!({
+                        "text": format!("<url_context>
+                            {:?}
+                            </url_context>",
+                        urls),
+                    }));
                 }
-            });
+            }
         }
 
         let contents = json!({
