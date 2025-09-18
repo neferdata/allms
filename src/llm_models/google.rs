@@ -276,13 +276,35 @@ impl LLMModel for GoogleModels {
                 </instructions>"),
         });
 
+        let mut message_parts = vec![
+            base_instructions_json,
+            output_instructions_json,
+            user_instructions_json,
+        ];
+
+        // If the `URL context` tool was configured we include a part with the URLs to be used as context
+        if let Some(tools_inner) = tools {
+            tools_inner.iter().find_map(|tool| {
+                if let LLMTools::GeminiWebSearch(config) = tool {
+                    let urls = config.get_context_urls();
+                    if !urls.is_empty() {
+                        message_parts.push(json!({
+                            "text": format!("<url_context>
+                                {:?}
+                                </url_context>",
+                            urls),
+                        }));
+                    }
+                    Some(())
+                } else {
+                    None
+                }
+            });
+        }
+
         let contents = json!({
             "role": "user",
-            "parts": vec![
-                base_instructions_json,
-                output_instructions_json,
-                user_instructions_json,
-            ],
+            "parts": message_parts,
         });
 
         let generation_config = json!({
@@ -304,7 +326,7 @@ impl LLMModel for GoogleModels {
                         .find(|supported| {
                             std::mem::discriminant(tool) == std::mem::discriminant(supported)
                         })
-                        .and_then(|tool| tool.get_config_json())
+                        .and_then(|_| tool.get_config_json())
                 })
                 .collect();
 

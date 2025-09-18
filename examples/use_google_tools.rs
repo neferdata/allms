@@ -44,7 +44,10 @@ async fn main() -> Result<()> {
     let vertex_token = get_vertex_token().await?;
 
     // Example 1A: Web search example (with Studio API)
-    let web_search_tool = LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new());
+    let web_search_config =
+        GeminiWebSearchConfig::new().add_source("https://www.artificialintelligence-news.com/");
+
+    let web_search_tool = LLMTools::GeminiWebSearch(web_search_config);
     let google_responses =
         Completions::new(GoogleModels::Gemini2_5Flash, &google_api_key, None, None)
             .add_tool(web_search_tool.clone());
@@ -93,8 +96,7 @@ async fn main() -> Result<()> {
     let google_responses_vertex =
         Completions::new(GoogleModels::Gemini2_5Pro, &vertex_token, None, None)
             .add_tool(code_interpreter_tool)
-            .version("google-vertex")
-            .debug();
+            .version("google-vertex");
 
     match google_responses_vertex
         .get_answer::<CodeInterpreterResponse>(

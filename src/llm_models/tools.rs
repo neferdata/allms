@@ -41,7 +41,8 @@ impl LLMTools {
             LLMTools::AnthropicWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::GeminiCodeInterpreter(cfg) => to_value(cfg).ok(),
-            LLMTools::GeminiWebSearch(cfg) => to_value(cfg).ok(),
+            // For Gemini Web Search we decode configuration based on the settings
+            LLMTools::GeminiWebSearch(cfg) => Some(cfg.get_config_json()),
         }
     }
 }
@@ -721,18 +722,161 @@ impl GeminiCodeInterpreterConfig {
 ///
 /// Gemini Web Search
 ///
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub struct GeminiWebSearchConfig {
-    pub google_search: GeminiGoogleSearchTool,
+    context_urls: Vec<String>,
+    include_web: bool,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
-pub struct GeminiGoogleSearchTool {}
+impl Default for GeminiWebSearchConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl GeminiWebSearchConfig {
     pub fn new() -> Self {
         Self {
-            google_search: GeminiGoogleSearchTool {},
+            context_urls: Vec::new(),
+            include_web: false,
         }
+    }
+
+    /// Add a single URL to the context URLs list
+    pub fn add_source(mut self, url: &str) -> Self {
+        self.context_urls.push(url.to_string());
+        self
+    }
+
+    /// Add multiple URLs to the context URLs list
+    pub fn add_sources(mut self, urls: &[String]) -> Self {
+        self.context_urls.extend(urls.to_vec());
+        self
+    }
+
+    /// Enable google search in addition to URL context
+    pub fn include_web(mut self) -> Self {
+        self.include_web = true;
+        self
+    }
+
+    /// Get the list of context URLs
+    pub fn get_context_urls(&self) -> &[String] {
+        &self.context_urls
+    }
+
+    /// Get the configuration as JSON based on the current state
+    pub fn get_config_json(&self) -> serde_json::Value {
+        if self.context_urls.is_empty() {
+            // Case A: context_urls is empty
+            serde_json::json!({
+                "google_search": {}
+            })
+        } else if !self.include_web {
+            // Case B: context_urls is not empty and include_web is false
+            serde_json::json!({
+                "url_context": {}
+            })
+        } else {
+            // Case C: context_urls is not empty and include_web is true
+            serde_json::json!([
+                {
+                    "url_context": {}
+                },
+                {
+                    "google_search": {}
+                }
+            ])
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_gemini_web_search_config_empty() {
+        let config = GeminiWebSearchConfig::new();
+        let json = config.get_config_json();
+
+        // Case A: context_urls is empty -> should return google_search only
+        assert_eq!(json["google_search"], serde_json::json!({}));
+        assert!(
+            json["url_context"].is_null(),
+            "Should not have url_context when empty"
+        );
+        assert!(!json.is_array(), "Should not be an array when empty");
+    }
+
+    #[test]
+    fn test_gemini_web_search_config_with_urls() {
+        let config = GeminiWebSearchConfig::new().add_source("https://example.com");
+        let json = config.get_config_json();
+
+        // Case B: context_urls is not empty and include_web is false -> should return url_context only
+        assert_eq!(json["url_context"], serde_json::json!({}));
+        assert!(
+            json["google_search"].is_null(),
+            "Should not have google_search when only URLs"
+        );
+        assert!(!json.is_array(), "Should not be an array when only URLs");
+    }
+
+    #[test]
+    fn test_gemini_web_search_config_with_urls_and_web() {
+        let config = GeminiWebSearchConfig::new()
+            .add_source("https://example.com")
+            .include_web();
+        let json = config.get_config_json();
+
+        // Case C: context_urls is not empty and include_web is true -> should return array with both
+        assert!(json.is_array());
+        assert_eq!(json[0]["url_context"], serde_json::json!({}));
+        assert_eq!(json[1]["google_search"], serde_json::json!({}));
+    }
+
+    #[test]
+    fn test_gemini_web_search_config_multiple_sources() {
+        let config = GeminiWebSearchConfig::new().add_sources(&[
+            "https://site1.com".to_string(),
+            "https://site2.com".to_string(),
+        ]);
+        let json = config.get_config_json();
+
+        // Should return url_context for multiple sources without include_web
+        assert_eq!(json["url_context"], serde_json::json!({}));
+        assert!(
+            json["google_search"].is_null(),
+            "Should not have google_search when only URLs"
+        );
+        assert!(!json.is_array(), "Should not be an array when only URLs");
+    }
+
+    #[test]
+    fn test_gemini_web_search_config_builder_pattern() {
+        let config = GeminiWebSearchConfig::new()
+            .add_source("https://example.com")
+            .add_sources(&["https://site1.com".to_string()])
+            .include_web();
+
+        // Verify the internal state
+        assert_eq!(config.get_context_urls().len(), 2);
+        assert!(config.include_web);
+
+        let json = config.get_config_json();
+        assert!(json.is_array());
+        assert_eq!(json[0]["url_context"], serde_json::json!({}));
+        assert_eq!(json[1]["google_search"], serde_json::json!({}));
+    }
+
+    #[test]
+    fn test_gemini_web_search_config_through_llm_tools() {
+        let tool = LLMTools::GeminiWebSearch(
+            GeminiWebSearchConfig::new().add_source("https://example.com"),
+        );
+
+        let json = tool.get_config_json().unwrap();
+        assert_eq!(json["url_context"], serde_json::json!({}));
     }
 }
