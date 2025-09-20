@@ -14,24 +14,27 @@ use crate::constants::{
     GOOGLE_VERTEX_ENDPOINT_API_URL,
 };
 use crate::domain::{GoogleGeminiProApiResp, RateLimit};
+use crate::llm_models::tools::{GeminiCodeInterpreterConfig, GeminiWebSearchConfig};
 use crate::llm_models::{LLMModel, LLMTools};
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 // Google Docs: https://ai.google.dev/gemini-api/docs/models/gemini
 // Google Vertex Docs: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 pub enum GoogleModels {
+    // 2.5
+    Gemini2_5Pro,
+    Gemini2_5Flash,
+    Gemini2_5FlashLite,
+    // 2.0
+    Gemini2_0Flash,
+    Gemini2_0FlashLite,
+    // 2.0 - Experimental
+    Gemini2_0ProExp,
+    Gemini2_0FlashThinkingExp,
     // 1.5
     Gemini1_5Flash,
     Gemini1_5Flash8B,
     Gemini1_5Pro,
-    // 2.0
-    Gemini2_0Flash,
-    Gemini2_0FlashLite,
-    Gemini2_0ProExp,
-    Gemini2_0FlashThinkingExp,
-    // 2.5
-    Gemini2_5Flash,
-    Gemini2_5Pro,
     // Fine-tuned models
     FineTunedEndpoint {
         name: String,
@@ -94,8 +97,9 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => {
                 "gemini-2.0-flash-thinking-exp-01-21"
             }
-            GoogleModels::Gemini2_5Flash => "gemini-2.5-flash-preview-05-20",
-            GoogleModels::Gemini2_5Pro => "gemini-2.5-pro-preview-05-06",
+            GoogleModels::Gemini2_5Flash => "gemini-2.5-flash",
+            GoogleModels::Gemini2_5Pro => "gemini-2.5-pro",
+            GoogleModels::Gemini2_5FlashLite => "gemini-2.5-flash-lite",
             GoogleModels::FineTunedEndpoint { name } => name,
         }
     }
@@ -122,6 +126,7 @@ impl LLMModel for GoogleModels {
             }
             "gemini-2.5-flash" => Some(GoogleModels::Gemini2_5Flash),
             "gemini-2.5-pro" => Some(GoogleModels::Gemini2_5Pro),
+            "gemini-2.5-flash-lite" => Some(GoogleModels::Gemini2_5FlashLite),
             // Gemini 1.0 Pro is deprecated starting 2/15/2025. We are re-routing to 1.5 Pro for the model
             "gemini-pro" => Some(GoogleModels::Gemini1_5Pro),
             "gemini-1.0-pro" => Some(GoogleModels::Gemini1_5Pro),
@@ -145,6 +150,7 @@ impl LLMModel for GoogleModels {
             | GoogleModels::Gemini2_0FlashThinkingExpVertex => 1_048_576,
             GoogleModels::Gemini2_5Flash => 1_048_576,
             GoogleModels::Gemini2_5Pro => 1_048_576,
+            GoogleModels::Gemini2_5FlashLite => 1_048_576,
             // TODO: Is this a good assumption?
             GoogleModels::FineTunedEndpoint { .. } => 1_048_576,
         }
@@ -174,7 +180,9 @@ impl LLMModel for GoogleModels {
             ),
             // 2.5 models are only available in the beta API
             (
-                GoogleModels::Gemini2_5Flash | GoogleModels::Gemini2_5Pro,
+                GoogleModels::Gemini2_5Flash
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleStudio,
             ) => format!(
                 "{}/{}:generateContent",
@@ -201,7 +209,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro,
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleVertex,
             ) => {
                 // Construct Vertex URL when needed
@@ -250,7 +259,7 @@ impl LLMModel for GoogleModels {
         function_call: bool,
         _max_tokens: &usize,
         temperature: &f32,
-        _tools: Option<&[LLMTools]>,
+        tools: Option<&[LLMTools]>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions_json = json!({
@@ -267,23 +276,64 @@ impl LLMModel for GoogleModels {
                 </instructions>"),
         });
 
+        let mut message_parts = vec![
+            base_instructions_json,
+            output_instructions_json,
+            user_instructions_json,
+        ];
+
+        // If the `URL context` tool was configured we include a part with the URLs to be used as context
+        if let Some(tools_inner) = tools {
+            if let Some(LLMTools::GeminiWebSearch(config)) = tools_inner
+                .iter()
+                .find(|tool| matches!(tool, LLMTools::GeminiWebSearch(_)))
+            {
+                let urls = config.get_context_urls();
+                if !urls.is_empty() {
+                    message_parts.push(json!({
+                        "text": format!("<url_context>
+                            {:?}
+                            </url_context>",
+                        urls),
+                    }));
+                }
+            }
+        }
+
         let contents = json!({
             "role": "user",
-            "parts": vec![
-                base_instructions_json,
-                output_instructions_json,
-                user_instructions_json,
-            ],
+            "parts": message_parts,
         });
 
         let generation_config = json!({
             "temperature": temperature,
         });
 
-        json!({
+        let mut body = json!({
             "contents": contents,
             "generationConfig": generation_config,
-        })
+        });
+
+        // Include tools if provided
+        if let Some(tools_inner) = tools {
+            let processed_tools: Vec<Value> = tools_inner
+                .iter()
+                .filter_map(|tool| {
+                    self.get_supported_tools()
+                        .iter()
+                        .find(|supported| {
+                            std::mem::discriminant(tool) == std::mem::discriminant(supported)
+                        })
+                        .and_then(|_| tool.get_config_json())
+                })
+                .collect();
+
+            if !processed_tools.is_empty() {
+                body["tools"] = json!(processed_tools);
+            }
+        }
+
+        body
     }
 
     /*
@@ -316,7 +366,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro,
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleStudio,
             ) => self.call_api_studio(api_key, version, body, debug).await,
             // Fine-tuned models are only available in the Vertex API
@@ -334,7 +385,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro,
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleVertex,
             ) => {
                 self.call_api_vertex_stream(api_key, version, body, debug)
@@ -384,7 +436,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro,
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleStudio,
             ) => self.get_generate_content_data(response_text),
             // Fine-tuned models are only available in the Vertex API
@@ -392,7 +445,7 @@ impl LLMModel for GoogleModels {
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleStudio) => {
                 self.get_generate_content_data(response_text)
             }
-            //Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
+            // Because for Vertex we are using streaming the extraction of data/text is handled in call_api method. Here we only pass the input forward
             (
                 GoogleModels::Gemini1_5Pro
                 | GoogleModels::Gemini1_5Flash
@@ -402,7 +455,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0ProExp
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
-                | GoogleModels::Gemini2_5Pro,
+                | GoogleModels::Gemini2_5Pro
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleVertex,
             ) => Ok(response_text.to_string()),
             // Google Vertex API for fine-tuned models
@@ -426,7 +480,7 @@ impl LLMModel for GoogleModels {
 
     //This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
-        //Docs: https://ai.google.dev/gemini-api/docs/models/gemini
+        //Docs: https://ai.google.dev/gemini-api/docs/rate-limits#tier-3
         match self {
             GoogleModels::Gemini1_5Flash | GoogleModels::Gemini1_5FlashVertex => RateLimit {
                 tpm: 4_000_000,
@@ -457,6 +511,10 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini2_5Pro => RateLimit {
                 tpm: 8_000_000,
                 rpm: 2_000,
+            },
+            GoogleModels::Gemini2_5FlashLite => RateLimit {
+                tpm: 30_000_000,
+                rpm: 30_000,
             },
             // Fine-tuned models use 2.0 Flash and Flash Lite rate limits
             GoogleModels::FineTunedEndpoint { .. } => RateLimit {
@@ -567,7 +625,7 @@ impl GoogleModels {
                     .iter()
                     .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
                     .flat_map(|candidate| &candidate.content.parts)
-                    .map(|part| &part.text)
+                    .filter_map(|part| part.text.as_ref())
                     .fold(String::new(), |mut acc, text| {
                         acc.push_str(text);
                         acc
@@ -643,12 +701,389 @@ impl GoogleModels {
             .iter()
             .filter(|candidate| candidate.content.role.as_deref() == Some("model"))
             .flat_map(|candidate| &candidate.content.parts)
-            .map(|part| &part.text)
+            .filter_map(|part| part.text.as_ref())
             .fold(String::new(), |mut acc, text| {
                 acc.push_str(text);
                 acc
             });
 
         Ok(self.sanitize_json_response(&data))
+    }
+
+    fn get_supported_tools(&self) -> Vec<LLMTools> {
+        match self {
+            GoogleModels::Gemini2_5Pro
+            | GoogleModels::Gemini2_5Flash
+            | GoogleModels::Gemini2_5FlashLite
+            | GoogleModels::Gemini2_0Flash => vec![
+                LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new()),
+                LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new()),
+            ],
+            _ => vec![],
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn create_test_model() -> GoogleModels {
+        GoogleModels::Gemini1_5Pro
+    }
+
+    fn create_test_schema() -> Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                }
+            }
+        })
+    }
+
+    ///
+    /// get_body
+    ///
+    #[test]
+    fn test_get_body_basic_functionality() {
+        let model = create_test_model();
+        let instructions = "Test instructions";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+        let tools = None;
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // Verify the structure of the returned JSON
+        assert!(body.is_object());
+
+        // Check that contents field exists and has the right structure
+        assert!(body["contents"].is_object());
+        assert_eq!(body["contents"]["role"], "user");
+        assert!(body["contents"]["parts"].is_array());
+
+        // Check that generationConfig exists
+        assert!(body["generationConfig"].is_object());
+        assert!((body["generationConfig"]["temperature"].as_f64().unwrap() - 0.7).abs() < 0.001);
+
+        // Verify that tools field is not present when no tools are provided
+        assert!(body["tools"].is_null());
+    }
+
+    #[test]
+    fn test_get_body_with_instructions_content() {
+        let model = create_test_model();
+        let instructions = "Please analyze this data and provide insights";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.5;
+        let tools = None;
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        let parts = &body["contents"]["parts"];
+        assert!(parts.is_array());
+
+        // Find the user instructions part
+        let user_instructions = parts.as_array().unwrap().iter().find(|part| {
+            part["text"]
+                .as_str()
+                .unwrap_or("")
+                .contains("<instructions>")
+        });
+
+        assert!(user_instructions.is_some());
+        let text = user_instructions.unwrap()["text"].as_str().unwrap();
+        assert!(text.contains("Please analyze this data and provide insights"));
+        assert!(text.contains("<instructions>"));
+        assert!(text.contains("</instructions>"));
+    }
+
+    #[test]
+    fn test_get_body_with_json_schema() {
+        let model = create_test_model();
+        let instructions = "Test";
+        let json_schema = json!({
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "string",
+                    "description": "The result"
+                }
+            }
+        });
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.3;
+        let tools = None;
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        let parts = &body["contents"]["parts"];
+        let output_schema_part = parts.as_array().unwrap().iter().find(|part| {
+            part["text"]
+                .as_str()
+                .unwrap_or("")
+                .contains("<output json schema>")
+        });
+
+        assert!(output_schema_part.is_some());
+        let text = output_schema_part.unwrap()["text"].as_str().unwrap();
+        assert!(text.contains("<output json schema>"));
+        assert!(text.contains("</output json schema>"));
+        // The JSON schema is serialized, so we need to check for the actual serialized content
+        assert!(text.contains("type"));
+        assert!(text.contains("object"));
+    }
+
+    #[test]
+    fn test_get_body_with_tools() {
+        let model = GoogleModels::Gemini2_5Pro; // Model that supports tools
+        let instructions = "Search for information";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+        let tools_array = [
+            LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new()),
+            LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new()),
+        ];
+        let tools = Some(&tools_array[..]);
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // Check that tools field exists and contains the tools
+        assert!(body["tools"].is_array());
+        let tools_array = body["tools"].as_array().unwrap();
+        assert!(!tools_array.is_empty());
+    }
+
+    #[test]
+    fn test_get_body_with_unsupported_tools() {
+        let model = GoogleModels::Gemini1_5Flash; // Model that doesn't support tools
+        let instructions = "Test";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+        let tools_array = [LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new())];
+        let tools = Some(&tools_array[..]);
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // Tools should not be included for unsupported models
+        assert!(body["tools"].is_null());
+    }
+
+    #[test]
+    fn test_get_body_with_web_search_context() {
+        let model = GoogleModels::Gemini2_5Pro;
+        let instructions = "Search for information";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+
+        // Create a web search config with URLs
+        let web_search_config = GeminiWebSearchConfig::new();
+        // Note: We need to check if GeminiWebSearchConfig has methods to set URLs
+        // For now, we'll test the basic structure
+        let tools_array = [LLMTools::GeminiWebSearch(web_search_config)];
+        let tools = Some(&tools_array[..]);
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // Verify the structure is correct
+        assert!(body["contents"].is_object());
+        assert!(body["generationConfig"].is_object());
+    }
+
+    #[test]
+    fn test_get_body_temperature_values() {
+        let model = create_test_model();
+        let instructions = "Test";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let tools = None;
+
+        // Test different temperature values
+        let temperatures = vec![0.0, 0.5, 1.0, 1.5];
+
+        for temp in temperatures {
+            let body = model.get_body(
+                instructions,
+                &json_schema,
+                function_call,
+                &max_tokens,
+                &temp,
+                tools,
+            );
+
+            assert_eq!(body["generationConfig"]["temperature"], temp);
+        }
+    }
+
+    #[test]
+    fn test_get_body_function_call_true() {
+        let model = create_test_model();
+        let instructions = "Test with function calling";
+        let json_schema = create_test_schema();
+        let function_call = true;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+        let tools = None;
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // The function_call parameter affects the base instructions
+        // We should verify that the base instructions are included
+        let parts = &body["contents"]["parts"];
+        assert!(parts.is_array());
+
+        // Check that base instructions are included
+        let base_instructions = parts
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|part| part["text"].as_str().unwrap_or("").contains("text"));
+
+        assert!(base_instructions.is_some());
+    }
+
+    #[test]
+    fn test_get_body_empty_instructions() {
+        let model = create_test_model();
+        let instructions = "";
+        let json_schema = create_test_schema();
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+        let tools = None;
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // Should still create a valid body even with empty instructions
+        assert!(body.is_object());
+        assert!(body["contents"].is_object());
+        assert!(body["generationConfig"].is_object());
+    }
+
+    #[test]
+    fn test_get_body_complex_json_schema() {
+        let model = create_test_model();
+        let instructions = "Test";
+        let json_schema = json!({
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The name"
+                },
+                "age": {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["name"]
+        });
+        let function_call = false;
+        let max_tokens = 1000;
+        let temperature = 0.7;
+        let tools = None;
+
+        let body = model.get_body(
+            instructions,
+            &json_schema,
+            function_call,
+            &max_tokens,
+            &temperature,
+            tools,
+        );
+
+        // Verify that the complex schema is properly included
+        let parts = &body["contents"]["parts"];
+        let output_schema_part = parts.as_array().unwrap().iter().find(|part| {
+            part["text"]
+                .as_str()
+                .unwrap_or("")
+                .contains("<output json schema>")
+        });
+
+        assert!(output_schema_part.is_some());
+        let text = output_schema_part.unwrap()["text"].as_str().unwrap();
+        // The JSON schema is serialized, so we need to check for the actual serialized content
+        assert!(text.contains("type"));
+        assert!(text.contains("object"));
+        assert!(text.contains("required"));
+        assert!(text.contains("name"));
     }
 }

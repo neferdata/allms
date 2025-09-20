@@ -105,8 +105,8 @@ async fn main() {
     }
 
     // Get answer using Google Studio
-    let model =
-        GoogleModels::try_from_str("gemini-2.5-flash").unwrap_or(GoogleModels::Gemini2_5Flash); // Choose the model
+    let model = GoogleModels::try_from_str("gemini-2.5-flash-lite")
+        .unwrap_or(GoogleModels::Gemini2_5FlashLite); // Choose the model
     println!("Google Gemini model: {:#?}", model.as_str());
 
     let google_token_str: String =

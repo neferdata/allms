@@ -18,6 +18,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 Anthropic:
 - APIs: Messages, Text Completions
 - Models: Claude Opus 4.1, Claude Sonnet 4, Claude Opus 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
+- Tools: file search, web search, code interpreter, computer use
 
 AWS Bedrock:
 - APIs: Converse
@@ -36,9 +37,10 @@ DeepSeek:
 Google Gemini:
 - APIs: Chat Completions (including streaming)
     - Via Vertex AI or AI Studio
-- Models: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 2.5 Flash, Gemini 2.5 Pro
+- Models: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.5 Flash-Lite, Gemini 2.0 Flash, Gemini 2.0 Flash-Lite, Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 1.5 Flash-8B
     - Experimental models: Gemini 2.0 Pro, Gemini 2.0 Flash-Thinking
     - Fine-tuned models: in Vertex AI only, using endpoint constructor
+- Tools: Google Search, code execution
 
 Mistral:
 - APIs: Chat Completions
@@ -46,10 +48,11 @@ Mistral:
     - Legacy models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
-- APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores, Tools (file search, web search, code interpreter)
+- APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores
 - Models: 
     - Chat Completions & Responses only: o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini 
     - Chat Completions, Responses & Assistants: GPT-5, GPT-5-mini, GPT-5-nano, GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
+- Tools: file search, web search, code interpreter, computer use
 
 Perplexity:
 - APIs: Chat Completions
@@ -59,6 +62,7 @@ Perplexity:
 xAI:
 - APIs: Chat Completions
 - Models: Grok 4, Grok 3, Grok 3 Mini, Grok 3 Fast, Grok 3 Mini Fast
+- Tools: web search
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)
