@@ -381,6 +381,8 @@ impl AnthropicModels {
                 LLMTools::AnthropicCodeExecution(_),
             ) => Some(("anthropic-beta", "code-execution-2025-05-22")),
             (
+                // Claude Sonnet 4.5 does not support the computer use tool as of 9/30/2025
+                // https://docs.claude.com/en/docs/agents-and-tools/tool-use/computer-use-tool
                 AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
