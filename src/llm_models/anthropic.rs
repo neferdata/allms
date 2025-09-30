@@ -19,6 +19,7 @@ use crate::llm_models::{
 // API Docs: https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
+    Claude4_5Sonnet,
     Claude4_1Opus,
     Claude4Sonnet,
     Claude4Opus,
@@ -37,6 +38,7 @@ pub enum AnthropicModels {
 impl LLMModel for AnthropicModels {
     fn as_str(&self) -> &str {
         match self {
+            AnthropicModels::Claude4_5Sonnet => "claude-sonnet-4-5",
             AnthropicModels::Claude4_1Opus => "claude-opus-4-1-20250805",
             AnthropicModels::Claude4Sonnet => "claude-sonnet-4-20250514",
             AnthropicModels::Claude4Opus => "claude-opus-4-20250514",
@@ -55,6 +57,8 @@ impl LLMModel for AnthropicModels {
     // Docs: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-aliases
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "claude-sonnet-4-5" => Some(AnthropicModels::Claude4_5Sonnet),
+            "claude-sonnet-4-5-20250929" => Some(AnthropicModels::Claude4_5Sonnet),
             "claude-opus-4-1-20250805" => Some(AnthropicModels::Claude4_1Opus),
             "claude-opus-4-1" => Some(AnthropicModels::Claude4_1Opus),
             "claude-sonnet-4-20250514" => Some(AnthropicModels::Claude4Sonnet),
@@ -79,6 +83,7 @@ impl LLMModel for AnthropicModels {
     fn default_max_tokens(&self) -> usize {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
         match self {
+            AnthropicModels::Claude4_5Sonnet => 64_000,
             AnthropicModels::Claude4_1Opus => 32_000,
             AnthropicModels::Claude4Sonnet => 64_000,
             AnthropicModels::Claude4Opus => 32_000,
@@ -96,7 +101,8 @@ impl LLMModel for AnthropicModels {
 
     fn get_endpoint(&self) -> String {
         match self {
-            AnthropicModels::Claude4_1Opus
+            AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
             | AnthropicModels::Claude3_7Sonnet
@@ -224,7 +230,8 @@ impl LLMModel for AnthropicModels {
         }
 
         match self {
-            AnthropicModels::Claude4_1Opus
+            AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
             | AnthropicModels::Claude3_7Sonnet
@@ -297,7 +304,8 @@ impl LLMModel for AnthropicModels {
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
         match self {
-            AnthropicModels::Claude4_1Opus
+            AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
             | AnthropicModels::Claude3_7Sonnet
@@ -337,7 +345,8 @@ impl LLMModel for AnthropicModels {
 impl AnthropicModels {
     pub fn get_supported_tools(&self) -> Vec<LLMTools> {
         match self {
-            AnthropicModels::Claude4_1Opus
+            AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
             | AnthropicModels::Claude3_7Sonnet
@@ -363,7 +372,8 @@ impl AnthropicModels {
     pub fn get_tool_header(&self, tool: &LLMTools) -> Option<(&'static str, &'static str)> {
         match (self, tool) {
             (
-                AnthropicModels::Claude4_1Opus
+                AnthropicModels::Claude4_5Sonnet
+                | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet
@@ -381,7 +391,8 @@ impl AnthropicModels {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
             (
-                AnthropicModels::Claude4_1Opus
+                AnthropicModels::Claude4_5Sonnet
+                | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet
