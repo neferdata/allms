@@ -12,14 +12,23 @@ use crate::llm_models::{LLMModel, LLMTools};
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Mistral docs: https://docs.mistral.ai/getting-started/models/models_overview/
 pub enum MistralModels {
-    // Premier models
+    // Frontier multimodal models
+    MistralLarge2_1,
+    MistralMedium3_1,
     MistralMedium3,
+    MistralSmall3_2,
+    MistralSmall3_1,
+    MistralSmall3,
+    MistralSmall2,
+    // Frontier reasoning models
+    MagistralMedium1_2,
     MagistralMedium,
+    MagistralSmall1_2,
+    // Other frontier models
+    Codestral2508,
     Codestral2,
     Ministral3B,
     Ministral8B,
-    MistralLarge2_1,
-    MistralSmall2,
     // Legacy models
     MistralLarge,
     MistralNemo,
@@ -35,14 +44,23 @@ pub enum MistralModels {
 impl LLMModel for MistralModels {
     fn as_str(&self) -> &str {
         match self {
-            // Premier models
+            // Frontier multimodal models
+            MistralModels::MistralLarge2_1 => "mistral-large-latest",
+            MistralModels::MistralMedium3_1 => "mistral-medium-latest",
             MistralModels::MistralMedium3 => "mistral-medium-2505",
+            MistralModels::MistralSmall3_2 => "mistral-small-latest",
+            MistralModels::MistralSmall3_1 => "mistral-small-2503",
+            MistralModels::MistralSmall3 => "mistral-small-2501",
+            MistralModels::MistralSmall2 => "mistral-small-2407",
+            // Frontier reasoning models
+            MistralModels::MagistralMedium1_2 => "magistral-medium-latest",
             MistralModels::MagistralMedium => "magistral-medium-2506",
+            MistralModels::MagistralSmall1_2 => "magistral-small-latest",
+            // Other frontier models
+            MistralModels::Codestral2508 => "codestral-2508",
             MistralModels::Codestral2 => "codestral-2501",
             MistralModels::Ministral3B => "ministral-3b-2410",
             MistralModels::Ministral8B => "ministral-8b-2410",
-            MistralModels::MistralLarge2_1 => "mistral-large-2411",
-            MistralModels::MistralSmall2 => "mistral-small-2506",
             // Legacy
             MistralModels::MistralLarge => "mistral-large-latest",
             MistralModels::MistralNemo => "open-mistral-nemo",
@@ -57,22 +75,29 @@ impl LLMModel for MistralModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
-            // Premier models
+            // Frontier multimodal models
+            "mistral-large-latest" => Some(MistralModels::MistralLarge2_1),
+            "mistral-large-2411" => Some(MistralModels::MistralLarge2_1),
+            "mistral-medium-latest" => Some(MistralModels::MistralMedium3_1),
+            "mistral-medium-2508" => Some(MistralModels::MistralMedium3_1),
             "mistral-medium-2505" => Some(MistralModels::MistralMedium3),
-            "mistral-medium-latest" => Some(MistralModels::MistralMedium3),
+            "mistral-small-latest" => Some(MistralModels::MistralSmall3_2),
+            "mistral-small-2506" => Some(MistralModels::MistralSmall3_2),
+            "mistral-small-2503" => Some(MistralModels::MistralSmall3_1),
+            "mistral-small-2501" => Some(MistralModels::MistralSmall3),
+            "mistral-small-2407" => Some(MistralModels::MistralSmall2),
+            // Frontier reasoning models
+            "magistral-medium-latest" => Some(MistralModels::MagistralMedium1_2),
             "magistral-medium-2506" => Some(MistralModels::MagistralMedium),
-            "magistral-medium-latest" => Some(MistralModels::MagistralMedium),
+            "magistral-small-latest" => Some(MistralModels::MagistralSmall1_2),
+            // Other frontier models
+            "codestral-latest" => Some(MistralModels::Codestral2508),
+            "codestral-2508" => Some(MistralModels::Codestral2508),
             "codestral-2501" => Some(MistralModels::Codestral2),
-            "codestral-latest" => Some(MistralModels::Codestral2),
             "ministral-3b-2410" => Some(MistralModels::Ministral3B),
             "ministral-3b-latest" => Some(MistralModels::Ministral3B),
             "ministral-8b-2410" => Some(MistralModels::Ministral8B),
             "ministral-8b-latest" => Some(MistralModels::Ministral8B),
-            "mistral-large-2411" => Some(MistralModels::MistralLarge2_1),
-            "mistral-large-latest" => Some(MistralModels::MistralLarge2_1),
-            "mistral-small-2407" => Some(MistralModels::MistralSmall2),
-            "mistral-small-2506" => Some(MistralModels::MistralSmall2),
-            "mistral-small-latest" => Some(MistralModels::MistralSmall2),
             // Legacy
             "open-mistral-nemo" => Some(MistralModels::MistralNemo),
             "open-mistral-7b" => Some(MistralModels::Mistral7B),
@@ -87,14 +112,23 @@ impl LLMModel for MistralModels {
 
     fn default_max_tokens(&self) -> usize {
         match self {
-            // Premier models
+            // Frontier multimodal models
+            MistralModels::MistralLarge2_1 => 128_000,
+            MistralModels::MistralMedium3_1 => 128_000,
             MistralModels::MistralMedium3 => 128_000,
-            MistralModels::MagistralMedium => 40_000,
+            MistralModels::MistralSmall3_2 => 128_000,
+            MistralModels::MistralSmall3_1 => 128_000,
+            MistralModels::MistralSmall3 => 32_000,
+            MistralModels::MistralSmall2 => 32_000,
+            // Frontier reasoning models
+            MistralModels::MagistralMedium1_2 => 128_000,
+            MistralModels::MagistralMedium => 128_000,
+            MistralModels::MagistralSmall1_2 => 128_000,
+            // Other frontier models
+            MistralModels::Codestral2508 => 256_000,
             MistralModels::Codestral2 => 256_000,
             MistralModels::Ministral3B => 128_000,
             MistralModels::Ministral8B => 128_000,
-            MistralModels::MistralLarge2_1 => 128_000,
-            MistralModels::MistralSmall2 => 32_000,
             // Legacy
             MistralModels::MistralLarge => 128_000,
             MistralModels::MistralNemo => 128_000,

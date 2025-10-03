@@ -90,8 +90,8 @@ async fn main() {
     // Get answer using Mistral
     let mistral_api_key: String =
         std::env::var("MISTRAL_API_KEY").expect("MISTRAL_API_KEY not set");
-    let model =
-        MistralModels::try_from_str("mistral-medium-2505").unwrap_or(MistralModels::MistralMedium3); // Choose the model
+    let model = MistralModels::try_from_str("mistral-medium-latest")
+        .unwrap_or(MistralModels::MistralMedium3_1); // Choose the model
     println!("Mistral model: {:#?}", model.as_str());
 
     let mistral_completion = Completions::new(model, &mistral_api_key, None, None);
