@@ -44,7 +44,10 @@ Google Gemini:
 
 Mistral:
 - APIs: Chat Completions
-- Models: Mistral Medium 3, Magistral Medium, Codestral 2, Ministral 3B, Ministral 8B, Mistral Large 2.1, Mistral Small 2
+- Models:  
+    - Multimodal: Mistral Large 2.1, Mistral Medium 3.1, Mistral Medium 3, Mistral Small 3.2, Mistral Small 3.1, Mistral Small 3, Mistral Small 2
+    - Reasoning: Magistral Medium 1.2, Magistral Medium, Magistral Small 1.2
+    - Other: Codestral 2508, Codestral 2, Ministral 3B, Ministral 8B
     - Legacy models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
 
 OpenAI:
