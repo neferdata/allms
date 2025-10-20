@@ -20,6 +20,7 @@ use crate::llm_models::{
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
     Claude4_5Sonnet,
+    Claude4_5Haiku,
     Claude4_1Opus,
     Claude4Sonnet,
     Claude4Opus,
@@ -39,6 +40,7 @@ impl LLMModel for AnthropicModels {
     fn as_str(&self) -> &str {
         match self {
             AnthropicModels::Claude4_5Sonnet => "claude-sonnet-4-5",
+            AnthropicModels::Claude4_5Haiku => "claude-haiku-4-5",
             AnthropicModels::Claude4_1Opus => "claude-opus-4-1-20250805",
             AnthropicModels::Claude4Sonnet => "claude-sonnet-4-20250514",
             AnthropicModels::Claude4Opus => "claude-opus-4-20250514",
@@ -59,6 +61,8 @@ impl LLMModel for AnthropicModels {
         match name.to_lowercase().as_str() {
             "claude-sonnet-4-5" => Some(AnthropicModels::Claude4_5Sonnet),
             "claude-sonnet-4-5-20250929" => Some(AnthropicModels::Claude4_5Sonnet),
+            "claude-haiku-4-5" => Some(AnthropicModels::Claude4_5Haiku),
+            "claude-haiku-4-5-20251001" => Some(AnthropicModels::Claude4_5Haiku),
             "claude-opus-4-1-20250805" => Some(AnthropicModels::Claude4_1Opus),
             "claude-opus-4-1" => Some(AnthropicModels::Claude4_1Opus),
             "claude-sonnet-4-20250514" => Some(AnthropicModels::Claude4Sonnet),
@@ -84,6 +88,7 @@ impl LLMModel for AnthropicModels {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
         match self {
             AnthropicModels::Claude4_5Sonnet => 64_000,
+            AnthropicModels::Claude4_5Haiku => 64_000,
             AnthropicModels::Claude4_1Opus => 32_000,
             AnthropicModels::Claude4Sonnet => 64_000,
             AnthropicModels::Claude4Opus => 32_000,
@@ -102,6 +107,7 @@ impl LLMModel for AnthropicModels {
     fn get_endpoint(&self) -> String {
         match self {
             AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_5Haiku
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
@@ -231,6 +237,7 @@ impl LLMModel for AnthropicModels {
 
         match self {
             AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_5Haiku
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
@@ -305,6 +312,7 @@ impl LLMModel for AnthropicModels {
         //Convert API response to struct representing expected response format
         match self {
             AnthropicModels::Claude4_5Sonnet
+            | AnthropicModels::Claude4_5Haiku
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
@@ -358,6 +366,14 @@ impl AnthropicModels {
                     LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
                 ]
             }
+            // As of 2025.10.16 Claude 4.5 Haiku does not seem to support file search
+            AnthropicModels::Claude4_5Haiku => {
+                vec![
+                    LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new()),
+                    LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
+                    LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
+                ]
+            }
             AnthropicModels::Claude3_5Sonnet => {
                 vec![
                     LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
@@ -373,17 +389,20 @@ impl AnthropicModels {
         match (self, tool) {
             (
                 AnthropicModels::Claude4_5Sonnet
+                | AnthropicModels::Claude4_5Haiku
                 | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet
                 | AnthropicModels::Claude3_5Haiku,
                 LLMTools::AnthropicCodeExecution(_),
-            ) => Some(("anthropic-beta", "code-execution-2025-05-22")),
+            ) => Some(("anthropic-beta", "code-execution-2025-08-25")),
             (
-                // Claude Sonnet 4.5 does not support the computer use tool as of 9/30/2025
+                // As of 2025.10.16 it is unclear if computer us is supported for 4.5 models
                 // https://docs.claude.com/en/docs/agents-and-tools/tool-use/computer-use-tool
-                AnthropicModels::Claude4_1Opus
+                AnthropicModels::Claude4_5Sonnet
+                | AnthropicModels::Claude4_5Haiku
+                | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet,
