@@ -247,7 +247,7 @@ pub enum MistralAPIConversationsOutput {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MistralAPIConversationsMessageOutput {
     pub object: Option<String>,
-    #[serde(rename = "type")]
+    #[serde(rename = "type", skip_deserializing)]
     pub entry_type: Option<String>,
     pub role: Option<String>,
     pub id: Option<String>,
@@ -304,8 +304,11 @@ pub struct MistralAPIConversationsToolExecution {
     pub name: MistralAPIConversationsToolName,
     #[serde(default = "default_entry_object")]
     pub object: String,
-    #[serde(rename = "type")]
-    #[serde(default = "default_tool_execution_type")]
+    #[serde(
+        rename = "type",
+        skip_deserializing,
+        default = "default_tool_execution_type"
+    )]
     pub entry_type: String,
     pub function: Option<String>,
 }
