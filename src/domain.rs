@@ -307,6 +307,7 @@ pub struct MistralAPIConversationsToolExecution {
     #[serde(rename = "type")]
     #[serde(default = "default_tool_execution_type")]
     pub entry_type: String,
+    pub function: Option<String>,
 }
 
 /// Tool name enum for Mistral Conversations API
@@ -340,6 +341,8 @@ pub struct MistralAPIConversationsUsage {
     pub connector_tokens: usize,
     pub prompt_tokens: usize,
     pub total_tokens: usize,
+    #[serde(default)]
+    pub connectors: Option<Value>,
 }
 
 ///Google GeminiPro API response deserialization structs

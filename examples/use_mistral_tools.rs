@@ -8,7 +8,7 @@ use std::path::Path;
 use allms::{
     files::{AnthropicFile, LLMFiles},
     llm::{
-        tools::{LLMTools, MistralWebSearchConfig},
+        tools::{LLMTools, MistralCodeInterpreterConfig, MistralWebSearchConfig},
         MistralModels,
     },
     Completions,
@@ -70,8 +70,7 @@ async fn main() -> Result<()> {
         None,
         None,
     )
-    .add_tool(web_search_tool)
-    .debug();
+    .add_tool(web_search_tool);
 
     match mistral_responses
         .get_answer::<AINewsArticles>("Find up to 5 most recent news items about Artificial Intelligence, Generative AI, and Large Language Models. 
@@ -82,27 +81,26 @@ async fn main() -> Result<()> {
         Err(e) => eprintln!("Error: {:?}", e),
     }
 
-    // // Example 2: Code interpreter example
+    // Example 2: Code interpreter example
+    let code_interpreter_tool =
+        LLMTools::MistralCodeInterpreter(MistralCodeInterpreterConfig::new());
+    let mistral_responses = Completions::new(
+        MistralModels::MistralMedium3_1,
+        &mistral_api_key,
+        None,
+        None,
+    )
+    .add_tool(code_interpreter_tool);
 
-    // let code_interpreter_tool =
-    //     LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new());
-    // let anthropic_responses = Completions::new(
-    //     AnthropicModels::Claude4_5Haiku,
-    //     &anthropic_api_key,
-    //     None,
-    //     None,
-    // )
-    // .add_tool(code_interpreter_tool);
-
-    // match anthropic_responses
-    //     .get_answer::<CodeInterpreterResponse>(
-    //         "Calculate the mean and standard deviation of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
-    //     )
-    //     .await
-    // {
-    //     Ok(response) => println!("Code interpreter response:\n{:#?}", response),
-    //     Err(e) => eprintln!("Error: {:?}", e),
-    // }
+    match mistral_responses
+        .get_answer::<CodeInterpreterResponse>(
+            "Calculate the mean and standard deviation of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]",
+        )
+        .await
+    {
+        Ok(response) => println!("Code interpreter response:\n{:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
 
     // // Example 3: File search example
 

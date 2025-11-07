@@ -31,6 +31,7 @@ pub enum LLMTools {
     GeminiWebSearch(GeminiWebSearchConfig),
     /// Mistral
     MistralWebSearch(MistralWebSearchConfig),
+    MistralCodeInterpreter(MistralCodeInterpreterConfig),
 }
 
 impl LLMTools {
@@ -50,6 +51,7 @@ impl LLMTools {
             // For Gemini Web Search we decode configuration based on the settings
             LLMTools::GeminiWebSearch(cfg) => Some(cfg.get_config_json()),
             LLMTools::MistralWebSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::MistralCodeInterpreter(cfg) => to_value(cfg).ok(),
         }
     }
 }
@@ -830,6 +832,30 @@ impl MistralWebSearchConfig {
 
     pub fn get_type_str(&self) -> String {
         serde_json::to_string(&self.web_search_type).unwrap_or_default()
+    }
+}
+
+///
+/// Mistral Code Interpreter
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct MistralCodeInterpreterConfig {
+    #[serde(rename = "type")]
+    pub code_interpreter_type: MistralCodeInterpreterType,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum MistralCodeInterpreterType {
+    #[serde(rename = "code_interpreter")]
+    #[default]
+    CodeInterpreter,
+}
+
+impl MistralCodeInterpreterConfig {
+    pub fn new() -> Self {
+        Self {
+            code_interpreter_type: MistralCodeInterpreterType::default(),
+        }
     }
 }
 

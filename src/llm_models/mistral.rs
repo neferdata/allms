@@ -11,7 +11,10 @@ use crate::domain::{
     MistralAPIConversationsMessageOutputContent, MistralAPIConversationsOutput,
     MistralAPIConversationsResponse, RateLimit,
 };
-use crate::llm_models::{tools::MistralWebSearchConfig, LLMModel, LLMTools};
+use crate::llm_models::{
+    tools::{MistralCodeInterpreterConfig, MistralWebSearchConfig},
+    LLMModel, LLMTools,
+};
 use crate::utils::has_values;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
@@ -247,7 +250,10 @@ impl LLMModel for MistralModels {
 
 impl MistralModels {
     fn get_supported_tools(&self) -> Vec<LLMTools> {
-        vec![LLMTools::MistralWebSearch(MistralWebSearchConfig::new())]
+        vec![
+            LLMTools::MistralWebSearch(MistralWebSearchConfig::new()),
+            LLMTools::MistralCodeInterpreter(MistralCodeInterpreterConfig::new()),
+        ]
     }
 
     fn get_chat_completions_body(
