@@ -232,7 +232,7 @@ pub struct MistralAPIConversationsResponse {
 /// Mistral Conversations API output entry types
 /// Can be MessageOutputEntry | ToolExecutionEntry | FunctionCallEntry | AgentHandoffEntry
 #[derive(Deserialize, Serialize, Debug, Clone)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type")]
 pub enum MistralAPIConversationsOutput {
     #[serde(rename = "message.output")]
     MistralAPIConversationsMessageOutput(MistralAPIConversationsMessageOutput),

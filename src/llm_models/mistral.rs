@@ -376,7 +376,7 @@ impl MistralModels {
         let conversations_response: MistralAPIConversationsResponse =
             serde_json::from_str(response_text)?;
 
-        //Parse the response and return the assistant content
+        // Parse the response and return the assistant content
         let content_text = conversations_response
             .outputs
             .iter()
@@ -388,10 +388,10 @@ impl MistralModels {
                             MistralAPIConversationsMessageOutputContent::MistralAPIConversationsMessageOutputContentChunks(chunks) => {
                                 chunks
                                     .iter()
-                                    .filter_map(|chunk| {
+                                    .map(|chunk| {
                                         match chunk {
                                             MistralAPIConversationsChunk::MistralAPIConversationsChunkText(text_chunk) => {
-                                                Some(text_chunk.text.clone())
+                                                text_chunk.text.clone()
                                             }
                                         }
                                     })
@@ -406,6 +406,7 @@ impl MistralModels {
             })
             .ok_or_else(|| anyhow!("Message output content not found"))?;
 
-        Ok(self.sanitize_json_response(&content_text))
+        let sanitized = self.sanitize_json_response(&content_text);
+        Ok(sanitized)
     }
 }
