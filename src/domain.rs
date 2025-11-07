@@ -233,6 +233,7 @@ pub struct MistralAPIConversationsResponse {
 /// Can be MessageOutputEntry | ToolExecutionEntry | FunctionCallEntry | AgentHandoffEntry
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum MistralAPIConversationsOutput {
     #[serde(rename = "message.output")]
     MistralAPIConversationsMessageOutput(MistralAPIConversationsMessageOutput),
