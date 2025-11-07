@@ -231,7 +231,7 @@ pub(crate) fn get_mime_type(file_name: &str) -> Option<&str> {
 
 /// Checks if an `Option<&[T]>` has meaningful values, i.e., is `Some` and the slice is not empty
 pub fn has_values<T>(opt_slice: Option<&[T]>) -> bool {
-    opt_slice.map_or(false, |s| !s.is_empty())
+    opt_slice.is_some_and(|s| !s.is_empty())
 }
 
 #[cfg(test)]

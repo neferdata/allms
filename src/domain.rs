@@ -660,18 +660,21 @@ pub enum OpenAPIResponsesFormatType {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(untagged)]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesToolChoice {
     String(String),
     Object(OpenAPIResponsesToolChoiceObject),
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesToolChoiceObject {
     pub r#type: Option<String>,
     pub function: Option<OpenAPIResponsesToolChoiceFunction>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesToolChoiceFunction {
     pub name: Option<String>,
 }
