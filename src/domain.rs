@@ -220,6 +220,128 @@ pub struct MistralAPICompletionsUsage {
     pub total_tokens: usize,
 }
 
+// Mistral Agents API response type format
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPIConversationsResponse {
+    pub conversation_id: String,
+    pub object: String,
+    pub outputs: Vec<MistralAPIConversationsOutput>,
+    pub usage: Option<MistralAPIConversationsUsage>,
+}
+
+/// Mistral Conversations API output entry types
+/// Can be MessageOutputEntry | ToolExecutionEntry | FunctionCallEntry | AgentHandoffEntry
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum MistralAPIConversationsOutput {
+    #[serde(rename = "message.output")]
+    MistralAPIConversationsMessageOutput(MistralAPIConversationsMessageOutput),
+    #[serde(rename = "tool.execution")]
+    MistralAPIConversationsToolExecution(MistralAPIConversationsToolExecution),
+    // TODO: Add other entry types when needed
+    // MistralAPIConversationsFunctionCall(MistralAPIConversationsFunctionCall),
+    // MistralAPIConversationsAgentHandoff(MistralAPIConversationsAgentHandoff),
+}
+
+/// MessageOutputEntry for Mistral Conversations API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPIConversationsMessageOutput {
+    pub object: Option<String>,
+    #[serde(rename = "type")]
+    pub entry_type: Option<String>,
+    pub role: Option<String>,
+    pub id: Option<String>,
+    pub created_at: Option<String>,
+    pub agent_id: Option<String>,
+    pub completed_at: Option<String>,
+    pub model: Option<String>,
+    pub content: Option<MistralAPIConversationsMessageOutputContent>,
+}
+
+/// Content can be a string or array of chunk types (TextChunk, ImageURLChunk, etc.)
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum MistralAPIConversationsMessageOutputContent {
+    MistralAPIConversationsMessageOutputContentString(String),
+    MistralAPIConversationsMessageOutputContentChunks(Vec<MistralAPIConversationsChunk>),
+}
+
+/// Chunk types for Mistral Conversations API content
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum MistralAPIConversationsChunk {
+    #[serde(rename = "text")]
+    MistralAPIConversationsChunkText(MistralAPIConversationsChunkText),
+    // TODO: Add other chunk types when needed
+    // ImageURL(ImageURLChunk),
+    // ToolFile(ToolFileChunk),
+    // DocumentURL(DocumentURLChunk),
+    // Think(ThinkChunk),
+    // ToolReference(ToolReferenceChunk),
+}
+
+/// TextChunk for Mistral Conversations API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPIConversationsChunkText {
+    pub text: String,
+    #[serde(rename = "type")]
+    #[serde(default = "default_text_chunk_type")]
+    pub chunk_type: String,
+}
+
+fn default_text_chunk_type() -> String {
+    "text".to_string()
+}
+
+/// ToolExecutionEntry for Mistral Conversations API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPIConversationsToolExecution {
+    pub arguments: String,
+    pub completed_at: Option<String>,
+    pub created_at: String,
+    pub id: String,
+    pub info: Value,
+    pub name: MistralAPIConversationsToolName,
+    #[serde(default = "default_entry_object")]
+    pub object: String,
+    #[serde(rename = "type")]
+    #[serde(default = "default_tool_execution_type")]
+    pub entry_type: String,
+}
+
+/// Tool name enum for Mistral Conversations API
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum MistralAPIConversationsToolName {
+    #[serde(rename = "web_search")]
+    WebSearch,
+    #[serde(rename = "web_search_premium")]
+    WebSearchPremium,
+    #[serde(rename = "code_interpreter")]
+    CodeInterpreter,
+    #[serde(rename = "image_generation")]
+    ImageGeneration,
+    #[serde(rename = "document_library")]
+    DocumentLibrary,
+}
+
+fn default_entry_object() -> String {
+    "entry".to_string()
+}
+
+fn default_tool_execution_type() -> String {
+    "tool.execution".to_string()
+}
+
+// Mistral API response type format for Conversations API
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPIConversationsUsage {
+    pub completion_tokens: usize,
+    pub connector_tokens: usize,
+    pub prompt_tokens: usize,
+    pub total_tokens: usize,
+}
+
 ///Google GeminiPro API response deserialization structs
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleGeminiProApiResp {

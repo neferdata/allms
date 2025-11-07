@@ -5,9 +5,14 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::constants::MISTRAL_API_URL;
-use crate::domain::{MistralAPICompletionsResponse, RateLimit};
-use crate::llm_models::{LLMModel, LLMTools};
+use crate::constants::{MISTRAL_API_URL, MISTRAL_CONVERSATIONS_API_URL};
+use crate::domain::{
+    MistralAPICompletionsResponse, MistralAPIConversationsChunk,
+    MistralAPIConversationsMessageOutputContent, MistralAPIConversationsOutput,
+    MistralAPIConversationsResponse, RateLimit,
+};
+use crate::llm_models::{tools::MistralWebSearchConfig, LLMModel, LLMTools};
+use crate::utils::has_values;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 //Mistral docs: https://docs.mistral.ai/getting-started/models/models_overview/
@@ -145,8 +150,107 @@ impl LLMModel for MistralModels {
         MISTRAL_API_URL.to_string()
     }
 
-    //This method prepares the body of the API call for different models
+    // This method prepares the body of the API call for different models
     fn get_body(
+        &self,
+        instructions: &str,
+        json_schema: &Value,
+        function_call: bool,
+        max_tokens: &usize,
+        temperature: &f32,
+        tools: Option<&[LLMTools]>,
+    ) -> serde_json::Value {
+        if has_values(tools) {
+            self.get_conversations_body(
+                instructions,
+                json_schema,
+                function_call,
+                max_tokens,
+                temperature,
+                tools,
+            )
+        } else {
+            self.get_chat_completions_body(
+                instructions,
+                json_schema,
+                function_call,
+                max_tokens,
+                temperature,
+                tools,
+            )
+        }
+    }
+    /*
+     * This function leverages Mistral API to perform any query as per the provided body.
+     *
+     * It returns a String the Response object that needs to be parsed based on the self.model.
+     */
+    async fn call_api(
+        &self,
+        api_key: &str,
+        _version: Option<String>,
+        body: &serde_json::Value,
+        debug: bool,
+        tools: Option<&[LLMTools]>,
+    ) -> Result<String> {
+        //Get the API url
+        let model_url = if has_values(tools) {
+            // If tools are provided we need to use the conversations API
+            MISTRAL_CONVERSATIONS_API_URL.to_string()
+        } else {
+            self.get_endpoint()
+        };
+
+        //Make the API call
+        let client = Client::new();
+
+        //Send request
+        let response = client
+            .post(model_url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .bearer_auth(api_key)
+            .json(&body)
+            .send()
+            .await?;
+
+        let response_status = response.status();
+        let response_text = response.text().await?;
+
+        if debug {
+            info!(
+                "[debug] Mistral API response: [{}] {:#?}",
+                &response_status, &response_text
+            );
+        }
+
+        Ok(response_text)
+    }
+
+    //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
+    fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
+        if let Ok(data) = self.get_chat_completions_data(response_text, _function_call) {
+            Ok(data)
+        } else {
+            self.get_conversations_data(response_text, _function_call)
+        }
+    }
+
+    //This function allows to check the rate limits for different models
+    fn get_rate_limit(&self) -> RateLimit {
+        //Mistral documentation: https://docs.mistral.ai/platform/pricing#rate-limits
+        RateLimit {
+            tpm: 2_000_000,
+            rpm: 360, // 6 requests per second
+        }
+    }
+}
+
+impl MistralModels {
+    fn get_supported_tools(&self) -> Vec<LLMTools> {
+        vec![LLMTools::MistralWebSearch(MistralWebSearchConfig::new())]
+    }
+
+    fn get_chat_completions_body(
         &self,
         instructions: &str,
         json_schema: &Value,
@@ -182,49 +286,66 @@ impl LLMModel for MistralModels {
             ],
         })
     }
-    /*
-     * This function leverages Mistral API to perform any query as per the provided body.
-     *
-     * It returns a String the Response object that needs to be parsed based on the self.model.
-     */
-    async fn call_api(
+
+    fn get_conversations_body(
         &self,
-        api_key: &str,
-        _version: Option<String>,
-        body: &serde_json::Value,
-        debug: bool,
-        _tools: Option<&[LLMTools]>,
-    ) -> Result<String> {
-        //Get the API url
-        let model_url = self.get_endpoint();
+        instructions: &str,
+        json_schema: &Value,
+        function_call: bool,
+        max_tokens: &usize,
+        temperature: &f32,
+        tools: Option<&[LLMTools]>,
+    ) -> serde_json::Value {
+        // Prepare the inputs part of the body
+        let base_instructions = self.get_base_instructions(Some(function_call));
+        let inputs = format!(
+            "{base_instructions}
+            <instructions>
+            {instructions}
+            </instructions>
+            <output json schema>
+            {json_schema}
+            </output json schema>"
+        );
+        // Prepare the completion args part of the body
+        let completion_args = json!({
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        });
+        // Prepare the tools part of the body
+        let tools = if let Some(tools) = tools {
+            // Filter out the tools that are not supported by the model
+            let supported_tools = self.get_supported_tools();
+            let tools = tools
+                .iter()
+                .filter(|tool| supported_tools.contains(tool))
+                .filter_map(|tool| tool.get_config_json())
+                .collect::<Vec<Value>>();
 
-        //Make the API call
-        let client = Client::new();
+            // If no tools are supported return None
+            if tools.is_empty() {
+                None
+            } else {
+                Some(tools)
+            }
+        } else {
+            None
+        };
 
-        //Send request
-        let response = client
-            .post(model_url)
-            .header(header::CONTENT_TYPE, "application/json")
-            .bearer_auth(api_key)
-            .json(&body)
-            .send()
-            .await?;
-
-        let response_status = response.status();
-        let response_text = response.text().await?;
-
-        if debug {
-            info!(
-                "[debug] Mistral API response: [{}] {:#?}",
-                &response_status, &response_text
-            );
-        }
-
-        Ok(response_text)
+        // Prepare and return the body
+        json!({
+            "model": self.as_str(),
+            "inputs": inputs,
+            "completion_args": completion_args,
+            "tools": tools,
+        })
     }
 
-    //This method attempts to convert the provided API response text into the expected struct and extracts the data from the response
-    fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
+    fn get_chat_completions_data(
+        &self,
+        response_text: &str,
+        _function_call: bool,
+    ) -> Result<String> {
         //Convert API response to struct representing expected response format
         let completions_response: MistralAPICompletionsResponse =
             serde_json::from_str(response_text)?;
@@ -244,12 +365,41 @@ impl LLMModel for MistralModels {
             .ok_or_else(|| anyhow!("Assistant role content not found"))
     }
 
-    //This function allows to check the rate limits for different models
-    fn get_rate_limit(&self) -> RateLimit {
-        //Mistral documentation: https://docs.mistral.ai/platform/pricing#rate-limits
-        RateLimit {
-            tpm: 2_000_000,
-            rpm: 360, // 6 requests per second
-        }
+    fn get_conversations_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
+        //Convert API response to struct representing expected response format
+        let conversations_response: MistralAPIConversationsResponse =
+            serde_json::from_str(response_text)?;
+
+        //Parse the response and return the assistant content
+        let content_text = conversations_response
+            .outputs
+            .iter()
+            .find_map(|output| {
+                if let MistralAPIConversationsOutput::MistralAPIConversationsMessageOutput(message_output) = output {
+                    message_output.content.as_ref().map(|content| {
+                        match content {
+                            MistralAPIConversationsMessageOutputContent::MistralAPIConversationsMessageOutputContentString(s) => s.clone(),
+                            MistralAPIConversationsMessageOutputContent::MistralAPIConversationsMessageOutputContentChunks(chunks) => {
+                                chunks
+                                    .iter()
+                                    .filter_map(|chunk| {
+                                        match chunk {
+                                            MistralAPIConversationsChunk::MistralAPIConversationsChunkText(text_chunk) => {
+                                                Some(text_chunk.text.clone())
+                                            }
+                                        }
+                                    })
+                                    .collect::<Vec<String>>()
+                                    .join("")
+                            }
+                        }
+                    })
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| anyhow!("Message output content not found"))?;
+
+        Ok(self.sanitize_json_response(&content_text))
     }
 }

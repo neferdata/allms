@@ -23,6 +23,9 @@ lazy_static! {
 lazy_static! {
     pub(crate) static ref MISTRAL_API_URL: String = std::env::var("MISTRAL_API_URL")
         .unwrap_or("https://api.mistral.ai/v1/chat/completions".to_string());
+    pub(crate) static ref MISTRAL_CONVERSATIONS_API_URL: String =
+        std::env::var("MISTRAL_CONVERSATIONS_API_URL")
+            .unwrap_or("https://api.mistral.ai/v1/conversations".to_string());
 }
 
 lazy_static! {
