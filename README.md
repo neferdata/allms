@@ -49,6 +49,7 @@ Mistral:
     - Reasoning: Magistral Medium 1.2, Magistral Medium, Magistral Small 1.2
     - Other: Codestral 2508, Codestral 2, Ministral 3B, Ministral 8B
     - Legacy models: Mistral Large, Mistral Nemo, Mistral 7B, Mixtral 8x7B, Mixtral 8x22B, Mistral Medium, Mistral Small, Mistral Tiny
+- Tools: file web search, code interpreter
 
 OpenAI:
 - APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores

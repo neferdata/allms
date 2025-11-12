@@ -13,18 +13,25 @@ pub use crate::domain::XAIWebSearchConfig;
 ///
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum LLMTools {
+    /// OpenAI
     OpenAIFileSearch(OpenAIFileSearchConfig),
     OpenAIWebSearch(OpenAIWebSearchConfig),
     OpenAIComputerUse(OpenAIComputerUseConfig),
     OpenAIReasoning(OpenAIReasoningConfig),
     OpenAICodeInterpreter(OpenAICodeInterpreterConfig),
+    /// Anthropic
     AnthropicCodeExecution(AnthropicCodeExecutionConfig),
     AnthropicComputerUse(AnthropicComputerUseConfig),
     AnthropicFileSearch(AnthropicFileSearchConfig),
     AnthropicWebSearch(AnthropicWebSearchConfig),
+    /// xAI
     XAIWebSearch(XAIWebSearchConfig),
+    /// Gemini
     GeminiCodeInterpreter(GeminiCodeInterpreterConfig),
     GeminiWebSearch(GeminiWebSearchConfig),
+    /// Mistral
+    MistralWebSearch(MistralWebSearchConfig),
+    MistralCodeInterpreter(MistralCodeInterpreterConfig),
 }
 
 impl LLMTools {
@@ -43,6 +50,8 @@ impl LLMTools {
             LLMTools::GeminiCodeInterpreter(cfg) => to_value(cfg).ok(),
             // For Gemini Web Search we decode configuration based on the settings
             LLMTools::GeminiWebSearch(cfg) => Some(cfg.get_config_json()),
+            LLMTools::MistralWebSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::MistralCodeInterpreter(cfg) => to_value(cfg).ok(),
         }
     }
 }
@@ -791,6 +800,68 @@ impl GeminiWebSearchConfig {
     }
 }
 
+///
+/// Mistral Web Search
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct MistralWebSearchConfig {
+    #[serde(rename = "type")]
+    pub web_search_type: MistralWebSearchType,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum MistralWebSearchType {
+    #[serde(rename = "web_search")]
+    #[default]
+    WebSearch,
+    #[serde(rename = "web_search_premium")]
+    WebSearchPremium,
+}
+
+impl MistralWebSearchConfig {
+    pub fn new() -> Self {
+        Self {
+            web_search_type: MistralWebSearchType::default(),
+        }
+    }
+
+    pub fn set_type(mut self, web_search_type: MistralWebSearchType) -> Self {
+        self.web_search_type = web_search_type;
+        self
+    }
+
+    pub fn get_type_str(&self) -> String {
+        serde_json::to_string(&self.web_search_type).unwrap_or_default()
+    }
+}
+
+///
+/// Mistral Code Interpreter
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct MistralCodeInterpreterConfig {
+    #[serde(rename = "type")]
+    pub code_interpreter_type: MistralCodeInterpreterType,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub enum MistralCodeInterpreterType {
+    #[serde(rename = "code_interpreter")]
+    #[default]
+    CodeInterpreter,
+}
+
+impl MistralCodeInterpreterConfig {
+    pub fn new() -> Self {
+        Self {
+            code_interpreter_type: MistralCodeInterpreterType::default(),
+        }
+    }
+}
+
+///
+/// Tests
+///
 #[cfg(test)]
 mod tests {
     use super::*;

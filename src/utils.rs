@@ -229,6 +229,11 @@ pub(crate) fn get_mime_type(file_name: &str) -> Option<&str> {
     }
 }
 
+/// Checks if an `Option<&[T]>` has meaningful values, i.e., is `Some` and the slice is not empty
+pub fn has_values<T>(opt_slice: Option<&[T]>) -> bool {
+    opt_slice.is_some_and(|s| !s.is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use schemars::schema::{InstanceType, ObjectValidation, RootSchema, Schema, SchemaObject};
@@ -238,8 +243,8 @@ mod tests {
 
     use crate::llm_models::OpenAIModels;
     use crate::utils::{
-        fix_value_schema, get_tokenizer, get_type_schema, map_to_range, map_to_range_f32,
-        remove_schema_wrappers, remove_think_reasoner_wrapper,
+        fix_value_schema, get_tokenizer, get_type_schema, has_values, map_to_range,
+        map_to_range_f32, remove_schema_wrappers, remove_think_reasoner_wrapper,
     };
 
     #[derive(JsonSchema, Serialize, Deserialize)]
@@ -850,6 +855,53 @@ mod tests {
         assert_eq!(
             result_value, expected_value,
             "Should preserve items when it's not the only field"
+        );
+    }
+
+    // Tests for has_values
+    #[test]
+    fn test_has_values_with_none() {
+        let opt_slice: Option<&[i32]> = None;
+        assert!(!has_values(opt_slice), "None should return false");
+    }
+
+    #[test]
+    fn test_has_values_with_empty_slice() {
+        let empty: [i32; 0] = [];
+        let opt_slice: Option<&[i32]> = Some(&empty);
+        assert!(
+            !has_values(opt_slice),
+            "Some(empty slice) should return false"
+        );
+    }
+
+    #[test]
+    fn test_has_values_with_non_empty_slice() {
+        let values = [1, 2, 3];
+        let opt_slice: Option<&[i32]> = Some(&values);
+        assert!(
+            has_values(opt_slice),
+            "Some(non-empty slice) should return true"
+        );
+    }
+
+    #[test]
+    fn test_has_values_with_string_slice() {
+        let strings = ["hello".to_string()];
+        let opt_slice: Option<&[String]> = Some(&strings);
+        assert!(
+            has_values(opt_slice),
+            "Some(slice with one string) should return true"
+        );
+    }
+
+    #[test]
+    fn test_has_values_with_vec_slice() {
+        let vec = vec![1, 2, 3];
+        let opt_slice: Option<&[i32]> = Some(&vec);
+        assert!(
+            has_values(opt_slice),
+            "Some(vec as slice) should return true"
         );
     }
 }
