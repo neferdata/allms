@@ -25,31 +25,32 @@ use crate::{
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIModels {
     // GPT models
-    Gpt3_5Turbo,
-    Gpt3_5Turbo0613,
-    Gpt3_5Turbo16k,
-    Gpt4,
-    Gpt4_32k,
-    Gpt4Turbo,
-    Gpt4TurboPreview,
-    Gpt4o,
-    Gpt4o20240806,
-    Gpt4_1,
-    Gpt4_1Mini,
-    Gpt4_1Nano,
-    Gpt4oMini,
-    Gpt4_5Preview,
+    Gpt5_1,
     Gpt5,
     Gpt5Mini,
     Gpt5Nano,
+    Gpt4_5Preview,
+    Gpt4oMini,
+    Gpt4_1,
+    Gpt4_1Mini,
+    Gpt4_1Nano,
+    Gpt4o20240806,
+    Gpt4o,
+    Gpt4TurboPreview,
+    Gpt4Turbo,
+    Gpt4_32k,
+    Gpt4,
+    Gpt3_5Turbo16k,
+    Gpt3_5Turbo0613,
+    Gpt3_5Turbo,
     // Reasoning models
+    O4Mini,
+    O3,
+    O3Mini,
+    O1Pro,
     O1,
     O1Preview, // Deprecated
     O1Mini,    // Deprecated
-    O1Pro,
-    O3,
-    O3Mini,
-    O4Mini,
     // Custom models
     Custom { name: String },
     // Legacy models
@@ -60,6 +61,7 @@ pub enum OpenAIModels {
 impl LLMModel for OpenAIModels {
     fn as_str(&self) -> &str {
         match self {
+            OpenAIModels::Gpt5_1 => "gpt-5.1",
             OpenAIModels::Gpt5 => "gpt-5",
             OpenAIModels::Gpt5Mini => "gpt-5-mini",
             OpenAIModels::Gpt5Nano => "gpt-5-nano",
@@ -91,6 +93,8 @@ impl LLMModel for OpenAIModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "gpt-5.1" => Some(OpenAIModels::Gpt5_1),
+            "gpt-5.1-2025-11-13" => Some(OpenAIModels::Gpt5_1),
             "gpt-5" => Some(OpenAIModels::Gpt5),
             "gpt-5-2025-08-07" => Some(OpenAIModels::Gpt5),
             "gpt-5-mini" => Some(OpenAIModels::Gpt5Mini),
@@ -129,6 +133,7 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5_1 => 400_000,
             OpenAIModels::Gpt5 => 400_000,
             OpenAIModels::Gpt5Mini => 400_000,
             OpenAIModels::Gpt5Nano => 400_000,
@@ -192,6 +197,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -218,6 +224,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -269,6 +276,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -304,6 +312,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -365,6 +374,7 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt5
             | OpenAIModels::Gpt5Mini
             | OpenAIModels::Gpt5Nano
+            | OpenAIModels::Gpt5_1
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -425,6 +435,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::Custom { .. },
             ) => {
                 let system_message = json!({
@@ -543,6 +554,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::Custom { .. },
             ) => {
                 json!({
@@ -718,6 +730,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::O1
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1Preview
@@ -770,6 +783,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -828,6 +842,10 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/account/rate-limits
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5_1 => RateLimit {
+                tpm: 40_000_000,
+                rpm: 15_000,
+            },
             OpenAIModels::Gpt5 => RateLimit {
                 tpm: 40_000_000,
                 rpm: 15_000,
@@ -964,6 +982,7 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -999,6 +1018,8 @@ impl OpenAIModels {
                 | OpenAIModels::O3
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
+                // GPT-5.1 is not supported in Assistants API
+                | OpenAIModels::Gpt5_1
         )
     }
 
@@ -1006,7 +1027,10 @@ impl OpenAIModels {
     pub fn is_gpt5_model(&self) -> bool {
         matches!(
             self,
-            OpenAIModels::Gpt5 | OpenAIModels::Gpt5Mini | OpenAIModels::Gpt5Nano
+            OpenAIModels::Gpt5
+                | OpenAIModels::Gpt5Mini
+                | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
         )
     }
 
