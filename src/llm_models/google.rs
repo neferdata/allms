@@ -344,9 +344,11 @@ impl LLMModel for GoogleModels {
         }
 
         // Include thinking level if provided
-        if let Some(thinking_level) = thinking_level {
-            body["generationConfig"]["thinkingConfig"]["thinkingLevel"] =
-                json!(thinking_level.as_str());
+        if self == &GoogleModels::Gemini3Pro {
+            if let Some(thinking_level) = thinking_level {
+                body["generationConfig"]["thinkingConfig"]["thinkingLevel"] =
+                    json!(thinking_level.as_str());
+            }
         }
 
         body
