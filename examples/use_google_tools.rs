@@ -48,17 +48,16 @@ async fn main() -> Result<()> {
         GeminiWebSearchConfig::new().add_source("https://www.artificialintelligence-news.com/");
 
     let web_search_tool = LLMTools::GeminiWebSearch(web_search_config);
-    let google_responses =
-        Completions::new(GoogleModels::Gemini2_5Flash, &google_api_key, None, None)
-            .add_tool(web_search_tool.clone());
+    let google_responses = Completions::new(GoogleModels::Gemini3Pro, &google_api_key, None, None)
+        .add_tool(web_search_tool.clone());
 
     match google_responses
         .get_answer::<AINewsArticles>("Find up to 5 most recent news items about Artificial Intelligence, Generative AI, and Large Language Models. 
         For each news item, provide the title, url, and a short description.")
         .await
     {
-        Ok(response) => println!("AI news articles:\n{:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
+        Ok(response) => println!("[AI Studio] AI news articles:\n{:#?}", response),
+        Err(e) => eprintln!("[AI Studio] AI news articles error: {:?}", e),
     }
 
     // Example 1B: Web search example (with Vertex API)
@@ -72,15 +71,14 @@ async fn main() -> Result<()> {
         For each news item, provide the title, url, and a short description.")
         .await
     {
-        Ok(response) => println!("Vertex AI news articles:\n{:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
+        Ok(response) => println!("[Vertex] AI news articles:\n{:#?}", response),
+        Err(e) => eprintln!("[Vertex] AI news articles error: {:?}", e),
     }
 
     // Example 2A: Code interpreter example (with Studio API)
     let code_interpreter_tool = LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new());
-    let google_responses =
-        Completions::new(GoogleModels::Gemini2_5Pro, &google_api_key, None, None)
-            .add_tool(code_interpreter_tool.clone());
+    let google_responses = Completions::new(GoogleModels::Gemini3Pro, &google_api_key, None, None)
+        .add_tool(code_interpreter_tool.clone());
 
     match google_responses
         .get_answer::<CodeInterpreterResponse>(
@@ -88,8 +86,8 @@ async fn main() -> Result<()> {
         )
         .await
     {
-        Ok(response) => println!("Code interpreter response:\n{:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
+        Ok(response) => println!("[AI Studio] Code interpreter response:\n{:#?}", response),
+        Err(e) => eprintln!("[AI Studio] Code interpreter error: {:?}", e),
     }
 
     // Example 2B: Code interpreter example (with Vertex API)
@@ -104,8 +102,8 @@ async fn main() -> Result<()> {
         )
         .await
     {
-        Ok(response) => println!("Vertex code interpreter response:\n{:#?}", response),
-        Err(e) => eprintln!("Error: {:?}", e),
+        Ok(response) => println!("[Vertex] Code interpreter response:\n{:#?}", response),
+        Err(e) => eprintln!("[Vertex] Code interpreter error: {:?}", e),
     }
 
     Ok(())
