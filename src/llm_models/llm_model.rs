@@ -37,6 +37,7 @@ pub trait LLMModel {
         false
     }
     ///Constructs the body that should be attached to the API call for each of the LLM Models
+    #[allow(clippy::too_many_arguments)]
     fn get_body(
         &self,
         instructions: &str,
