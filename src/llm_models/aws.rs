@@ -9,6 +9,7 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::completions::ThinkingLevel;
 use crate::constants::{AWS_BEDROCK_API_URL, AWS_REGION};
 use crate::domain::RateLimit;
 use crate::llm_models::{LLMModel, LLMTools};
@@ -69,6 +70,7 @@ impl LLMModel for AwsBedrockModels {
         max_tokens: &usize,
         temperature: &f32,
         _tools: Option<&[LLMTools]>,
+        _thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         let body = AwsBedrockRequestBody {
             instructions: instructions.to_string(),

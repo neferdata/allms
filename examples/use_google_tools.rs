@@ -8,7 +8,7 @@ use allms::{
         tools::{GeminiCodeInterpreterConfig, GeminiWebSearchConfig, LLMTools},
         GoogleModels,
     },
-    Completions,
+    Completions, ThinkingLevel,
 };
 
 mod utils;
@@ -49,7 +49,8 @@ async fn main() -> Result<()> {
 
     let web_search_tool = LLMTools::GeminiWebSearch(web_search_config);
     let google_responses = Completions::new(GoogleModels::Gemini3Pro, &google_api_key, None, None)
-        .add_tool(web_search_tool.clone());
+        .add_tool(web_search_tool.clone())
+        .thinking_level(ThinkingLevel::Low);
 
     match google_responses
         .get_answer::<AINewsArticles>("Find up to 5 most recent news items about Artificial Intelligence, Generative AI, and Large Language Models. 

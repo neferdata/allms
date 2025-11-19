@@ -9,6 +9,7 @@ use serde_json::{json, to_value, Value};
 
 use crate::{
     apis::OpenAiApiEndpoints,
+    completions::ThinkingLevel,
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{
         OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesContentType,
@@ -390,6 +391,7 @@ impl LLMModel for OpenAIModels {
         temperature: &f32,
         version: Option<String>,
         tools: Option<&[LLMTools]>,
+        _thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         // If no version provided default to OpenAI Completions API
         let version = version

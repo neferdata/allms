@@ -5,6 +5,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::completions::ThinkingLevel;
 use crate::constants::XAI_API_URL;
 use crate::domain::{
     XAIAssistantMessageRole, XAIChatMessage, XAIChatRequest, XAIChatResponse, XAIRole,
@@ -79,6 +80,7 @@ impl LLMModel for XAIModels {
         max_tokens: &usize,
         temperature: &f32,
         tools: Option<&[LLMTools]>,
+        _thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         // Get system instructions
         let base_instructions = self.get_base_instructions(Some(function_call));

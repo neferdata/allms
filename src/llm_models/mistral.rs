@@ -5,6 +5,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::completions::ThinkingLevel;
 use crate::constants::{MISTRAL_API_URL, MISTRAL_CONVERSATIONS_API_URL};
 use crate::domain::{
     MistralAPICompletionsResponse, MistralAPIConversationsChunk,
@@ -162,6 +163,7 @@ impl LLMModel for MistralModels {
         max_tokens: &usize,
         temperature: &f32,
         tools: Option<&[LLMTools]>,
+        _thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         if has_values(tools) {
             self.get_conversations_body(

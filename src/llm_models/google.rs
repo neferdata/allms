@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::apis::GoogleApiEndpoints;
+use crate::completions::ThinkingLevel;
 use crate::constants::{
     GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL,
     GOOGLE_VERTEX_ENDPOINT_API_URL,
@@ -268,6 +269,7 @@ impl LLMModel for GoogleModels {
         _max_tokens: &usize,
         temperature: &f32,
         tools: Option<&[LLMTools]>,
+        thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions_json = json!({
@@ -341,6 +343,12 @@ impl LLMModel for GoogleModels {
             }
         }
 
+        // Include thinking level if provided
+        if let Some(thinking_level) = thinking_level {
+            body["generationConfig"]["thinkingConfig"]["thinkingLevel"] =
+                json!(thinking_level.as_str());
+        }
+
         body
     }
 
@@ -395,12 +403,17 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Gemini2_5FlashLite
-                | GoogleModels::Gemini3Pro,
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleVertex,
             ) => {
                 self.call_api_vertex_stream(api_key, version, body, debug)
                     .await
+            }
+            // Google Vertex API for Gemini 3
+            // Gemini 3 is currently only available via Studio
+            // Docs: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+            (GoogleModels::Gemini3Pro, GoogleApiEndpoints::GoogleVertex) => {
+                self.call_api_vertex(api_key, version, body, debug).await
             }
             // Google Vertex API for fine-tuned models
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
@@ -546,6 +559,8 @@ impl LLMModel for GoogleModels {
     }
 
     fn get_default_temperature(&self) -> f32 {
+        // For Gemini 3, we strongly recommend keeping the temperature parameter at its default value of 1.0.
+        // Docs: https://ai.google.dev/gemini-api/docs/gemini-3?thinking=high#temperature
         if self == &GoogleModels::Gemini3Pro {
             1.0f32
         } else {
@@ -781,6 +796,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -789,6 +805,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Verify the structure of the returned JSON
@@ -816,6 +833,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.5;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -824,6 +842,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         let parts = &body["contents"]["parts"];
@@ -861,6 +880,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.3;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -869,6 +889,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         let parts = &body["contents"]["parts"];
@@ -901,6 +922,7 @@ mod tests {
             LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new()),
         ];
         let tools = Some(&tools_array[..]);
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -909,6 +931,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Check that tools field exists and contains the tools
@@ -927,6 +950,7 @@ mod tests {
         let temperature = 0.7;
         let tools_array = [LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new())];
         let tools = Some(&tools_array[..]);
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -935,6 +959,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Tools should not be included for unsupported models
@@ -949,6 +974,7 @@ mod tests {
         let function_call = false;
         let max_tokens = 1000;
         let temperature = 0.7;
+        let thinking_level = None;
 
         // Create a web search config with URLs
         let web_search_config = GeminiWebSearchConfig::new();
@@ -964,6 +990,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Verify the structure is correct
@@ -979,6 +1006,7 @@ mod tests {
         let function_call = false;
         let max_tokens = 1000;
         let tools = None;
+        let thinking_level = None;
 
         // Test different temperature values
         let temperatures = vec![0.0, 0.5, 1.0, 1.5];
@@ -991,6 +1019,7 @@ mod tests {
                 &max_tokens,
                 &temp,
                 tools,
+                thinking_level,
             );
 
             assert_eq!(body["generationConfig"]["temperature"], temp);
@@ -1006,6 +1035,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -1014,6 +1044,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // The function_call parameter affects the base instructions
@@ -1040,6 +1071,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -1048,6 +1080,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Should still create a valid body even with empty instructions
@@ -1084,6 +1117,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -1092,6 +1126,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Verify that the complex schema is properly included

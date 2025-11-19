@@ -2,6 +2,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde_json::Value;
 
+use crate::completions::ThinkingLevel;
 use crate::constants::OPENAI_BASE_INSTRUCTIONS;
 use crate::domain::RateLimit;
 use crate::llm_models::LLMTools;
@@ -44,6 +45,7 @@ pub trait LLMModel {
         max_tokens: &usize,
         temperature: &f32,
         tools: Option<&[LLMTools]>,
+        thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         self.get_version_body(
             instructions,
@@ -53,6 +55,7 @@ pub trait LLMModel {
             temperature,
             None,
             tools,
+            thinking_level,
         )
     }
     /// An API-version-specific implementation of the body constructor
@@ -66,6 +69,7 @@ pub trait LLMModel {
         temperature: &f32,
         _version: Option<String>,
         tools: Option<&[LLMTools]>,
+        thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         self.get_body(
             instructions,
@@ -74,6 +78,7 @@ pub trait LLMModel {
             max_tokens,
             temperature,
             tools,
+            thinking_level,
         )
     }
     ///Makes the call to the correct API for the selected model
