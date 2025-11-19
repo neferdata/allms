@@ -344,7 +344,7 @@ impl LLMModel for GoogleModels {
         }
 
         // Include thinking level if provided
-        if self == &GoogleModels::Gemini3Pro {
+        if self.thinking_level_supported() {
             if let Some(thinking_level) = thinking_level {
                 body["generationConfig"]["thinkingConfig"]["thinkingLevel"] =
                     json!(thinking_level.as_str());
@@ -762,6 +762,30 @@ impl GoogleModels {
                 LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new()),
             ],
             _ => vec![],
+        }
+    }
+
+    fn thinking_level_supported(&self) -> bool {
+        match self {
+            GoogleModels::Gemini3Pro => true,
+            GoogleModels::Gemini2_5Pro
+            | GoogleModels::Gemini2_5Flash
+            | GoogleModels::Gemini2_5FlashLite
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini2_0FlashLite
+            | GoogleModels::Gemini2_0ProExp
+            | GoogleModels::Gemini2_0FlashThinkingExp
+            | GoogleModels::Gemini1_5Flash
+            | GoogleModels::Gemini1_5Flash8B
+            | GoogleModels::Gemini1_5Pro
+            | GoogleModels::FineTunedEndpoint { .. }
+            | GoogleModels::Gemini1_5FlashVertex
+            | GoogleModels::Gemini1_5Flash8BVertex
+            | GoogleModels::Gemini1_5ProVertex
+            | GoogleModels::Gemini2_0FlashVertex
+            | GoogleModels::Gemini2_0FlashLiteVertex
+            | GoogleModels::Gemini2_0ProExpVertex
+            | GoogleModels::Gemini2_0FlashThinkingExpVertex => false,
         }
     }
 }
