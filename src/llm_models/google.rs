@@ -3,7 +3,7 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::stream::StreamExt;
-use log::info;
+use log::{error, info};
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -218,14 +218,24 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Gemini2_5FlashLite
-                | GoogleModels::Gemini3Pro,
+                | GoogleModels::Gemini2_5FlashLite,
                 GoogleApiEndpoints::GoogleVertex,
             ) => {
                 // Construct Vertex URL when needed
                 format!(
                     "{}/{}:streamGenerateContent?alt=sse",
                     &*GOOGLE_VERTEX_API_URL,
+                    self.as_str()
+                )
+            }
+            // Google Vertex does not support Gemini 3 Pro. Rerouting to Studio API
+            // Docs: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+            // TODO: Add Gemini 3 Pro to the Google Vertex API once it is supported
+            (GoogleModels::Gemini3Pro, GoogleApiEndpoints::GoogleVertex) => {
+                error!("[allms][Google Vertex] Gemini 3 Pro is not supported in the Google Vertex API. Rerouting to Studio API.");
+                format!(
+                    "{}/{}:generateContent",
+                    &*GOOGLE_GEMINI_BETA_API_URL,
                     self.as_str()
                 )
             }
@@ -415,7 +425,7 @@ impl LLMModel for GoogleModels {
             // Gemini 3 is currently only available via Studio
             // Docs: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
             (GoogleModels::Gemini3Pro, GoogleApiEndpoints::GoogleVertex) => {
-                self.call_api_vertex(api_key, version, body, debug).await
+                self.call_api_studio(api_key, version, body, debug).await
             }
             // Google Vertex API for fine-tuned models
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
