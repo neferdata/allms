@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::apis::AnthropicApiEndpoints;
+use crate::completions::ThinkingLevel;
 use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::{
@@ -133,6 +134,7 @@ impl LLMModel for AnthropicModels {
         max_tokens: &usize,
         temperature: &f32,
         tools: Option<&[LLMTools]>,
+        _thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         let schema_string = serde_json::to_string(json_schema).unwrap_or_default();
         let base_instructions = self.get_base_instructions(Some(function_call));

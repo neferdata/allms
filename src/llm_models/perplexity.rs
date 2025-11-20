@@ -7,6 +7,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use crate::completions::ThinkingLevel;
 use crate::constants::PERPLEXITY_API_URL;
 use crate::domain::{PerplexityAPICompletionsResponse, RateLimit};
 use crate::llm_models::{LLMModel, LLMTools};
@@ -100,6 +101,7 @@ impl LLMModel for PerplexityModels {
         _max_tokens: &usize,
         temperature: &f32,
         _tools: Option<&[LLMTools]>,
+        _thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions = self.get_base_instructions(Some(function_call));

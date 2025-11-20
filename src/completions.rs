@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use log::{error, info, warn};
 use schemars::JsonSchema;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::domain::{AllmsError, OpenAIDataResponse};
 use crate::llm_models::{LLMModel, LLMTools};
@@ -21,6 +21,7 @@ pub struct Completions<T: LLMModel> {
     api_key: String,
     version: Option<String>,
     tools: Option<Vec<LLMTools>>,
+    thinking_level: Option<ThinkingLevel>,
 }
 
 impl<T: LLMModel> Completions<T> {
@@ -45,6 +46,7 @@ impl<T: LLMModel> Completions<T> {
             api_key: api_key.to_string(),
             version: None,
             tools: None,
+            thinking_level: None,
         }
     }
 
@@ -105,6 +107,15 @@ impl<T: LLMModel> Completions<T> {
             }
             None => vec![tool],
         });
+        self
+    }
+
+    ///
+    /// This method can be used to set the thinking level for the model
+    /// This is currently used for Gemini 3 models
+    ///
+    pub fn thinking_level(mut self, thinking_level: ThinkingLevel) -> Self {
+        self.thinking_level = Some(thinking_level);
         self
     }
 
@@ -228,6 +239,7 @@ impl<T: LLMModel> Completions<T> {
             &self.temperature,
             self.version.clone(),
             self.tools.as_deref(),
+            self.thinking_level.as_ref(),
         );
 
         //Display debug info if requested
@@ -306,6 +318,31 @@ impl<T: LLMModel> Completions<T> {
             Ok(response_deser.data)
         } else {
             response_deser
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ThinkingLevel {
+    Low,
+    #[default]
+    High,
+}
+
+impl ThinkingLevel {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ThinkingLevel::Low => "low",
+            ThinkingLevel::High => "high",
+        }
+    }
+
+    pub fn try_from_str(s: &str) -> Option<Self> {
+        match s {
+            "low" => Some(ThinkingLevel::Low),
+            "high" => Some(ThinkingLevel::High),
+            _ => None,
         }
     }
 }

@@ -3,12 +3,13 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::stream::StreamExt;
-use log::info;
+use log::{error, info};
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::apis::GoogleApiEndpoints;
+use crate::completions::ThinkingLevel;
 use crate::constants::{
     GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL,
     GOOGLE_VERTEX_ENDPOINT_API_URL,
@@ -21,6 +22,8 @@ use crate::llm_models::{LLMModel, LLMTools};
 // Google Docs: https://ai.google.dev/gemini-api/docs/models/gemini
 // Google Vertex Docs: https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 pub enum GoogleModels {
+    // 3.0
+    Gemini3Pro,
     // 2.5
     Gemini2_5Pro,
     Gemini2_5Flash,
@@ -100,6 +103,7 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini2_5Flash => "gemini-2.5-flash",
             GoogleModels::Gemini2_5Pro => "gemini-2.5-pro",
             GoogleModels::Gemini2_5FlashLite => "gemini-2.5-flash-lite",
+            GoogleModels::Gemini3Pro => "gemini-3-pro-preview",
             GoogleModels::FineTunedEndpoint { name } => name,
         }
     }
@@ -127,6 +131,8 @@ impl LLMModel for GoogleModels {
             "gemini-2.5-flash" => Some(GoogleModels::Gemini2_5Flash),
             "gemini-2.5-pro" => Some(GoogleModels::Gemini2_5Pro),
             "gemini-2.5-flash-lite" => Some(GoogleModels::Gemini2_5FlashLite),
+            "gemini-3-pro-preview" => Some(GoogleModels::Gemini3Pro),
+            "gemini-3-pro" => Some(GoogleModels::Gemini3Pro),
             // Gemini 1.0 Pro is deprecated starting 2/15/2025. We are re-routing to 1.5 Pro for the model
             "gemini-pro" => Some(GoogleModels::Gemini1_5Pro),
             "gemini-1.0-pro" => Some(GoogleModels::Gemini1_5Pro),
@@ -151,6 +157,7 @@ impl LLMModel for GoogleModels {
             GoogleModels::Gemini2_5Flash => 1_048_576,
             GoogleModels::Gemini2_5Pro => 1_048_576,
             GoogleModels::Gemini2_5FlashLite => 1_048_576,
+            GoogleModels::Gemini3Pro => 1_048_576,
             // TODO: Is this a good assumption?
             GoogleModels::FineTunedEndpoint { .. } => 1_048_576,
         }
@@ -182,7 +189,8 @@ impl LLMModel for GoogleModels {
             (
                 GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Gemini2_5FlashLite,
+                | GoogleModels::Gemini2_5FlashLite
+                | GoogleModels::Gemini3Pro,
                 GoogleApiEndpoints::GoogleStudio,
             ) => format!(
                 "{}/{}:generateContent",
@@ -217,6 +225,17 @@ impl LLMModel for GoogleModels {
                 format!(
                     "{}/{}:streamGenerateContent?alt=sse",
                     &*GOOGLE_VERTEX_API_URL,
+                    self.as_str()
+                )
+            }
+            // Google Vertex does not support Gemini 3 Pro. Rerouting to Studio API
+            // Docs: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+            // TODO: Add Gemini 3 Pro to the Google Vertex API once it is supported
+            (GoogleModels::Gemini3Pro, GoogleApiEndpoints::GoogleVertex) => {
+                error!("[allms][Google Vertex] Gemini 3 Pro is not supported in the Google Vertex API. Rerouting to Studio API.");
+                format!(
+                    "{}/{}:generateContent",
+                    &*GOOGLE_GEMINI_BETA_API_URL,
                     self.as_str()
                 )
             }
@@ -260,6 +279,7 @@ impl LLMModel for GoogleModels {
         _max_tokens: &usize,
         temperature: &f32,
         tools: Option<&[LLMTools]>,
+        thinking_level: Option<&ThinkingLevel>,
     ) -> serde_json::Value {
         //Prepare the 'messages' part of the body
         let base_instructions_json = json!({
@@ -333,6 +353,14 @@ impl LLMModel for GoogleModels {
             }
         }
 
+        // Include thinking level if provided
+        if self.thinking_level_supported() {
+            if let Some(thinking_level) = thinking_level {
+                body["generationConfig"]["thinkingConfig"]["thinkingLevel"] =
+                    json!(thinking_level.as_str());
+            }
+        }
+
         body
     }
 
@@ -367,7 +395,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Gemini2_5FlashLite,
+                | GoogleModels::Gemini2_5FlashLite
+                | GoogleModels::Gemini3Pro,
                 GoogleApiEndpoints::GoogleStudio,
             ) => self.call_api_studio(api_key, version, body, debug).await,
             // Fine-tuned models are only available in the Vertex API
@@ -391,6 +420,12 @@ impl LLMModel for GoogleModels {
             ) => {
                 self.call_api_vertex_stream(api_key, version, body, debug)
                     .await
+            }
+            // Google Vertex API for Gemini 3
+            // Gemini 3 is currently only available via Studio
+            // Docs: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions
+            (GoogleModels::Gemini3Pro, GoogleApiEndpoints::GoogleVertex) => {
+                self.call_api_studio(api_key, version, body, debug).await
             }
             // Google Vertex API for fine-tuned models
             (GoogleModels::FineTunedEndpoint { .. }, GoogleApiEndpoints::GoogleVertex) => {
@@ -437,7 +472,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Gemini2_5FlashLite,
+                | GoogleModels::Gemini2_5FlashLite
+                | GoogleModels::Gemini3Pro,
                 GoogleApiEndpoints::GoogleStudio,
             ) => self.get_generate_content_data(response_text),
             // Fine-tuned models are only available in the Vertex API
@@ -456,7 +492,8 @@ impl LLMModel for GoogleModels {
                 | GoogleModels::Gemini2_0FlashThinkingExp
                 | GoogleModels::Gemini2_5Flash
                 | GoogleModels::Gemini2_5Pro
-                | GoogleModels::Gemini2_5FlashLite,
+                | GoogleModels::Gemini2_5FlashLite
+                | GoogleModels::Gemini3Pro,
                 GoogleApiEndpoints::GoogleVertex,
             ) => Ok(response_text.to_string()),
             // Google Vertex API for fine-tuned models
@@ -516,6 +553,10 @@ impl LLMModel for GoogleModels {
                 tpm: 30_000_000,
                 rpm: 30_000,
             },
+            GoogleModels::Gemini3Pro => RateLimit {
+                tpm: 8_000_000,
+                rpm: 2_000,
+            },
             // Fine-tuned models use 2.0 Flash and Flash Lite rate limits
             GoogleModels::FineTunedEndpoint { .. } => RateLimit {
                 tpm: 30_000_000,
@@ -526,6 +567,16 @@ impl LLMModel for GoogleModels {
                 tpm: 120_000,
                 rpm: 360,
             },
+        }
+    }
+
+    fn get_default_temperature(&self) -> f32 {
+        // For Gemini 3, we strongly recommend keeping the temperature parameter at its default value of 1.0.
+        // Docs: https://ai.google.dev/gemini-api/docs/gemini-3?thinking=high#temperature
+        if self == &GoogleModels::Gemini3Pro {
+            1.0f32
+        } else {
+            0.0f32
         }
     }
 }
@@ -715,11 +766,36 @@ impl GoogleModels {
             GoogleModels::Gemini2_5Pro
             | GoogleModels::Gemini2_5Flash
             | GoogleModels::Gemini2_5FlashLite
-            | GoogleModels::Gemini2_0Flash => vec![
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini3Pro => vec![
                 LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new()),
                 LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new()),
             ],
             _ => vec![],
+        }
+    }
+
+    fn thinking_level_supported(&self) -> bool {
+        match self {
+            GoogleModels::Gemini3Pro => true,
+            GoogleModels::Gemini2_5Pro
+            | GoogleModels::Gemini2_5Flash
+            | GoogleModels::Gemini2_5FlashLite
+            | GoogleModels::Gemini2_0Flash
+            | GoogleModels::Gemini2_0FlashLite
+            | GoogleModels::Gemini2_0ProExp
+            | GoogleModels::Gemini2_0FlashThinkingExp
+            | GoogleModels::Gemini1_5Flash
+            | GoogleModels::Gemini1_5Flash8B
+            | GoogleModels::Gemini1_5Pro
+            | GoogleModels::FineTunedEndpoint { .. }
+            | GoogleModels::Gemini1_5FlashVertex
+            | GoogleModels::Gemini1_5Flash8BVertex
+            | GoogleModels::Gemini1_5ProVertex
+            | GoogleModels::Gemini2_0FlashVertex
+            | GoogleModels::Gemini2_0FlashLiteVertex
+            | GoogleModels::Gemini2_0ProExpVertex
+            | GoogleModels::Gemini2_0FlashThinkingExpVertex => false,
         }
     }
 }
@@ -756,6 +832,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -764,6 +841,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Verify the structure of the returned JSON
@@ -791,6 +869,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.5;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -799,6 +878,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         let parts = &body["contents"]["parts"];
@@ -836,6 +916,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.3;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -844,6 +925,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         let parts = &body["contents"]["parts"];
@@ -876,6 +958,7 @@ mod tests {
             LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new()),
         ];
         let tools = Some(&tools_array[..]);
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -884,6 +967,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Check that tools field exists and contains the tools
@@ -902,6 +986,7 @@ mod tests {
         let temperature = 0.7;
         let tools_array = [LLMTools::GeminiWebSearch(GeminiWebSearchConfig::new())];
         let tools = Some(&tools_array[..]);
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -910,6 +995,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Tools should not be included for unsupported models
@@ -924,6 +1010,7 @@ mod tests {
         let function_call = false;
         let max_tokens = 1000;
         let temperature = 0.7;
+        let thinking_level = None;
 
         // Create a web search config with URLs
         let web_search_config = GeminiWebSearchConfig::new();
@@ -939,6 +1026,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Verify the structure is correct
@@ -954,6 +1042,7 @@ mod tests {
         let function_call = false;
         let max_tokens = 1000;
         let tools = None;
+        let thinking_level = None;
 
         // Test different temperature values
         let temperatures = vec![0.0, 0.5, 1.0, 1.5];
@@ -966,6 +1055,7 @@ mod tests {
                 &max_tokens,
                 &temp,
                 tools,
+                thinking_level,
             );
 
             assert_eq!(body["generationConfig"]["temperature"], temp);
@@ -981,6 +1071,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -989,6 +1080,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // The function_call parameter affects the base instructions
@@ -1015,6 +1107,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -1023,6 +1116,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Should still create a valid body even with empty instructions
@@ -1059,6 +1153,7 @@ mod tests {
         let max_tokens = 1000;
         let temperature = 0.7;
         let tools = None;
+        let thinking_level = None;
 
         let body = model.get_body(
             instructions,
@@ -1067,6 +1162,7 @@ mod tests {
             &max_tokens,
             &temperature,
             tools,
+            thinking_level,
         );
 
         // Verify that the complex schema is properly included
