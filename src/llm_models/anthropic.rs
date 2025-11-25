@@ -20,6 +20,7 @@ use crate::llm_models::{
 // API Docs: https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
+    Claude4_5Opus,
     Claude4_5Sonnet,
     Claude4_5Haiku,
     Claude4_1Opus,
@@ -40,6 +41,7 @@ pub enum AnthropicModels {
 impl LLMModel for AnthropicModels {
     fn as_str(&self) -> &str {
         match self {
+            AnthropicModels::Claude4_5Opus => "claude-opus-4-5",
             AnthropicModels::Claude4_5Sonnet => "claude-sonnet-4-5",
             AnthropicModels::Claude4_5Haiku => "claude-haiku-4-5",
             AnthropicModels::Claude4_1Opus => "claude-opus-4-1-20250805",
@@ -60,6 +62,8 @@ impl LLMModel for AnthropicModels {
     // Docs: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-aliases
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "claude-opus-4-5" => Some(AnthropicModels::Claude4_5Opus),
+            "claude-opus-4-5-20251101" => Some(AnthropicModels::Claude4_5Opus),
             "claude-sonnet-4-5" => Some(AnthropicModels::Claude4_5Sonnet),
             "claude-sonnet-4-5-20250929" => Some(AnthropicModels::Claude4_5Sonnet),
             "claude-haiku-4-5" => Some(AnthropicModels::Claude4_5Haiku),
@@ -88,6 +92,7 @@ impl LLMModel for AnthropicModels {
     fn default_max_tokens(&self) -> usize {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
         match self {
+            AnthropicModels::Claude4_5Opus => 64_000,
             AnthropicModels::Claude4_5Sonnet => 64_000,
             AnthropicModels::Claude4_5Haiku => 64_000,
             AnthropicModels::Claude4_1Opus => 32_000,
@@ -107,7 +112,8 @@ impl LLMModel for AnthropicModels {
 
     fn get_endpoint(&self) -> String {
         match self {
-            AnthropicModels::Claude4_5Sonnet
+            AnthropicModels::Claude4_5Opus
+            | AnthropicModels::Claude4_5Sonnet
             | AnthropicModels::Claude4_5Haiku
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
@@ -238,7 +244,8 @@ impl LLMModel for AnthropicModels {
         }
 
         match self {
-            AnthropicModels::Claude4_5Sonnet
+            AnthropicModels::Claude4_5Opus
+            | AnthropicModels::Claude4_5Sonnet
             | AnthropicModels::Claude4_5Haiku
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
@@ -313,7 +320,8 @@ impl LLMModel for AnthropicModels {
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
         match self {
-            AnthropicModels::Claude4_5Sonnet
+            AnthropicModels::Claude4_5Opus
+            | AnthropicModels::Claude4_5Sonnet
             | AnthropicModels::Claude4_5Haiku
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
@@ -355,7 +363,8 @@ impl LLMModel for AnthropicModels {
 impl AnthropicModels {
     pub fn get_supported_tools(&self) -> Vec<LLMTools> {
         match self {
-            AnthropicModels::Claude4_5Sonnet
+            AnthropicModels::Claude4_5Opus
+            | AnthropicModels::Claude4_5Sonnet
             | AnthropicModels::Claude4_1Opus
             | AnthropicModels::Claude4Sonnet
             | AnthropicModels::Claude4Opus
@@ -390,7 +399,8 @@ impl AnthropicModels {
     pub fn get_tool_header(&self, tool: &LLMTools) -> Option<(&'static str, &'static str)> {
         match (self, tool) {
             (
-                AnthropicModels::Claude4_5Sonnet
+                AnthropicModels::Claude4_5Opus
+                | AnthropicModels::Claude4_5Sonnet
                 | AnthropicModels::Claude4_5Haiku
                 | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
@@ -402,19 +412,22 @@ impl AnthropicModels {
             (
                 // As of 2025.10.16 it is unclear if computer us is supported for 4.5 models
                 // https://docs.claude.com/en/docs/agents-and-tools/tool-use/computer-use-tool
-                AnthropicModels::Claude4_5Sonnet
-                | AnthropicModels::Claude4_5Haiku
-                | AnthropicModels::Claude4_1Opus
-                | AnthropicModels::Claude4Sonnet
+                AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet,
                 LLMTools::AnthropicComputerUse(_),
             ) => Some(("anthropic-beta", "computer-use-2025-01-24")),
+            // Claude Opus 4.5 requires a different header for computer use
+            // https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool
+            (AnthropicModels::Claude4_5Opus, LLMTools::AnthropicComputerUse(_)) => {
+                Some(("anthropic-beta", "computer-use-2025-11-24"))
+            }
             (AnthropicModels::Claude3_5Sonnet, LLMTools::AnthropicComputerUse(_)) => {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
             (
-                AnthropicModels::Claude4_5Sonnet
+                AnthropicModels::Claude4_5Opus
+                | AnthropicModels::Claude4_5Sonnet
                 | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
