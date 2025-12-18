@@ -16,7 +16,10 @@ use crate::{
         OpenAPIResponsesOutputType, OpenAPIResponsesResponse, OpenAPIResponsesRole, RateLimit,
     },
     llm_models::{
-        tools::{OpenAICodeInterpreterConfig, OpenAIFileSearchConfig},
+        tools::{
+            OpenAICodeInterpreterConfig, OpenAIComputerUseConfig, OpenAIFileSearchConfig,
+            OpenAIWebSearchConfig,
+        },
         LLMModel, LLMTools,
     },
     utils::{map_to_range, remove_json_wrapper, remove_schema_wrappers},
@@ -26,6 +29,8 @@ use crate::{
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIModels {
     // GPT models
+    Gpt5_2,
+    Gpt5_2Pro,
     Gpt5_1,
     Gpt5,
     Gpt5Mini,
@@ -62,6 +67,8 @@ pub enum OpenAIModels {
 impl LLMModel for OpenAIModels {
     fn as_str(&self) -> &str {
         match self {
+            OpenAIModels::Gpt5_2 => "gpt-5.2",
+            OpenAIModels::Gpt5_2Pro => "gpt-5.2-pro",
             OpenAIModels::Gpt5_1 => "gpt-5.1",
             OpenAIModels::Gpt5 => "gpt-5",
             OpenAIModels::Gpt5Mini => "gpt-5-mini",
@@ -94,6 +101,10 @@ impl LLMModel for OpenAIModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "gpt-5.2" => Some(OpenAIModels::Gpt5_2),
+            "gpt-5.2-2025-12-11" => Some(OpenAIModels::Gpt5_2),
+            "gpt-5.2-pro" => Some(OpenAIModels::Gpt5_2Pro),
+            "gpt-5.2-pro-2025-12-11" => Some(OpenAIModels::Gpt5_2Pro),
             "gpt-5.1" => Some(OpenAIModels::Gpt5_1),
             "gpt-5.1-2025-11-13" => Some(OpenAIModels::Gpt5_1),
             "gpt-5" => Some(OpenAIModels::Gpt5),
@@ -134,6 +145,8 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5_2 => 400_000,
+            OpenAIModels::Gpt5_2Pro => 400_000,
             OpenAIModels::Gpt5_1 => 400_000,
             OpenAIModels::Gpt5 => 400_000,
             OpenAIModels::Gpt5Mini => 400_000,
@@ -199,6 +212,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -226,6 +240,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -235,10 +251,10 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             )
-            // o1 Pro is not supported in Completions API, we redirect to Responses API
+            // o1 Pro or GPT-5.2 Pro is not supported in Completions API, we redirect to Responses API
             | (
                 OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
-                OpenAIModels::O1Pro,
+                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro,
             ) => {
                 format!(
                     "{OPENAI_API_URL}/v1/responses",
@@ -278,6 +294,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -314,6 +331,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -323,11 +342,11 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             )
-            // o1 Pro is not supported in Completions API, we redirect to Responses API
+            // o1 Pro and Gpt-5.2 Pro are not supported in Completions API, we redirect to Responses API
             | (
                 OpenAiApiEndpoints::Azure { version }
                 | OpenAiApiEndpoints::AzureCompletions { version },
-                OpenAIModels::O1Pro,
+                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro,
             ) => {
                 format!(
                     "{}/openai/deployments/{}/responses?api-version={}",
@@ -376,6 +395,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt5Mini
             | OpenAIModels::Gpt5Nano
             | OpenAIModels::Gpt5_1
+            | OpenAIModels::Gpt5_2
+            | OpenAIModels::Gpt5_2Pro
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -438,6 +459,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Custom { .. },
             ) => {
                 let system_message = json!({
@@ -557,6 +580,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Custom { .. },
             ) => {
                 json!({
@@ -570,6 +595,7 @@ impl LLMModel for OpenAIModels {
                     "tools": tools.map(|tools_inner| tools_inner
                         .iter()
                         .filter(|tool| !matches!(tool, LLMTools::OpenAIReasoning(_)))
+                        .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
                         .filter_map(LLMTools::get_config_json)
                         .collect::<Vec<Value>>()
                     ),
@@ -624,7 +650,7 @@ impl LLMModel for OpenAIModels {
                     // Reasoning models can use certain tools
                     "tools": tools.map(|tools_inner| tools_inner
                         .iter()
-                        .filter(|tool| self.get_supported_reasoning_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
+                        .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
                         .filter_map(LLMTools::get_config_json)
                         .collect::<Vec<Value>>()
                     ),
@@ -733,6 +759,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
                 | OpenAIModels::O1
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1Preview
@@ -786,6 +813,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -795,13 +824,13 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             )
-            // o1 Pro is not supported in Completions API, we use the Responses API data schema
+            // o1 Pro and GPT-5.2 Pro are not supported in Completions API, we use the Responses API data schema
             | (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
                 | OpenAiApiEndpoints::Azure { .. }
                 | OpenAiApiEndpoints::AzureCompletions { .. },
-                OpenAIModels::O1Pro,
+                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro,
             ) => {
                 //Convert API response to struct representing expected response format
                 let responses_response: OpenAPIResponsesResponse =
@@ -844,6 +873,14 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/account/rate-limits
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5_2 => RateLimit {
+                tpm: 40_000_000,
+                rpm: 15_000,
+            },
+            OpenAIModels::Gpt5_2Pro => RateLimit {
+                tpm: 30_000_000,
+                rpm: 10_000,
+            },
             OpenAIModels::Gpt5_1 => RateLimit {
                 tpm: 40_000_000,
                 rpm: 15_000,
@@ -984,7 +1021,6 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
-                | OpenAIModels::Gpt5_1
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1004,6 +1040,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1020,8 +1058,10 @@ impl OpenAIModels {
                 | OpenAIModels::O3
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini
-                // GPT-5.1 is not supported in Assistants API
+                // GPT-5.1+ are not supported in Assistants API
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
         )
     }
 
@@ -1033,27 +1073,47 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
         )
     }
 
-    // This function returns a list of supported tools for reasoning models
-    pub fn get_supported_reasoning_tools(&self) -> Vec<LLMTools> {
-        if matches!(
-            self,
+    // This function returns a list of supported tools for all models
+    pub fn get_supported_tools(&self) -> Vec<LLMTools> {
+        match self {
+            // Reasoning models only support File Search and Code Interpreter
             OpenAIModels::O1Preview
-                | OpenAIModels::O1Mini
-                | OpenAIModels::O1
-                | OpenAIModels::O1Pro
-                | OpenAIModels::O3
-                | OpenAIModels::O3Mini
-                | OpenAIModels::O4Mini
-        ) {
-            vec![
+            | OpenAIModels::O1Mini
+            | OpenAIModels::O1
+            | OpenAIModels::O1Pro
+            | OpenAIModels::O3
+            | OpenAIModels::O3Mini
+            | OpenAIModels::O4Mini => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
                 LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
-            ]
-        } else {
-            vec![]
+            ],
+            // GPT-5.2 does not support Computer Use as of 2025-12-11
+            OpenAIModels::Gpt5_2 => vec![
+                LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
+                LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
+            ],
+            // GPT-5.2 Pro does not support Computer Use and Code Interpreter as of 2025-12-11
+            OpenAIModels::Gpt5_2Pro => vec![
+                LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
+            ],
+            // All other models support all tools
+            _ => vec![
+                LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
+                LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
+                LLMTools::OpenAIComputerUse(OpenAIComputerUseConfig::new(
+                    1920,
+                    1080,
+                    "default".to_string(),
+                )),
+            ],
         }
     }
 }

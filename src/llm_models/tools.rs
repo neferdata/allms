@@ -145,6 +145,17 @@ pub enum OpenAIComputerUseToolType {
     ComputerUsePreview,
 }
 
+impl OpenAIComputerUseConfig {
+    pub fn new(display_height: usize, display_width: usize, environment: String) -> Self {
+        Self {
+            tool_type: OpenAIComputerUseToolType::ComputerUsePreview,
+            display_height,
+            display_width,
+            environment,
+        }
+    }
+}
+
 ///
 /// OpenAI Reasoning config
 ///

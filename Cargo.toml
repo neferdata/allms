@@ -1,11 +1,10 @@
 [package]
 name = "allms"
-version = "0.32.0"
+version = "0.33.0"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
     "Nate Dubetz <nate@neferdata.com>",
-    "Dario Lencina <dario@armore.dev>",
     "Chance Cyphers <chance@neferdata.com>"
 ]
 keywords = ["openai", "anthropic", "mistral", "gemini", "assistant"]
