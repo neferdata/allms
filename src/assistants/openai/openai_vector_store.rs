@@ -1,8 +1,10 @@
 use anyhow::{anyhow, Result};
+use backoff::{future::retry, ExponentialBackoff};
 use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::time::Duration;
 
 use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion};
 use crate::domain::AllmsError;
@@ -124,6 +126,43 @@ impl OpenAIVectorStore {
             // If working with existing Vector Store we simply upload files
             self.assign_to_store(file_ids).await?;
         }
+
+        // Before returning ensure the files are processed
+
+        // First ensure it's in Completed state
+        let backoff_config = ExponentialBackoff {
+            initial_interval: Duration::from_secs(1),
+            max_interval: Duration::from_secs(1),
+            max_elapsed_time: Some(Duration::from_secs(90)),
+            ..Default::default()
+        };
+
+        retry(backoff_config.clone(), || async {
+            let status = self.status().await?;
+            if status == OpenAIVectorStoreStatus::Completed {
+                Ok(())
+            } else {
+                Err(backoff::Error::transient(anyhow!(
+                    "[allms][OpenAI][Vector Store] Vector store failed to initialize in time."
+                )))
+            }
+        })
+        .await?;
+
+        // Then make sure all files are processed
+        retry(backoff_config, || async {
+            let file_count = self.file_count().await?;
+            if file_count.in_progress == 0 {
+                Ok(())
+            } else {
+                Err(backoff::Error::transient(anyhow!(
+                    "[allms][OpenAI][Vector Store] Files processing did not complete in time."
+                )))
+            }
+        })
+        .await?;
+
+        // Return the Vector Store
         Ok(self.clone())
     }
 
