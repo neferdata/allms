@@ -8,14 +8,19 @@ use serde_json::Value;
 use crate::completions::ThinkingLevel;
 use crate::constants::XAI_API_URL;
 use crate::domain::{
-    XAIAssistantMessageRole, XAIChatMessage, XAIChatRequest, XAIChatResponse, XAIRole,
+    RateLimit, XAIAssistantMessageRole, XAIChatMessage, XAIChatRequest, XAIChatResponse, XAIRole,
 };
 use crate::llm_models::{LLMModel, LLMTools};
 
 // API Docs: https://docs.x.ai/docs/models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum XAIModels {
+    Grok4_1FastReasoning,
+    Grok4_1FastNonReasoning,
+    Grok4FastReasoning,
+    Grok4FastNonReasoning,
     Grok4,
+    GrokCodeFast1,
     Grok3,
     Grok3Mini,
     Grok3Fast,
@@ -26,7 +31,12 @@ pub enum XAIModels {
 impl LLMModel for XAIModels {
     fn as_str(&self) -> &str {
         match self {
+            XAIModels::Grok4_1FastReasoning => "grok-4-1-fast-reasoning",
+            XAIModels::Grok4_1FastNonReasoning => "grok-4-1-fast-non-reasoning",
+            XAIModels::Grok4FastReasoning => "grok-4-fast-reasoning",
+            XAIModels::Grok4FastNonReasoning => "grok-4-fast-non-reasoning",
             XAIModels::Grok4 => "grok-4",
+            XAIModels::GrokCodeFast1 => "grok-code-fast-1",
             XAIModels::Grok3 => "grok-3",
             XAIModels::Grok3Mini => "grok-3-mini",
             XAIModels::Grok3Fast => "grok-3-fast",
@@ -37,9 +47,22 @@ impl LLMModel for XAIModels {
     // Docs: https://docs.x.ai/docs/models
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "grok-4-1-fast" => Some(XAIModels::Grok4_1FastReasoning),
+            "grok-4-1-fast-reasoning-latest" => Some(XAIModels::Grok4_1FastReasoning),
+            "grok-4-1-fast-reasoning" => Some(XAIModels::Grok4_1FastReasoning),
+            "grok-4-1-fast-non-reasoning" => Some(XAIModels::Grok4_1FastNonReasoning),
+            "grok-4-1-fast-non-reasoning-latest" => Some(XAIModels::Grok4_1FastNonReasoning),
+            "grok-4-fast" => Some(XAIModels::Grok4FastReasoning),
+            "grok-4-fast-reasoning" => Some(XAIModels::Grok4FastReasoning),
+            "grok-4-fast-reasoning-latest" => Some(XAIModels::Grok4FastReasoning),
+            "grok-4-fast-non-reasoning" => Some(XAIModels::Grok4FastNonReasoning),
+            "grok-4-fast-non-reasoning-latest" => Some(XAIModels::Grok4FastNonReasoning),
             "grok-4" => Some(XAIModels::Grok4),
             "grok-4-latest" => Some(XAIModels::Grok4),
             "grok-4-0709" => Some(XAIModels::Grok4),
+            "grok-code-fast-1" => Some(XAIModels::GrokCodeFast1),
+            "grok-code-fast" => Some(XAIModels::GrokCodeFast1),
+            "grok-code-fast-1-0825" => Some(XAIModels::GrokCodeFast1),
             "grok-3" => Some(XAIModels::Grok3),
             "grok-3-latest" => Some(XAIModels::Grok3),
             "grok-3-beta" => Some(XAIModels::Grok3),
@@ -59,7 +82,12 @@ impl LLMModel for XAIModels {
     fn default_max_tokens(&self) -> usize {
         // Docs: https://docs.x.ai/docs/models
         match self {
+            XAIModels::Grok4_1FastReasoning => 2_097_152,
+            XAIModels::Grok4_1FastNonReasoning => 2_097_152,
+            XAIModels::Grok4FastReasoning => 2_097_152,
+            XAIModels::Grok4FastNonReasoning => 2_097_152,
             XAIModels::Grok4 => 256_000,
+            XAIModels::GrokCodeFast1 => 256_000,
             XAIModels::Grok3 => 131_072,
             XAIModels::Grok3Mini => 131_072,
             XAIModels::Grok3Fast => 131_072,
@@ -190,5 +218,49 @@ impl LLMModel for XAIModels {
 
         //Return completions text
         Ok(assistant_response)
+    }
+
+    /// This function allows to check the rate limits for different models
+    fn get_rate_limit(&self) -> RateLimit {
+        //xAI documentation: https://docs.x.ai/developers/models
+        match self {
+            XAIModels::Grok4_1FastReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4_1FastNonReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4FastReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4FastNonReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4 => RateLimit {
+                tpm: 2_000_000,
+                rpm: 480,
+            },
+            XAIModels::GrokCodeFast1 => RateLimit {
+                tpm: 2_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok3 => RateLimit {
+                tpm: 2_000_000, // Not documented. Assuming same as Grok4.
+                rpm: 600,
+            },
+            XAIModels::Grok3Mini => RateLimit {
+                tpm: 2_000_000, // Not documented. Assuming same as Grok4.
+                rpm: 480,
+            },
+            _ => RateLimit {
+                // Not documented. Assuming same as Grok4.
+                tpm: 2_000_000,
+                rpm: 480,
+            },
+        }
     }
 }
