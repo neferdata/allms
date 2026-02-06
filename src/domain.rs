@@ -341,10 +341,10 @@ fn default_tool_execution_type() -> String {
 // Mistral API response type format for Conversations API
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MistralAPIConversationsUsage {
-    pub completion_tokens: usize,
-    pub connector_tokens: usize,
-    pub prompt_tokens: usize,
-    pub total_tokens: usize,
+    pub completion_tokens: Option<usize>,
+    pub connector_tokens: Option<usize>,
+    pub prompt_tokens: Option<usize>,
+    pub total_tokens: Option<usize>,
     #[serde(default)]
     pub connectors: Option<Value>,
 }
