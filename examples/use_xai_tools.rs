@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use allms::{
     llm::{
-        tools::{LLMTools, XAISearchSource, XAIWebSearchConfig},
+        tools::{LLMTools, XAIWebSearchConfig, XAIXSearchConfig},
         XAIModels,
     },
     Completions,
@@ -24,42 +24,35 @@ struct AINewsArticle {
     pub description: String,
 }
 
+// Example 2: X Search
+#[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
+struct XPosts {
+    pub posts: Vec<XPost>,
+}
+
+#[derive(Deserialize, Serialize, JsonSchema, Debug, Clone)]
+struct XPost {
+    pub author: String,
+    pub content: String,
+    pub url: Option<String>,
+    pub date: Option<String>,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
 
     let xai_api_key: String = std::env::var("XAI_API_KEY").expect("XAI_API_KEY not set");
 
-    // Example 1: Web search example with multiple sources
+    // Example 1: Web search example with domain filters
     let web_search_config = XAIWebSearchConfig::new()
-        .add_source(
-            XAISearchSource::web()
-                .with_allowed_sites(vec!["techcrunch.com".to_string(), "wired.com".to_string()])
-                .with_country("US".to_string())
-                .with_safe_search(true),
-        )
-        .add_source(
-            XAISearchSource::news()
-                .with_excluded_sites(vec!["tabloid.com".to_string()])
-                .with_country("US".to_string())
-                .with_safe_search(true),
-        )
-        .add_source(
-            XAISearchSource::x()
-                .with_included_handles(vec![
-                    "openai".to_string(),
-                    "anthropic".to_string(),
-                    "googleai".to_string(),
-                ])
-                .with_favorite_count(100)
-                .with_view_count(1000),
-        )
-        .max_search_results(10)
-        .return_citations(true);
+        .add_allowed_domains(&["techcrunch.com".to_string(), "wired.com".to_string()])
+        .with_enable_image_understanding(true);
 
     let web_search_tool = LLMTools::XAIWebSearch(web_search_config);
     let xai_responses =
-        Completions::new(XAIModels::Grok3Mini, &xai_api_key, None, None).add_tool(web_search_tool);
+        Completions::new(XAIModels::Grok4_1FastNonReasoning, &xai_api_key, None, None)
+            .add_tool(web_search_tool);
 
     match xai_responses
         .get_answer::<AINewsArticles>("Find up to 5 most recent news items about Artificial Intelligence, Generative AI, and Large Language Models. 
@@ -67,6 +60,30 @@ async fn main() -> Result<()> {
         .await
     {
         Ok(response) => println!("AI news articles:\n{:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Example 2: X Search example with date range and handle filters
+    let x_search_config = XAIXSearchConfig::new()
+        .from_date("2025-01-01".to_string())
+        .to_date("2025-12-31".to_string())
+        .add_allowed_x_handles(&["@elonmusk".to_string(), "@OpenAI".to_string()])
+        .enable_image_understanding(true)
+        .enable_video_understanding(true);
+
+    let x_search_tool = LLMTools::XAIXSearch(x_search_config);
+    let xai_responses_x =
+        Completions::new(XAIModels::Grok4_1FastReasoning, &xai_api_key, None, None)
+            .add_tool(x_search_tool);
+
+    match xai_responses_x
+        .get_answer::<XPosts>(
+            "Find up to 5 recent posts about AI and machine learning from the specified accounts. 
+        For each post, provide the author handle, content, and if available, the URL and date.",
+        )
+        .await
+    {
+        Ok(response) => println!("X posts:\n{:#?}", response),
         Err(e) => eprintln!("Error: {:?}", e),
     }
 

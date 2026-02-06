@@ -3,19 +3,22 @@ use async_trait::async_trait;
 use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use crate::completions::ThinkingLevel;
 use crate::constants::XAI_API_URL;
-use crate::domain::{
-    XAIAssistantMessageRole, XAIChatMessage, XAIChatRequest, XAIChatResponse, XAIRole,
-};
+use crate::domain::{RateLimit, XAIChatMessage, XAIChatResponse, XAIResponseOutput, XAIRole};
 use crate::llm_models::{LLMModel, LLMTools};
 
 // API Docs: https://docs.x.ai/docs/models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum XAIModels {
+    Grok4_1FastReasoning,
+    Grok4_1FastNonReasoning,
+    Grok4FastReasoning,
+    Grok4FastNonReasoning,
     Grok4,
+    GrokCodeFast1,
     Grok3,
     Grok3Mini,
     Grok3Fast,
@@ -26,7 +29,12 @@ pub enum XAIModels {
 impl LLMModel for XAIModels {
     fn as_str(&self) -> &str {
         match self {
+            XAIModels::Grok4_1FastReasoning => "grok-4-1-fast-reasoning",
+            XAIModels::Grok4_1FastNonReasoning => "grok-4-1-fast-non-reasoning",
+            XAIModels::Grok4FastReasoning => "grok-4-fast-reasoning",
+            XAIModels::Grok4FastNonReasoning => "grok-4-fast-non-reasoning",
             XAIModels::Grok4 => "grok-4",
+            XAIModels::GrokCodeFast1 => "grok-code-fast-1",
             XAIModels::Grok3 => "grok-3",
             XAIModels::Grok3Mini => "grok-3-mini",
             XAIModels::Grok3Fast => "grok-3-fast",
@@ -37,9 +45,22 @@ impl LLMModel for XAIModels {
     // Docs: https://docs.x.ai/docs/models
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "grok-4-1-fast" => Some(XAIModels::Grok4_1FastReasoning),
+            "grok-4-1-fast-reasoning-latest" => Some(XAIModels::Grok4_1FastReasoning),
+            "grok-4-1-fast-reasoning" => Some(XAIModels::Grok4_1FastReasoning),
+            "grok-4-1-fast-non-reasoning" => Some(XAIModels::Grok4_1FastNonReasoning),
+            "grok-4-1-fast-non-reasoning-latest" => Some(XAIModels::Grok4_1FastNonReasoning),
+            "grok-4-fast" => Some(XAIModels::Grok4FastReasoning),
+            "grok-4-fast-reasoning" => Some(XAIModels::Grok4FastReasoning),
+            "grok-4-fast-reasoning-latest" => Some(XAIModels::Grok4FastReasoning),
+            "grok-4-fast-non-reasoning" => Some(XAIModels::Grok4FastNonReasoning),
+            "grok-4-fast-non-reasoning-latest" => Some(XAIModels::Grok4FastNonReasoning),
             "grok-4" => Some(XAIModels::Grok4),
             "grok-4-latest" => Some(XAIModels::Grok4),
             "grok-4-0709" => Some(XAIModels::Grok4),
+            "grok-code-fast-1" => Some(XAIModels::GrokCodeFast1),
+            "grok-code-fast" => Some(XAIModels::GrokCodeFast1),
+            "grok-code-fast-1-0825" => Some(XAIModels::GrokCodeFast1),
             "grok-3" => Some(XAIModels::Grok3),
             "grok-3-latest" => Some(XAIModels::Grok3),
             "grok-3-beta" => Some(XAIModels::Grok3),
@@ -59,7 +80,12 @@ impl LLMModel for XAIModels {
     fn default_max_tokens(&self) -> usize {
         // Docs: https://docs.x.ai/docs/models
         match self {
+            XAIModels::Grok4_1FastReasoning => 2_097_152,
+            XAIModels::Grok4_1FastNonReasoning => 2_097_152,
+            XAIModels::Grok4FastReasoning => 2_097_152,
+            XAIModels::Grok4FastNonReasoning => 2_097_152,
             XAIModels::Grok4 => 256_000,
+            XAIModels::GrokCodeFast1 => 256_000,
             XAIModels::Grok3 => 131_072,
             XAIModels::Grok3Mini => 131_072,
             XAIModels::Grok3Fast => 131_072,
@@ -99,30 +125,33 @@ impl LLMModel for XAIModels {
             instructions, json_schema,
         );
 
-        let search_parameters = tools.and_then(|tools| {
-            tools.iter().find_map(|tool| match tool {
-                LLMTools::XAIWebSearch(config) => Some(config.clone()),
-                _ => None,
-            })
-        });
+        // Build tools array if provided
+        let tools = if let Some(tools_inner) = tools {
+            let processed_tools: Vec<Value> = tools_inner
+                .iter()
+                .filter_map(LLMTools::get_config_json)
+                .collect::<Vec<Value>>();
 
-        // TODOs:
-        // TextFile tool - currently only supports text files exposed as URL with instructions and not content
-
-        let chat_request = XAIChatRequest {
-            model: self.as_str().to_string(),
-            max_completion_tokens: Some(*max_tokens),
-            temperature: Some(*temperature),
-            messages: vec![
-                XAIChatMessage::new(XAIRole::System, base_instructions),
-                XAIChatMessage::new(XAIRole::User, instructions.to_string()),
-            ],
-            response_format: None,
-            tools: None,
-            search_parameters,
+            if processed_tools.is_empty() {
+                None
+            } else {
+                Some(processed_tools)
+            }
+        } else {
+            None
         };
 
-        serde_json::to_value(chat_request).unwrap_or_default()
+        // Build JSON body directly like other providers
+        json!({
+            "model": self.as_str(),
+            "instructions": base_instructions,
+            "max_completion_tokens": max_tokens,
+            "temperature": temperature,
+            "input": vec![
+                XAIChatMessage::new(XAIRole::User, instructions.to_string()),
+            ],
+            "tools": tools,
+        })
     }
 
     /*
@@ -171,24 +200,77 @@ impl LLMModel for XAIModels {
         //Convert API response to struct representing expected response format
         let messages_response: XAIChatResponse = serde_json::from_str(response_text)?;
 
+        // Extract text from message outputs
         let assistant_response = messages_response
-            .choices
+            .output
             .iter()
-            .map(|item| &item.message)
-            .filter(|message| message.role == XAIAssistantMessageRole::Assistant)
-            .filter_map(|message| {
-                // Use content or reasoning_content if present
-                message
-                    .content
-                    .as_ref()
-                    .or(message.reasoning_content.as_ref())
+            .filter_map(|output| {
+                if let XAIResponseOutput::Message(message) = output {
+                    if message.role == "assistant" {
+                        message.content.iter().find_map(|content| {
+                            if content.content_type == "output_text" {
+                                content.text.as_ref()
+                            } else {
+                                None
+                            }
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             })
-            .fold(String::new(), |mut acc, content| {
-                acc.push_str(&self.sanitize_json_response(content));
+            .fold(String::new(), |mut acc, text| {
+                acc.push_str(&self.sanitize_json_response(text));
                 acc
             });
 
         //Return completions text
         Ok(assistant_response)
+    }
+
+    /// This function allows to check the rate limits for different models
+    fn get_rate_limit(&self) -> RateLimit {
+        //xAI documentation: https://docs.x.ai/developers/models
+        match self {
+            XAIModels::Grok4_1FastReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4_1FastNonReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4FastReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4FastNonReasoning => RateLimit {
+                tpm: 4_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok4 => RateLimit {
+                tpm: 2_000_000,
+                rpm: 480,
+            },
+            XAIModels::GrokCodeFast1 => RateLimit {
+                tpm: 2_000_000,
+                rpm: 480,
+            },
+            XAIModels::Grok3 => RateLimit {
+                tpm: 2_000_000, // Not documented. Assuming same as Grok4.
+                rpm: 600,
+            },
+            XAIModels::Grok3Mini => RateLimit {
+                tpm: 2_000_000, // Not documented. Assuming same as Grok4.
+                rpm: 480,
+            },
+            _ => RateLimit {
+                // Not documented. Assuming same as Grok4.
+                tpm: 2_000_000,
+                rpm: 480,
+            },
+        }
     }
 }
