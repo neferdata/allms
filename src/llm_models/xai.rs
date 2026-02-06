@@ -3,13 +3,11 @@ use async_trait::async_trait;
 use log::info;
 use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use crate::completions::ThinkingLevel;
 use crate::constants::XAI_API_URL;
-use crate::domain::{
-    RateLimit, XAIAssistantMessageRole, XAIChatMessage, XAIChatRequest, XAIChatResponse, XAIRole,
-};
+use crate::domain::{RateLimit, XAIChatMessage, XAIChatResponse, XAIResponseOutput, XAIRole};
 use crate::llm_models::{LLMModel, LLMTools};
 
 // API Docs: https://docs.x.ai/docs/models
@@ -127,30 +125,33 @@ impl LLMModel for XAIModels {
             instructions, json_schema,
         );
 
-        let search_parameters = tools.and_then(|tools| {
-            tools.iter().find_map(|tool| match tool {
-                LLMTools::XAIWebSearch(config) => Some(config.clone()),
-                _ => None,
-            })
-        });
+        // Build tools array if provided
+        let tools = if let Some(tools_inner) = tools {
+            let processed_tools: Vec<Value> = tools_inner
+                .iter()
+                .filter_map(LLMTools::get_config_json)
+                .collect::<Vec<Value>>();
 
-        // TODOs:
-        // TextFile tool - currently only supports text files exposed as URL with instructions and not content
-
-        let chat_request = XAIChatRequest {
-            model: self.as_str().to_string(),
-            max_completion_tokens: Some(*max_tokens),
-            temperature: Some(*temperature),
-            messages: vec![
-                XAIChatMessage::new(XAIRole::System, base_instructions),
-                XAIChatMessage::new(XAIRole::User, instructions.to_string()),
-            ],
-            response_format: None,
-            tools: None,
-            search_parameters,
+            if processed_tools.is_empty() {
+                None
+            } else {
+                Some(processed_tools)
+            }
+        } else {
+            None
         };
 
-        serde_json::to_value(chat_request).unwrap_or_default()
+        // Build JSON body directly like other providers
+        json!({
+            "model": self.as_str(),
+            "instructions": base_instructions,
+            "max_completion_tokens": max_tokens,
+            "temperature": temperature,
+            "input": vec![
+                XAIChatMessage::new(XAIRole::User, instructions.to_string()),
+            ],
+            "tools": tools,
+        })
     }
 
     /*
@@ -199,20 +200,29 @@ impl LLMModel for XAIModels {
         //Convert API response to struct representing expected response format
         let messages_response: XAIChatResponse = serde_json::from_str(response_text)?;
 
+        // Extract text from message outputs
         let assistant_response = messages_response
-            .choices
+            .output
             .iter()
-            .map(|item| &item.message)
-            .filter(|message| message.role == XAIAssistantMessageRole::Assistant)
-            .filter_map(|message| {
-                // Use content or reasoning_content if present
-                message
-                    .content
-                    .as_ref()
-                    .or(message.reasoning_content.as_ref())
+            .filter_map(|output| {
+                if let XAIResponseOutput::Message(message) = output {
+                    if message.role == "assistant" {
+                        message.content.iter().find_map(|content| {
+                            if content.content_type == "output_text" {
+                                content.text.as_ref()
+                            } else {
+                                None
+                            }
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
             })
-            .fold(String::new(), |mut acc, content| {
-                acc.push_str(&self.sanitize_json_response(content));
+            .fold(String::new(), |mut acc, text| {
+                acc.push_str(&self.sanitize_json_response(text));
                 acc
             });
 

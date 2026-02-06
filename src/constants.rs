@@ -79,7 +79,7 @@ lazy_static! {
 
 lazy_static! {
     pub(crate) static ref XAI_API_URL: String =
-        std::env::var("XAI_API_URL").unwrap_or("https://api.x.ai/v1/chat/completions".to_string());
+        std::env::var("XAI_API_URL").unwrap_or("https://api.x.ai/v1/responses".to_string());
 }
 
 //Generic OpenAI instructions
