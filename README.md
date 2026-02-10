@@ -64,7 +64,7 @@ Perplexity:
     - The following legacy models will be supported until February 22, 2025: Llama 3.1 Sonar Small, Llama 3.1 Sonar Large, Llama 3.1 Sonar Huge
 
 xAI:
-- APIs: Chat Completions
+- APIs: Chat Completions, Responses
 - Models: Grok 4.1 Fast Thinking, Grok 4.1 Fast Non Thinking, Grok 4, Grok 4 Fast Thinking, Grok 4 Fast Non Thinking, Grok Code Fast 1, Grok 3, Grok 3 Mini, Grok 3 Fast, Grok 3 Mini Fast
 - Tools: web search, X search
 
