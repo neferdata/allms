@@ -65,8 +65,8 @@ Perplexity:
 
 xAI:
 - APIs: Chat Completions
-- Models: Grok 4, Grok 3, Grok 3 Mini, Grok 3 Fast, Grok 3 Mini Fast
-- Tools: web search
+- Models: Grok 4.1 Fast Thinking, Grok 4.1 Fast Non Thinking, Grok 4, Grok 4 Fast Thinking, Grok 4 Fast Non Thinking, Grok Code Fast 1, Grok 3, Grok 3 Mini, Grok 3 Fast, Grok 3 Mini Fast
+- Tools: web search, X search
 
 ### Prerequisites
 - Anthropic: API key (passed in model constructor)

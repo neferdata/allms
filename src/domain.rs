@@ -745,20 +745,6 @@ pub enum OpenAPIResponsesStatus {
 ///
 /// xAI API Request
 ///
-#[derive(Serialize, Deserialize)]
-pub struct XAIChatRequest {
-    pub model: String,
-    pub messages: Vec<XAIChatMessage>,
-    pub temperature: Option<f32>,
-    pub max_completion_tokens: Option<usize>,
-    pub response_format: Option<XAIResponseFormat>,
-    pub search_parameters: Option<XAIWebSearchConfig>,
-    pub tools: Option<Vec<XAITool>>,
-    // TODO: Future implementations
-    // pub tool_choice: Option<XAIToolChoice>, // Controls which (if any) tool is called by the model. `none` is the default when no tools are present. `auto`` is the default if tools are present.
-    // pub parallel_tool_calls: Option<bool>, // If set to false, the model can perform maximum one tool call.
-    // pub reasoning_effort: Option<String>, // Can be added later via Reasoning Tool
-}
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct XAIChatMessage {
@@ -836,180 +822,122 @@ pub struct XAIToolFunction {
     pub arguments: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct XAIResponseFormat {
-    #[serde(rename = "type")]
-    pub r#type: XAIResponseFormatType,
-    pub json_schema: Option<Value>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum XAIResponseFormatType {
-    Text,
-    JsonObject,
-    JsonSchema,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct XAIResponseFormatJsonObject {
-    pub r#type: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct XAIResponseFormatJsonSchema {
-    pub r#type: String,
-    pub json_schema: serde_json::Value,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub struct XAIWebSearchConfig {
-    pub from_date: Option<String>,
-    pub to_date: Option<String>,
-    pub max_search_results: Option<usize>,
-    pub mode: Option<XAISearchMode>,
-    pub return_citations: Option<bool>,
-    pub sources: Option<Vec<XAISearchSource>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default, Clone, Eq, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum XAISearchMode {
-    On,
-    Off,
-    #[default]
-    Auto,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum XAISearchSource {
-    Web(WebSource),
-    X(XSource),
-    News(NewsSource),
-    Rss(RssSource),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct WebSource {
-    pub allowed_websites: Option<Vec<String>>,
-    pub excluded_websites: Option<Vec<String>>,
-    pub country: Option<String>,
-    pub safe_search: Option<bool>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct XSource {
-    pub included_x_handles: Option<Vec<String>>,
-    pub excluded_x_handles: Option<Vec<String>>,
-    pub post_favorite_count: Option<usize>,
-    pub post_view_count: Option<usize>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct NewsSource {
-    pub excluded_websites: Option<Vec<String>>,
-    pub country: Option<String>,
-    pub safe_search: Option<bool>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub struct RssSource {
-    pub links: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct XAITool {
-    #[serde(rename = "type")]
-    pub tool_type: XAIToolType,
-    pub function: Option<XAIToolDefFunction>,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum XAIToolType {
-    Function,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct XAIToolDefFunction {
-    pub name: String,
-    pub description: Option<String>,
-    pub parameters: serde_json::Value,
-}
-
 ///
-/// xAI API Response
+/// xAI API Response (Responses API format)
 ///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct XAIChatResponse {
-    pub id: String,
-    pub object: Option<String>, // should be "chat.completion"
-    pub created: Option<u64>,
-    pub model: Option<String>,
-    pub choices: Vec<XAIChatChoice>,
+    pub id: Option<String>,
+    pub status: Option<String>,
+    pub output: Vec<XAIResponseOutput>,
     pub usage: Option<XAIUsage>,
-    pub citations: Option<Vec<String>>,
-    pub debug_output: Option<Value>,
-    pub system_fingerprint: Option<String>,
+    pub previous_response_id: Option<String>,
+    pub reasoning: Option<XAIReasoning>,
+    pub text: Option<XAITextFormat>,
+    pub tools: Option<Vec<Value>>,
+    pub incomplete_details: Option<Value>,
+    pub instructions: Option<String>,
+    pub error: Option<Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct XAIChatChoice {
-    pub index: u32,
-    pub message: XAIAssistantMessage,
-    pub finish_reason: Option<String>,
-    pub logprobs: Option<Value>, // You can replace with a struct if you want structured access
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum XAIResponseOutput {
+    #[serde(rename = "web_search_call")]
+    WebSearchCall(XAIWebSearchCallOutput),
+    #[serde(rename = "custom_tool_call")]
+    CustomToolCall(XAICustomToolCallOutput),
+    #[serde(rename = "message")]
+    Message(XAIMessageOutput),
+    // Add other output types as needed
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct XAIAssistantMessage {
-    pub role: XAIAssistantMessageRole,
-    pub content: Option<String>,
-    pub reasoning_content: Option<String>,
-    pub refusal: Option<String>,
-    pub tool_calls: Option<Vec<XAIAssistantMessageToolCall>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum XAIAssistantMessageRole {
-    #[default]
-    Assistant,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct XAIAssistantMessageToolCall {
+pub struct XAIWebSearchCallOutput {
     pub id: String,
-    pub index: Option<u32>,
-    #[serde(rename = "type")]
-    pub call_type: XAIAssistantMessageToolCallType,
-    pub function: XAIAssistantMessageToolFunction,
-}
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum XAIAssistantMessageToolCallType {
-    #[default]
-    Function,
+    pub status: String,
+    pub action: XAIWebSearchAction,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct XAIAssistantMessageToolFunction {
-    pub name: String,
-    pub arguments: String,
+pub struct XAIWebSearchAction {
+    #[serde(rename = "type")]
+    pub action_type: String,
+    pub query: Option<String>,
+    pub url: Option<String>,
+    pub sources: Option<Vec<Value>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAICustomToolCallOutput {
+    pub call_id: Option<String>,
+    pub input: Option<String>,
+    pub name: Option<String>,
+    pub id: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIMessageOutput {
+    pub id: String,
+    pub role: String,
+    pub status: String,
+    pub content: Vec<XAIMessageContent>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIMessageContent {
+    #[serde(rename = "type")]
+    pub content_type: String,
+    pub text: Option<String>,
+    pub logprobs: Option<Vec<Value>>,
+    pub annotations: Option<Vec<XAIAnnotation>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIAnnotation {
+    #[serde(rename = "type")]
+    pub annotation_type: String,
+    pub url: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIReasoning {
+    pub effort: Option<String>,
+    pub summary: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAITextFormat {
+    pub format: XAITextFormatType,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAITextFormatType {
+    #[serde(rename = "type")]
+    pub format_type: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct XAIUsage {
-    pub prompt_tokens: Option<u32>,
-    pub completion_tokens: Option<u32>,
+    #[serde(rename = "input_tokens")]
+    pub input_tokens: Option<u32>,
+    #[serde(rename = "input_tokens_details")]
+    pub input_tokens_details: Option<XAIPromptTokenDetails>,
+    #[serde(rename = "output_tokens")]
+    pub output_tokens: Option<u32>,
+    #[serde(rename = "output_tokens_details")]
+    pub output_tokens_details: Option<XAICompletionTokenDetails>,
+    #[serde(rename = "total_tokens")]
     pub total_tokens: Option<u32>,
-    pub completion_tokens_details: Option<XAICompletionTokenDetails>,
-    pub prompt_tokens_details: Option<XAIPromptTokenDetails>,
+    #[serde(rename = "num_sources_used")]
     pub num_sources_used: Option<u32>,
+    #[serde(rename = "num_server_side_tools_used")]
+    pub num_server_side_tools_used: Option<u32>,
+    #[serde(rename = "cost_in_usd_ticks")]
+    pub cost_in_usd_ticks: Option<u64>,
+    #[serde(rename = "server_side_tool_usage_details")]
+    pub server_side_tool_usage_details: Option<XAIServerSideToolUsageDetails>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1026,4 +954,20 @@ pub struct XAIPromptTokenDetails {
     pub cached_tokens: Option<u32>,
     pub image_tokens: Option<u32>,
     pub text_tokens: Option<u32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIServerSideToolUsageDetails {
+    #[serde(rename = "web_search_calls")]
+    pub web_search_calls: Option<u32>,
+    #[serde(rename = "x_search_calls")]
+    pub x_search_calls: Option<u32>,
+    #[serde(rename = "code_interpreter_calls")]
+    pub code_interpreter_calls: Option<u32>,
+    #[serde(rename = "file_search_calls")]
+    pub file_search_calls: Option<u32>,
+    #[serde(rename = "mcp_calls")]
+    pub mcp_calls: Option<u32>,
+    #[serde(rename = "document_search_calls")]
+    pub document_search_calls: Option<u32>,
 }
