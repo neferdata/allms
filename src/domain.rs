@@ -628,6 +628,7 @@ pub struct OpenAPIResponsesAnnotation {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesReasoning {
     pub effort: Option<String>,
     pub summary: Option<String>,
@@ -636,6 +637,7 @@ pub struct OpenAPIResponsesReasoning {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesServiceTier {
     Auto,
     Default,
@@ -686,6 +688,7 @@ pub struct OpenAPIResponsesToolChoiceFunction {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesTool {
     pub r#type: Option<OpenAPIResponsesToolType>,
     pub function: Option<OpenAPIResponsesToolFunction>,
@@ -693,6 +696,7 @@ pub struct OpenAPIResponsesTool {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesToolType {
     Function,
     FileSearch,
@@ -702,6 +706,7 @@ pub enum OpenAPIResponsesToolType {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesToolFunction {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -710,6 +715,7 @@ pub struct OpenAPIResponsesToolFunction {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesTruncationStrategy {
     Auto,
     Disabled,
