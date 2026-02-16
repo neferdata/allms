@@ -376,6 +376,9 @@ pub struct GoogleGeminiProContent {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleGeminiProPart {
+    /// Gemini may return this as an object (e.g. structured output); accept string or object.
+    /// When the part has only executableCode/codeExecutionResult, this key is absent; default to None.
+    #[serde(default, deserialize_with = "crate::utils::deserialize_text_content")]
     pub text: Option<String>,
     #[serde(rename = "executableCode")]
     pub executable_code: Option<GoogleGeminiExecutableCode>,
@@ -602,7 +605,8 @@ pub enum OpenAPIResponsesRole {
 pub struct OpenAPIResponsesContent {
     pub r#type: OpenAPIResponsesContentType,
     /// When using structured outputs, the API may return this as an object instead of a string.
-    #[serde(deserialize_with = "crate::utils::deserialize_text_content")]
+    /// When the content item has no text key, default to None.
+    #[serde(default, deserialize_with = "crate::utils::deserialize_text_content")]
     pub text: Option<String>,
     pub annotations: Option<Vec<OpenAPIResponsesAnnotation>>,
     pub refusal: Option<String>,
