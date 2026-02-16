@@ -3,7 +3,7 @@ use log::{error, info, warn};
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::domain::{AllmsError, OpenAIDataResponse};
+use crate::domain::AllmsError;
 use crate::llm_models::{LLMModel, LLMTools};
 use crate::utils::{get_tokenizer, get_type_schema};
 
@@ -283,42 +283,18 @@ impl<T: LLMModel> Completions<T> {
         if self.debug {
             info!("[debug] Completions response data: {}", response_string);
         }
+
         //Deserialize the string response into the expected output type
-        let response_deser: anyhow::Result<U, anyhow::Error> =
-            serde_json::from_str(&response_string).map_err(|error| {
-                let error = AllmsError {
-                    crate_name: "allms".to_string(),
-                    module: format!("assistants::completions::{}", self.model.as_str()),
-                    error_message: format!(
-                        "Completions API response serialization error: {}",
-                        error
-                    ),
-                    error_detail: response_string,
-                };
-                error!("{:?}", error);
-                anyhow!("{:?}", error)
-            });
-        // Sometimes openai responds with a json object that has a data property. If that's the case, we need to extract the data property and deserialize that.
-        // TODO: This is OpenAI specific and should be implemented within the model.
-        if let Err(_e) = response_deser {
-            let response_deser: OpenAIDataResponse<U> = serde_json::from_str(&response_text)
-                .map_err(|error| {
-                    let error = AllmsError {
-                        crate_name: "allms".to_string(),
-                        module: format!("assistants::completions::{}", self.model.as_str()),
-                        error_message: format!(
-                            "Completions API response serialization error: {}",
-                            error
-                        ),
-                        error_detail: response_text,
-                    };
-                    error!("{:?}", error);
-                    anyhow!("{:?}", error)
-                })?;
-            Ok(response_deser.data)
-        } else {
-            response_deser
-        }
+        serde_json::from_str(&response_string).map_err(|error| {
+            let error = AllmsError {
+                crate_name: "allms".to_string(),
+                module: format!("assistants::completions::{}", self.model.as_str()),
+                error_message: format!("Completions API response serialization error: {}", error),
+                error_detail: response_string,
+            };
+            error!("{:?}", error);
+            anyhow!("{:?}", error)
+        })
     }
 }
 
