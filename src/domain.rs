@@ -376,6 +376,9 @@ pub struct GoogleGeminiProContent {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleGeminiProPart {
+    /// Gemini may return this as an object (e.g. structured output); accept string or object.
+    /// When the part has only executableCode/codeExecutionResult, this key is absent; default to None.
+    #[serde(default, deserialize_with = "crate::utils::deserialize_text_content")]
     pub text: Option<String>,
     #[serde(rename = "executableCode")]
     pub executable_code: Option<GoogleGeminiExecutableCode>,
@@ -601,6 +604,9 @@ pub enum OpenAPIResponsesRole {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct OpenAPIResponsesContent {
     pub r#type: OpenAPIResponsesContentType,
+    /// When using structured outputs, the API may return this as an object instead of a string.
+    /// When the content item has no text key, default to None.
+    #[serde(default, deserialize_with = "crate::utils::deserialize_text_content")]
     pub text: Option<String>,
     pub annotations: Option<Vec<OpenAPIResponsesAnnotation>>,
     pub refusal: Option<String>,
@@ -622,6 +628,7 @@ pub struct OpenAPIResponsesAnnotation {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesReasoning {
     pub effort: Option<String>,
     pub summary: Option<String>,
@@ -630,6 +637,7 @@ pub struct OpenAPIResponsesReasoning {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesServiceTier {
     Auto,
     Default,
@@ -680,6 +688,7 @@ pub struct OpenAPIResponsesToolChoiceFunction {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesTool {
     pub r#type: Option<OpenAPIResponsesToolType>,
     pub function: Option<OpenAPIResponsesToolFunction>,
@@ -687,6 +696,7 @@ pub struct OpenAPIResponsesTool {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesToolType {
     Function,
     FileSearch,
@@ -696,6 +706,7 @@ pub enum OpenAPIResponsesToolType {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+#[allow(dead_code)]
 pub struct OpenAPIResponsesToolFunction {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -704,6 +715,7 @@ pub struct OpenAPIResponsesToolFunction {
 
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
 pub enum OpenAPIResponsesTruncationStrategy {
     Auto,
     Disabled,

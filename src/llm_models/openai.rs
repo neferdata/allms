@@ -768,6 +768,9 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             ) => {
+                if let Some(data_str) = self.try_extract_data_field(response_text) {
+                    return Ok(data_str);
+                }
                 //Convert API response to struct representing expected response format
                 let chat_response: OpenAPIChatResponse = serde_json::from_str(response_text)?;
 
@@ -852,6 +855,9 @@ impl LLMModel for OpenAIModels {
                     .collect())
             }
             (_, OpenAIModels::TextDavinci003) => {
+                if let Some(data_str) = self.try_extract_data_field(response_text) {
+                    return Ok(data_str);
+                }
                 //Convert API response to struct representing expected response format
                 let completions_response: OpenAPICompletionsResponse =
                     serde_json::from_str(response_text)?;
@@ -1004,6 +1010,17 @@ impl LLMModel for OpenAIModels {
 }
 
 impl OpenAIModels {
+    /// If the API response has a top-level `"data"` field (e.g. some Completions wrappers), returns its value as a string.
+    /// Otherwise returns `None` and the caller should parse the response as usual.
+    fn try_extract_data_field(&self, response_text: &str) -> Option<String> {
+        let value: Value = serde_json::from_str(response_text).ok()?;
+        let data = value.get("data")?;
+        Some(match data {
+            Value::String(s) => s.clone(),
+            other => serde_json::to_string(other).unwrap_or_default(),
+        })
+    }
+
     // This function checks if a model supports tool use in Assistants API (e.g. file_search)
     pub fn tools_support(&self) -> bool {
         matches!(

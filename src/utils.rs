@@ -37,6 +37,20 @@ pub(crate) fn get_tokenizer<T: LLMModel>(model: &T) -> anyhow::Result<CoreBPE> {
     }
 }
 
+/// Deserializes a field from either a JSON string or a JSON object (e.g. structured output).
+/// Returns `Option<String>`: strings are kept as-is, objects/arrays are serialized to a JSON string.
+pub(crate) fn deserialize_text_content<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::Deserialize;
+    let opt = Option::<Value>::deserialize(deserializer)?;
+    Ok(opt.map(|v| match v {
+        Value::String(s) => s,
+        other => serde_json::to_string(&other).unwrap_or_default(),
+    }))
+}
+
 /// LLMs have a tendency to wrap response Json in ```json{}```. This function sanitizes
 pub(crate) fn remove_json_wrapper(json_response: &str) -> String {
     let text_no_json = json_response.replace("json\n", "");
