@@ -1,8 +1,9 @@
 # Based on https://github.com/actions-rs/meta/blob/master/recipes/quickstart.md
 
-on: 
+on:
   push:
     paths:
+      - '.github/**'
       - 'examples/**'
       - 'src/**'
       - 'Cargo.toml'
@@ -21,6 +22,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.91
         with:
           components: clippy, rustfmt
+      - run: rustup component add --toolchain 1.91 clippy rustfmt
       - run: cargo clippy -- --deny warnings
       - run: cargo fmt --check
       - run: cargo test
