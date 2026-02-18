@@ -304,6 +304,14 @@ impl LLMModel for AnthropicModels {
                 AnthropicApiEndpoints::messages_default().version(),
             );
 
+        // For Sonnet 4.6 and Opus 4.6 we set the beta header for 1M context window
+        if matches!(
+            self,
+            AnthropicModels::ClaudeSonnet4_6 | AnthropicModels::ClaudeOpus4_6
+        ) {
+            request = request.header("anthropic-beta", "context-1m-2025-08-07");
+        }
+
         // Add tool-specific headers
         if let Some(tools_list) = tools {
             for tool in tools_list {
