@@ -23,7 +23,7 @@ jobs:
         with:
           components: clippy, rustfmt
       - run: rustup component add --toolchain 1.91 clippy rustfmt
-      - run: cargo clippy --locked -- --deny warnings
+      - run: cargo clippy -- --deny warnings
       - run: cargo fmt --check
-      - run: cargo test --locked
-      - run: cargo publish --locked --dry-run
+      - run: cargo test
+      - run: cargo publish --dry-run
