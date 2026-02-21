@@ -695,6 +695,11 @@ impl LLMModel for OpenAIModels {
         //Get the API url
         let model_url = self.get_version_endpoint(version);
 
+        // If debug is true, print the body
+        if debug {
+            info!("[debug] OpenAI API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 
