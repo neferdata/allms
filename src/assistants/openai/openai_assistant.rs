@@ -122,6 +122,14 @@ impl OpenAIAssistant {
             .version
             .get_endpoint(&OpenAIAssistantResource::Assistants);
 
+        // If debug is true, print the URL
+        if self.debug {
+            info!(
+                "[debug] OpenAI Assistant Create API URL: {:#?}",
+                assistant_url
+            );
+        }
+
         //Get the version-specific header
         let version_headers = self.version.get_headers(&self.api_key);
 

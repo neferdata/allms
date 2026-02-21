@@ -98,6 +98,12 @@ impl LLMModel for AwsBedrockModels {
             .region(&**AWS_REGION)
             .load()
             .await;
+
+        // If debug is true, print the SDK config
+        if debug {
+            info!("[debug] AWS Bedrock SDK config: {:#?}", sdk_config);
+        }
+
         let client = Client::new(&sdk_config);
 
         // Get request info from body

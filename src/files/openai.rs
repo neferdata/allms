@@ -55,6 +55,11 @@ impl LLMFiles for OpenAIFile {
     async fn upload(mut self, file_name: &str, file_bytes: Vec<u8>) -> Result<Self> {
         let files_url = self.version.get_endpoint(&OpenAIAssistantResource::Files);
 
+        // If debug is true, print the URL
+        if self.debug {
+            info!("[debug] OpenAI Files Upload API URL: {:#?}", files_url);
+        }
+
         // This API sends a form so content type is automatically set by multipart method
         let mut version_headers = self.version.get_headers(&self.api_key);
         version_headers.remove(header::CONTENT_TYPE);

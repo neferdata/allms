@@ -145,6 +145,10 @@ impl LLMModel for PerplexityModels {
         //Get the API url
         let model_url = self.get_endpoint();
 
+        if debug {
+            info!("[debug] Perplexity API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 

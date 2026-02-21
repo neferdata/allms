@@ -206,6 +206,10 @@ impl LLMModel for MistralModels {
             self.get_endpoint()
         };
 
+        if debug {
+            info!("[debug] Mistral API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 

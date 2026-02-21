@@ -601,6 +601,10 @@ impl GoogleModels {
         //Get the API url
         let model_url = self.get_version_endpoint(version);
 
+        if debug {
+            info!("[debug] Google AI Studio API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 
@@ -636,6 +640,13 @@ impl GoogleModels {
     ) -> Result<String> {
         //Get the API url
         let model_url = self.get_version_endpoint(version);
+
+        if debug {
+            info!(
+                "[debug] Google Vertex API URL (streaming): {:#?}",
+                model_url
+            );
+        }
 
         //Make the API call
         let client = Client::new();
@@ -715,6 +726,10 @@ impl GoogleModels {
     ) -> Result<String> {
         //Get the API url
         let model_url = self.get_version_endpoint(version);
+
+        if debug {
+            info!("[debug] Google Vertex API URL: {:#?}", model_url);
+        }
 
         //Make the API call
         let client = Client::new();

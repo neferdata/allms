@@ -170,6 +170,10 @@ impl LLMModel for XAIModels {
         //Get the API url
         let model_url = self.get_endpoint();
 
+        if debug {
+            info!("[debug] xAI API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 
