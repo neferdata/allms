@@ -289,6 +289,10 @@ impl LLMModel for AnthropicModels {
         //Get the API url
         let model_url = self.get_endpoint();
 
+        if debug {
+            info!("[debug] Anthropic API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 

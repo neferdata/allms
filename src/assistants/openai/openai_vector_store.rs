@@ -62,6 +62,14 @@ impl OpenAIVectorStore {
             .version
             .get_endpoint(&OpenAIAssistantResource::VectorStores);
 
+        // If debug is true, print the URL
+        if self.debug {
+            info!(
+                "[debug] OpenAI Vector Store Create API URL: {:#?}",
+                vector_store_url
+            );
+        }
+
         //Make the API call
         let client = Client::new();
 

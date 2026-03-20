@@ -100,6 +100,10 @@ impl LLMModel for DeepSeekModels {
         //Get the API url
         let model_url = self.get_endpoint();
 
+        if debug {
+            info!("[debug] DeepSeek API URL: {:#?}", model_url);
+        }
+
         //Make the API call
         let client = Client::new();
 
