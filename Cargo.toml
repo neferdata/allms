@@ -1,6 +1,6 @@
 [package]
 name = "allms"
-version = "0.35.2"
+version = "0.36.0"
 edition = "2021"
 authors = [
     "Kamil Litman <kamil@neferdata.com>",
@@ -30,7 +30,7 @@ serde = "1.0.140"
 serde_json = "1.0.82"
 tiktoken-rs = "0.4.4"
 schemars = "0.8.12"
-reqwest = { version = "0.11.11", features = ["json", "multipart", "stream"]}
+reqwest = { version = "0.11.11", default-features = false, features = ["json", "multipart", "stream", "rustls-tls"] }
 lazy_static = "1.4.0"
 base64 = "0.13.0"
 tokio = { version = "1.19.2", features = ["full"] }

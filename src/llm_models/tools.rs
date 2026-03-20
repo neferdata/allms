@@ -605,6 +605,8 @@ pub enum AnthropicWebSearchToolType {
     #[serde(rename = "web_search_20250305")]
     #[default]
     WebSearch20250305,
+    #[serde(rename = "web_search_20260209")]
+    WebSearch20260209,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
@@ -635,6 +637,11 @@ impl AnthropicWebSearchConfig {
             max_uses: None,
             user_location: None,
         }
+    }
+
+    pub fn set_type(mut self, tool_type: AnthropicWebSearchToolType) -> Self {
+        self.tool_type = tool_type;
+        self
     }
 
     pub fn cache_control(mut self, ttl: AnthropicCacheControllTTL) -> Self {
