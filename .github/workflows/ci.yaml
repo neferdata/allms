@@ -23,7 +23,9 @@ jobs:
         with:
           components: clippy, rustfmt
       - run: rustup component add --toolchain 1.91 clippy rustfmt
+      # This repository does not commit Cargo.lock, so create it in CI first.
+      - run: cargo generate-lockfile
       - run: cargo clippy --locked -- --deny warnings
       - run: cargo fmt --check
       - run: cargo test --locked
-      - run: cargo publish --locked --dry-run
+      - run: cargo publish --dry-run --locked
