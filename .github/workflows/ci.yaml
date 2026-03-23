@@ -28,4 +28,4 @@ jobs:
       - run: cargo clippy --locked -- --deny warnings
       - run: cargo fmt --check
       - run: cargo test --locked
-      - run: cargo publish --dry-run --locked
+      - run: cargo publish --dry-run --locked --allow-dirty
