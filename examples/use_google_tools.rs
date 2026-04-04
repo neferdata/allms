@@ -48,9 +48,10 @@ async fn main() -> Result<()> {
         GeminiWebSearchConfig::new().add_source("https://www.artificialintelligence-news.com/");
 
     let web_search_tool = LLMTools::GeminiWebSearch(web_search_config);
-    let google_responses = Completions::new(GoogleModels::Gemini3Pro, &google_api_key, None, None)
-        .add_tool(web_search_tool.clone())
-        .thinking_level(ThinkingLevel::Low);
+    let google_responses =
+        Completions::new(GoogleModels::Gemini3Flash, &google_api_key, None, None)
+            .add_tool(web_search_tool.clone())
+            .thinking_level(ThinkingLevel::Low);
 
     match google_responses
         .get_answer::<AINewsArticles>("Find up to 5 most recent news items about Artificial Intelligence, Generative AI, and Large Language Models. 
@@ -63,7 +64,7 @@ async fn main() -> Result<()> {
 
     // Example 1B: Web search example (with Vertex API)
     let google_responses_vertex =
-        Completions::new(GoogleModels::Gemini2_5Flash, &vertex_token, None, None)
+        Completions::new(GoogleModels::Gemini3_1FlashLite, &vertex_token, None, None)
             .add_tool(web_search_tool)
             .version("google-vertex");
 
@@ -78,8 +79,9 @@ async fn main() -> Result<()> {
 
     // Example 2A: Code interpreter example (with Studio API)
     let code_interpreter_tool = LLMTools::GeminiCodeInterpreter(GeminiCodeInterpreterConfig::new());
-    let google_responses = Completions::new(GoogleModels::Gemini3Pro, &google_api_key, None, None)
-        .add_tool(code_interpreter_tool.clone());
+    let google_responses =
+        Completions::new(GoogleModels::Gemini3_1Pro, &google_api_key, None, None)
+            .add_tool(code_interpreter_tool.clone());
 
     match google_responses
         .get_answer::<CodeInterpreterResponse>(
@@ -93,7 +95,7 @@ async fn main() -> Result<()> {
 
     // Example 2B: Code interpreter example (with Vertex API)
     let google_responses_vertex =
-        Completions::new(GoogleModels::Gemini2_5Pro, &vertex_token, None, None)
+        Completions::new(GoogleModels::Gemini3_1Pro, &vertex_token, None, None)
             .add_tool(code_interpreter_tool)
             .version("google-vertex");
 
