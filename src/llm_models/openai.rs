@@ -31,6 +31,8 @@ pub enum OpenAIModels {
     // GPT models
     Gpt5_4,
     Gpt5_4Pro,
+    Gpt5_4Mini,
+    Gpt5_4Nano,
     Gpt5_2,
     Gpt5_2Pro,
     Gpt5_1,
@@ -71,6 +73,8 @@ impl LLMModel for OpenAIModels {
         match self {
             OpenAIModels::Gpt5_4 => "gpt-5.4",
             OpenAIModels::Gpt5_4Pro => "gpt-5.4-pro",
+            OpenAIModels::Gpt5_4Mini => "gpt-5.4-mini",
+            OpenAIModels::Gpt5_4Nano => "gpt-5.4-nano",
             OpenAIModels::Gpt5_2 => "gpt-5.2",
             OpenAIModels::Gpt5_2Pro => "gpt-5.2-pro",
             OpenAIModels::Gpt5_1 => "gpt-5.1",
@@ -109,6 +113,10 @@ impl LLMModel for OpenAIModels {
             "gpt-5.4-2026-03-05" => Some(OpenAIModels::Gpt5_4),
             "gpt-5.4-pro" => Some(OpenAIModels::Gpt5_4Pro),
             "gpt-5.4-pro-2026-03-05" => Some(OpenAIModels::Gpt5_4Pro),
+            "gpt-5.4-mini" => Some(OpenAIModels::Gpt5_4Mini),
+            "gpt-5.4-mini-2026-03-17" => Some(OpenAIModels::Gpt5_4Mini),
+            "gpt-5.4-nano" => Some(OpenAIModels::Gpt5_4Nano),
+            "gpt-5.4-nano-2026-03-17" => Some(OpenAIModels::Gpt5_4Nano),
             "gpt-5.2" => Some(OpenAIModels::Gpt5_2),
             "gpt-5.2-2025-12-11" => Some(OpenAIModels::Gpt5_2),
             "gpt-5.2-pro" => Some(OpenAIModels::Gpt5_2Pro),
@@ -155,6 +163,8 @@ impl LLMModel for OpenAIModels {
         match self {
             OpenAIModels::Gpt5_4 => 1_050_000,
             OpenAIModels::Gpt5_4Pro => 1_050_000,
+            OpenAIModels::Gpt5_4Mini => 400_000,
+            OpenAIModels::Gpt5_4Nano => 400_000,
             OpenAIModels::Gpt5_2 => 400_000,
             OpenAIModels::Gpt5_2Pro => 400_000,
             OpenAIModels::Gpt5_1 => 400_000,
@@ -224,6 +234,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_1
                 | OpenAIModels::Gpt5_2
                 | OpenAIModels::Gpt5_4
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -255,6 +267,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -313,6 +327,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_1
                 | OpenAIModels::Gpt5_2
                 | OpenAIModels::Gpt5_4
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -353,6 +369,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -425,6 +443,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt5_2Pro
             | OpenAIModels::Gpt5_4
             | OpenAIModels::Gpt5_4Pro
+            | OpenAIModels::Gpt5_4Mini
+            | OpenAIModels::Gpt5_4Nano
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -489,6 +509,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_1
                 | OpenAIModels::Gpt5_2
                 | OpenAIModels::Gpt5_4
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Custom { .. },
             ) => {
                 let system_message = json!({
@@ -612,6 +634,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Custom { .. },
             ) => {
                 json!({
@@ -796,6 +820,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_1
                 | OpenAIModels::Gpt5_2
                 | OpenAIModels::Gpt5_4
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::O1
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1Preview
@@ -856,6 +882,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -924,6 +952,14 @@ impl LLMModel for OpenAIModels {
             OpenAIModels::Gpt5_4Pro => RateLimit {
                 tpm: 30_000_000,
                 rpm: 10_000,
+            },
+            OpenAIModels::Gpt5_4Mini => RateLimit {
+                tpm: 180_000_000,
+                rpm: 30_000,
+            },
+            OpenAIModels::Gpt5_4Nano => RateLimit {
+                tpm: 180_000_000,
+                rpm: 30_000,
             },
             OpenAIModels::Gpt5_2 => RateLimit {
                 tpm: 40_000_000,
@@ -1086,6 +1122,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1108,6 +1146,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_1
                 | OpenAIModels::Gpt5_2
                 | OpenAIModels::Gpt5_4
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1130,6 +1170,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
         )
     }
 
@@ -1145,6 +1187,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_4Mini
+                | OpenAIModels::Gpt5_4Nano
         )
     }
 
@@ -1161,6 +1205,12 @@ impl OpenAIModels {
             | OpenAIModels::O4Mini => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
                 LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
+            ],
+            // GPT-5.4 nano does not support Computer Use as of 2026-03-17
+            OpenAIModels::Gpt5_4Nano => vec![
+                LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
+                LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
             ],
             // GPT-5.2 does not support Computer Use as of 2025-12-11
             OpenAIModels::Gpt5_2 => vec![
@@ -1286,6 +1336,14 @@ mod tests {
         assert_eq!(
             OpenAIModels::try_from_str("gpt-4.5-preview"),
             Some(OpenAIModels::Gpt4_5Preview)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.4-mini"),
+            Some(OpenAIModels::Gpt5_4Mini)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.4-nano"),
+            Some(OpenAIModels::Gpt5_4Nano)
         );
     }
 
