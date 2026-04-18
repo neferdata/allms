@@ -268,6 +268,8 @@ pub enum AnthropicCodeExecutionToolType {
     #[serde(rename = "code_execution_20250522")]
     #[default]
     CodeExecution20250522,
+    #[serde(rename = "code_execution_20260120")]
+    CodeExecution20260120,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
@@ -300,6 +302,11 @@ impl AnthropicCodeExecutionConfig {
             tool_type: AnthropicCodeExecutionToolType::default(),
             cache_control: None,
         }
+    }
+
+    pub fn set_type(mut self, tool_type: AnthropicCodeExecutionToolType) -> Self {
+        self.tool_type = tool_type;
+        self
     }
 
     pub fn cache_control(mut self, ttl: AnthropicCacheControllTTL) -> Self {

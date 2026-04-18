@@ -11,8 +11,8 @@ use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::{
     tools::{
-        AnthropicCodeExecutionConfig, AnthropicComputerUseConfig, AnthropicFileSearchConfig,
-        AnthropicWebSearchConfig, AnthropicWebSearchToolType,
+        AnthropicCodeExecutionConfig, AnthropicCodeExecutionToolType, AnthropicComputerUseConfig,
+        AnthropicFileSearchConfig, AnthropicWebSearchConfig, AnthropicWebSearchToolType,
     },
     LLMModel, LLMTools,
 };
@@ -20,6 +20,7 @@ use crate::llm_models::{
 // API Docs: https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
+    ClaudeOpus4_7,
     ClaudeSonnet4_6,
     ClaudeOpus4_6,
     Claude4_5Opus,
@@ -43,6 +44,7 @@ pub enum AnthropicModels {
 impl LLMModel for AnthropicModels {
     fn as_str(&self) -> &str {
         match self {
+            AnthropicModels::ClaudeOpus4_7 => "claude-opus-4-7",
             AnthropicModels::ClaudeSonnet4_6 => "claude-sonnet-4-6",
             AnthropicModels::ClaudeOpus4_6 => "claude-opus-4-6",
             AnthropicModels::Claude4_5Opus => "claude-opus-4-5",
@@ -66,6 +68,7 @@ impl LLMModel for AnthropicModels {
     // Docs: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-aliases
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "claude-opus-4-7" => Some(AnthropicModels::ClaudeOpus4_7),
             "claude-sonnet-4-6" => Some(AnthropicModels::ClaudeSonnet4_6),
             "claude-opus-4-6" => Some(AnthropicModels::ClaudeOpus4_6),
             "claude-opus-4-5" => Some(AnthropicModels::Claude4_5Opus),
@@ -98,6 +101,7 @@ impl LLMModel for AnthropicModels {
     fn default_max_tokens(&self) -> usize {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
         match self {
+            AnthropicModels::ClaudeOpus4_7 => 128_000,
             AnthropicModels::ClaudeSonnet4_6 => 64_000,
             AnthropicModels::ClaudeOpus4_6 => 128_000,
             AnthropicModels::Claude4_5Opus => 64_000,
@@ -120,7 +124,8 @@ impl LLMModel for AnthropicModels {
 
     fn get_endpoint(&self) -> String {
         match self {
-            AnthropicModels::ClaudeSonnet4_6
+            AnthropicModels::ClaudeOpus4_7
+            | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
             | AnthropicModels::Claude4_5Sonnet
@@ -229,9 +234,14 @@ impl LLMModel for AnthropicModels {
         let mut message_body = json!({
             "model": self.as_str(),
             "max_tokens": max_tokens,
-            "temperature": temperature,
             "messages": messages,
         });
+
+        // Starting with Claude Opus 4.7, temperature is no longer supported
+        // https://platform.claude.com/docs/en/about-claude/models/migration-guide
+        if self.temperature_supported() {
+            message_body["temperature"] = json!(temperature);
+        }
 
         // Add tools if provided
         if let Some(tools_inner) = tools {
@@ -244,7 +254,7 @@ impl LLMModel for AnthropicModels {
                         std::mem::discriminant(*tool) == std::mem::discriminant(supported)
                     })
                 })
-                .map(|tool| self.set_web_search_tool_type(tool))
+                .map(|tool| self.set_tool_type(tool))
                 .filter_map(|tool| LLMTools::get_config_json(&tool))
                 .collect::<Vec<Value>>();
 
@@ -255,7 +265,8 @@ impl LLMModel for AnthropicModels {
         }
 
         match self {
-            AnthropicModels::ClaudeSonnet4_6
+            AnthropicModels::ClaudeOpus4_7
+            | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
             | AnthropicModels::Claude4_5Sonnet
@@ -345,7 +356,8 @@ impl LLMModel for AnthropicModels {
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
         match self {
-            AnthropicModels::ClaudeSonnet4_6
+            AnthropicModels::ClaudeOpus4_7
+            | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
             | AnthropicModels::Claude4_5Sonnet
@@ -388,6 +400,7 @@ impl LLMModel for AnthropicModels {
 }
 
 impl AnthropicModels {
+    // Docs: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
     pub fn get_supported_tools(&self) -> Vec<LLMTools> {
         match self {
             AnthropicModels::ClaudeSonnet4_6
@@ -406,8 +419,8 @@ impl AnthropicModels {
                     LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
                 ]
             }
-            // As of 2025.10.16 Claude 4.5 Haiku does not seem to support file search
-            AnthropicModels::Claude4_5Haiku => {
+            // As of 2026.04.17 Claude 4.5 Haiku and Claude Opus 4.7 do not seem to support code execution
+            AnthropicModels::ClaudeOpus4_7 | AnthropicModels::Claude4_5Haiku => {
                 vec![
                     LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new()),
                     LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
@@ -428,26 +441,21 @@ impl AnthropicModels {
     pub fn get_tool_header(&self, tool: &LLMTools) -> Option<(&'static str, &'static str)> {
         match (self, tool) {
             (
-                AnthropicModels::ClaudeSonnet4_6 | AnthropicModels::ClaudeOpus4_6,
+                AnthropicModels::ClaudeOpus4_7
+                | AnthropicModels::ClaudeSonnet4_6
+                | AnthropicModels::ClaudeOpus4_6,
                 LLMTools::AnthropicWebSearch(_),
             ) => Some(("anthropic-beta", "code-execution-web-tools-2026-02-09")),
+            // https://docs.claude.com/en/docs/agents-and-tools/tool-use/computer-use-tool
             (
-                AnthropicModels::ClaudeSonnet4_6
+                AnthropicModels::ClaudeOpus4_7
+                | AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6
-                | AnthropicModels::Claude4_5Opus
-                | AnthropicModels::Claude4_5Sonnet
-                | AnthropicModels::Claude4_5Haiku
-                | AnthropicModels::Claude4_1Opus
-                | AnthropicModels::Claude4Sonnet
-                | AnthropicModels::Claude4Opus
-                | AnthropicModels::Claude3_7Sonnet
-                | AnthropicModels::Claude3_5Haiku,
-                LLMTools::AnthropicCodeExecution(_),
-            ) => Some(("anthropic-beta", "code-execution-2025-08-25")),
+                | AnthropicModels::Claude4_5Opus,
+                LLMTools::AnthropicComputerUse(_),
+            ) => Some(("anthropic-beta", "computer-use-2025-11-24")),
             (
-                // https://docs.claude.com/en/docs/agents-and-tools/tool-use/computer-use-tool
-                AnthropicModels::ClaudeSonnet4_6
-                | AnthropicModels::Claude4_5Sonnet
+                AnthropicModels::Claude4_5Sonnet
                 | AnthropicModels::Claude4_5Haiku
                 | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
@@ -455,12 +463,6 @@ impl AnthropicModels {
                 | AnthropicModels::Claude3_7Sonnet,
                 LLMTools::AnthropicComputerUse(_),
             ) => Some(("anthropic-beta", "computer-use-2025-01-24")),
-            // Claude Opus 4.5 & 4.6 require a different header for computer use
-            // https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool
-            (
-                AnthropicModels::ClaudeOpus4_6 | AnthropicModels::Claude4_5Opus,
-                LLMTools::AnthropicComputerUse(_),
-            ) => Some(("anthropic-beta", "computer-use-2025-11-24")),
             (AnthropicModels::Claude3_5Sonnet, LLMTools::AnthropicComputerUse(_)) => {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
@@ -487,18 +489,39 @@ impl AnthropicModels {
         }
     }
 
-    // For Sonnet 4.6 and Opus 4.6 we need to set the web search tool type to 20260209
-    fn set_web_search_tool_type(&self, tool: &LLMTools) -> LLMTools {
+    fn set_tool_type(&self, tool: &LLMTools) -> LLMTools {
         match (self, tool) {
+            // For Sonnet 4.6 and Opus 4.6 we need to set the web search tool type to 20260209
             (
-                AnthropicModels::ClaudeSonnet4_6 | AnthropicModels::ClaudeOpus4_6,
+                AnthropicModels::ClaudeOpus4_7
+                | AnthropicModels::ClaudeSonnet4_6
+                | AnthropicModels::ClaudeOpus4_6,
                 LLMTools::AnthropicWebSearch(config),
             ) => LLMTools::AnthropicWebSearch(
                 config
                     .clone()
                     .set_type(AnthropicWebSearchToolType::WebSearch20260209),
             ),
+            // For Claude Opus 4.7, Sonnet 4.6 and Opus 4.6, 4.5 Opus and 4.5 Sonnet we need to set the code execution tool type to 20260120
+            (
+                AnthropicModels::ClaudeOpus4_7
+                | AnthropicModels::ClaudeSonnet4_6
+                | AnthropicModels::ClaudeOpus4_6
+                | AnthropicModels::Claude4_5Opus
+                | AnthropicModels::Claude4_5Sonnet,
+                LLMTools::AnthropicCodeExecution(config),
+            ) => LLMTools::AnthropicCodeExecution(
+                config
+                    .clone()
+                    .set_type(AnthropicCodeExecutionToolType::CodeExecution20260120),
+            ),
             _ => tool.clone(),
         }
+    }
+
+    // Starting with Claude Opus 4.7, temperature is no longer supported
+    // https://platform.claude.com/docs/en/about-claude/models/migration-guide
+    fn temperature_supported(&self) -> bool {
+        !matches!(self, AnthropicModels::ClaudeOpus4_7)
     }
 }
