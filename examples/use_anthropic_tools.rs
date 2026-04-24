@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
     // Example 1: Web search example
     let web_search_tool = LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new());
     let anthropic_responses = Completions::new(
-        AnthropicModels::ClaudeSonnet4_6,
+        AnthropicModels::ClaudeOpus4_7,
         &anthropic_api_key,
         None,
         None,
@@ -89,7 +89,7 @@ async fn main() -> Result<()> {
     let code_interpreter_tool =
         LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new());
     let anthropic_responses = Completions::new(
-        AnthropicModels::ClaudeSonnet4_6,
+        AnthropicModels::ClaudeOpus4_7,
         &anthropic_api_key,
         None,
         None,
