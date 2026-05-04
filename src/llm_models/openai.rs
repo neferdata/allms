@@ -29,6 +29,8 @@ use crate::{
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIModels {
     // GPT models
+    Gpt5_5,
+    Gpt5_5Pro,
     Gpt5_4,
     Gpt5_4Pro,
     Gpt5_4Mini,
@@ -71,6 +73,8 @@ pub enum OpenAIModels {
 impl LLMModel for OpenAIModels {
     fn as_str(&self) -> &str {
         match self {
+            OpenAIModels::Gpt5_5 => "gpt-5.5",
+            OpenAIModels::Gpt5_5Pro => "gpt-5.5-pro",
             OpenAIModels::Gpt5_4 => "gpt-5.4",
             OpenAIModels::Gpt5_4Pro => "gpt-5.4-pro",
             OpenAIModels::Gpt5_4Mini => "gpt-5.4-mini",
@@ -109,6 +113,10 @@ impl LLMModel for OpenAIModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "gpt-5.5" => Some(OpenAIModels::Gpt5_5),
+            "gpt-5.5-2026-04-23" => Some(OpenAIModels::Gpt5_5),
+            "gpt-5.5-pro" => Some(OpenAIModels::Gpt5_5Pro),
+            "gpt-5.5-pro-2026-04-23" => Some(OpenAIModels::Gpt5_5Pro),
             "gpt-5.4" => Some(OpenAIModels::Gpt5_4),
             "gpt-5.4-2026-03-05" => Some(OpenAIModels::Gpt5_4),
             "gpt-5.4-pro" => Some(OpenAIModels::Gpt5_4Pro),
@@ -161,6 +169,8 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt5_5 => 1_050_000,
+            OpenAIModels::Gpt5_5Pro => 1_050_000,
             OpenAIModels::Gpt5_4 => 1_050_000,
             OpenAIModels::Gpt5_4Pro => 1_050_000,
             OpenAIModels::Gpt5_4Mini => 400_000,
@@ -236,6 +246,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -269,6 +280,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -281,10 +294,13 @@ impl LLMModel for OpenAIModels {
                 "{OPENAI_API_URL}/v1/responses",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro are not supported in Completions API, we redirect to Responses API
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we redirect to Responses API
             (
                 OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
-                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro,
+                OpenAIModels::O1Pro
+                | OpenAIModels::Gpt5_2Pro
+                | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_5Pro,
             ) => {
                 warn!("[allms] The selected model is not supported in Completions API. Responses API will be used instead.");
                 format!(
@@ -329,6 +345,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -371,6 +388,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -385,11 +404,14 @@ impl LLMModel for OpenAIModels {
                 self.as_str(),
                 version
             ),
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro are not supported in Completions API, we redirect to Responses API
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we redirect to Responses API
             (
                 OpenAiApiEndpoints::Azure { version }
                 | OpenAiApiEndpoints::AzureCompletions { version },
-                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro,
+                OpenAIModels::O1Pro
+                | OpenAIModels::Gpt5_2Pro
+                | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_5Pro,
             ) => {
                 warn!("[allms] The selected model is not supported in Completions API. Responses API will be used instead.");
                 format!(
@@ -445,6 +467,8 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt5_4Pro
             | OpenAIModels::Gpt5_4Mini
             | OpenAIModels::Gpt5_4Nano
+            | OpenAIModels::Gpt5_5
+            | OpenAIModels::Gpt5_5Pro
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -511,6 +535,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
                 | OpenAIModels::Custom { .. },
             ) => {
                 let system_message = json!({
@@ -636,6 +661,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::Custom { .. },
             ) => {
                 json!({
@@ -677,13 +704,13 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini,
             )
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro are not supported in Completions API, we redirect to Responses API
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we redirect to Responses API
             | (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
                 | OpenAiApiEndpoints::Azure { .. }
                 | OpenAiApiEndpoints::AzureCompletions { .. },
-                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro,
+                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro | OpenAIModels::Gpt5_5Pro,
             ) => {
                 // Check if reasoning configuration is provided as a tool
                 let reasoning_opt = tools.and_then(|tools_inner| {
@@ -822,6 +849,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
                 | OpenAIModels::O1
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1Preview
@@ -884,6 +912,8 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -893,13 +923,13 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             )
-            // o1 Pro and GPT-5.2 Pro are not supported in Completions API, we use the Responses API data schema
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we use the Responses API data schema
             | (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
                 | OpenAiApiEndpoints::Azure { .. }
                 | OpenAiApiEndpoints::AzureCompletions { .. },
-                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro,
+                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro | OpenAIModels::Gpt5_5Pro,
             ) => {
                 //Convert API response to struct representing expected response format
                 let responses_response: OpenAPIResponsesResponse =
@@ -945,9 +975,17 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/account/rate-limits
         //This is the max tokens allowed between prompt & response
         match self {
-            OpenAIModels::Gpt5_4 => RateLimit {
+            OpenAIModels::Gpt5_5 => RateLimit {
+                tpm: 40_000_000,
+                rpm: 15_000,
+            },
+            OpenAIModels::Gpt5_5Pro => RateLimit {
                 tpm: 30_000_000,
                 rpm: 10_000,
+            },
+            OpenAIModels::Gpt5_4 => RateLimit {
+                tpm: 40_000_000,
+                rpm: 15_000,
             },
             OpenAIModels::Gpt5_4Pro => RateLimit {
                 tpm: 30_000_000,
@@ -1124,6 +1162,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_5
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1148,6 +1188,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_5
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1172,6 +1214,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_5
         )
     }
 
@@ -1189,6 +1233,8 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_5
         )
     }
 
@@ -1223,8 +1269,8 @@ impl OpenAIModels {
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
             ],
-            // GPT-5.4 Pro does not support Code Interpreter as of 2026-03-05
-            OpenAIModels::Gpt5_4Pro => vec![
+            // GPT-5.4 Pro, GPT-5.5 Pro do not support Code Interpreter as of 2026-05-04
+            OpenAIModels::Gpt5_4Pro | OpenAIModels::Gpt5_5Pro => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
                 LLMTools::OpenAIComputerUse(OpenAIComputerUseConfig::new(
