@@ -51,8 +51,7 @@ async fn main() -> Result<()> {
 
     let web_search_tool = LLMTools::XAIWebSearch(web_search_config);
     let xai_responses =
-        Completions::new(XAIModels::Grok4_1FastNonReasoning, &xai_api_key, None, None)
-            .add_tool(web_search_tool);
+        Completions::new(XAIModels::Grok4_3, &xai_api_key, None, None).add_tool(web_search_tool);
 
     match xai_responses
         .get_answer::<AINewsArticles>("Find up to 5 most recent news items about Artificial Intelligence, Generative AI, and Large Language Models. 
@@ -73,8 +72,7 @@ async fn main() -> Result<()> {
 
     let x_search_tool = LLMTools::XAIXSearch(x_search_config);
     let xai_responses_x =
-        Completions::new(XAIModels::Grok4_1FastReasoning, &xai_api_key, None, None)
-            .add_tool(x_search_tool);
+        Completions::new(XAIModels::Grok4_3, &xai_api_key, None, None).add_tool(x_search_tool);
 
     match xai_responses_x
         .get_answer::<XPosts>(
