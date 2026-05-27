@@ -13,6 +13,7 @@ use crate::llm_models::{LLMModel, LLMTools};
 // API Docs: https://docs.x.ai/docs/models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum XAIModels {
+    Grok4_3,
     Grok4_1FastReasoning,
     Grok4_1FastNonReasoning,
     Grok4FastReasoning,
@@ -29,6 +30,7 @@ pub enum XAIModels {
 impl LLMModel for XAIModels {
     fn as_str(&self) -> &str {
         match self {
+            XAIModels::Grok4_3 => "grok-4.3",
             XAIModels::Grok4_1FastReasoning => "grok-4-1-fast-reasoning",
             XAIModels::Grok4_1FastNonReasoning => "grok-4-1-fast-non-reasoning",
             XAIModels::Grok4FastReasoning => "grok-4-fast-reasoning",
@@ -45,6 +47,7 @@ impl LLMModel for XAIModels {
     // Docs: https://docs.x.ai/docs/models
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "grok-4.3" => Some(XAIModels::Grok4_3),
             "grok-4-1-fast" => Some(XAIModels::Grok4_1FastReasoning),
             "grok-4-1-fast-reasoning-latest" => Some(XAIModels::Grok4_1FastReasoning),
             "grok-4-1-fast-reasoning" => Some(XAIModels::Grok4_1FastReasoning),
@@ -80,6 +83,7 @@ impl LLMModel for XAIModels {
     fn default_max_tokens(&self) -> usize {
         // Docs: https://docs.x.ai/docs/models
         match self {
+            XAIModels::Grok4_3 => 1_000_000,
             XAIModels::Grok4_1FastReasoning => 2_097_152,
             XAIModels::Grok4_1FastNonReasoning => 2_097_152,
             XAIModels::Grok4FastReasoning => 2_097_152,
@@ -145,7 +149,7 @@ impl LLMModel for XAIModels {
         json!({
             "model": self.as_str(),
             "instructions": base_instructions,
-            "max_completion_tokens": max_tokens,
+            "max_output_tokens": max_tokens,
             "temperature": temperature,
             "input": vec![
                 XAIChatMessage::new(XAIRole::User, instructions.to_string()),
@@ -238,6 +242,10 @@ impl LLMModel for XAIModels {
     fn get_rate_limit(&self) -> RateLimit {
         //xAI documentation: https://docs.x.ai/developers/models
         match self {
+            XAIModels::Grok4_3 => RateLimit {
+                tpm: 10_000_000,
+                rpm: 1_800,
+            },
             XAIModels::Grok4_1FastReasoning => RateLimit {
                 tpm: 4_000_000,
                 rpm: 480,

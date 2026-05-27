@@ -859,6 +859,8 @@ pub enum XAIResponseOutput {
     WebSearchCall(XAIWebSearchCallOutput),
     #[serde(rename = "custom_tool_call")]
     CustomToolCall(XAICustomToolCallOutput),
+    #[serde(rename = "reasoning")]
+    Reasoning(XAIReasoningOutput),
     #[serde(rename = "message")]
     Message(XAIMessageOutput),
     // Add other output types as needed
@@ -887,6 +889,20 @@ pub struct XAICustomToolCallOutput {
     pub name: Option<String>,
     pub id: String,
     pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIReasoningOutput {
+    pub id: String,
+    pub summary: Vec<XAIReasoningSummary>,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct XAIReasoningSummary {
+    #[serde(rename = "type")]
+    pub summary_type: String,
+    pub text: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
