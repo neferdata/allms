@@ -130,25 +130,26 @@ pub enum OpenAIWebSearchContextSize {
 pub struct OpenAIComputerUseConfig {
     #[serde(rename = "type")]
     pub tool_type: OpenAIComputerUseToolType,
-    pub display_height: usize,
-    pub display_width: usize,
-    pub environment: String,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+impl Default for OpenAIComputerUseConfig {
+    fn default() -> Self {
+        Self {
+            tool_type: OpenAIComputerUseToolType::Computer,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
 pub enum OpenAIComputerUseToolType {
-    #[serde(rename = "computer_use_preview")]
-    ComputerUsePreview,
+    #[serde(rename = "computer")]
+    #[default]
+    Computer,
 }
 
 impl OpenAIComputerUseConfig {
-    pub fn new(display_height: usize, display_width: usize, environment: String) -> Self {
-        Self {
-            tool_type: OpenAIComputerUseToolType::ComputerUsePreview,
-            display_height,
-            display_width,
-            environment,
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
