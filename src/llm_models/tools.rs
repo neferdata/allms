@@ -18,6 +18,7 @@ pub enum LLMTools {
     AnthropicCodeExecution(AnthropicCodeExecutionConfig),
     AnthropicComputerUse(AnthropicComputerUseConfig),
     AnthropicFileSearch(AnthropicFileSearchConfig),
+    AnthropicImageAnalysis(AnthropicImageAnalysisConfig),
     AnthropicWebSearch(AnthropicWebSearchConfig),
     /// xAI
     XAIWebSearch(XAIWebSearchConfig),
@@ -42,6 +43,7 @@ impl LLMTools {
             LLMTools::AnthropicCodeExecution(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicComputerUse(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicFileSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::AnthropicImageAnalysis(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIXSearch(cfg) => to_value(cfg).ok(),
@@ -442,6 +444,38 @@ impl AnthropicFileSearchConfig {
                 "file_id": self.file_id,
             },
         })
+    }
+}
+
+///
+/// Anthropic Image Analysis tool config
+///
+/// This is not a hosted Anthropic tool. When attached, image file IDs are
+/// injected into the Messages API content as `image` blocks.
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct AnthropicImageAnalysisConfig {
+    pub file_ids: Vec<String>,
+}
+
+impl AnthropicImageAnalysisConfig {
+    pub fn new(file_ids: Vec<String>) -> Self {
+        Self { file_ids }
+    }
+
+    pub fn content(&self) -> Vec<Value> {
+        self.file_ids
+            .iter()
+            .map(|file_id| {
+                json!({
+                    "type": "image",
+                    "source": {
+                        "type": "file",
+                        "file_id": file_id,
+                    },
+                })
+            })
+            .collect()
     }
 }
 

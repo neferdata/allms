@@ -12,7 +12,8 @@ use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesRespons
 use crate::llm_models::{
     tools::{
         AnthropicCodeExecutionConfig, AnthropicCodeExecutionToolType, AnthropicComputerUseConfig,
-        AnthropicFileSearchConfig, AnthropicWebSearchConfig, AnthropicWebSearchToolType,
+        AnthropicFileSearchConfig, AnthropicImageAnalysisConfig, AnthropicWebSearchConfig,
+        AnthropicWebSearchToolType,
     },
     LLMModel, LLMTools,
 };
@@ -195,46 +196,13 @@ impl LLMModel for AnthropicModels {
             </output json schema>"
         );
 
-        // The file search tool, if attached, is added to the body of the message
-        // We check if the tool is added and if so use it to get the message content to be sent to the model
-        let messages = if let Some(file_search_tool_config) = tools.and_then(|tools_inner| {
-            tools_inner
-                .iter()
-                // Check if the tool is supported by the model
-                .filter(|tool| {
-                    self.get_supported_tools().iter().any(|supported| {
-                        std::mem::discriminant(*tool) == std::mem::discriminant(supported)
-                    })
-                })
-                // Find the file search tool
-                .find(|tool| matches!(tool, LLMTools::AnthropicFileSearch(_)))
-                // Extract the file search tool config
-                .and_then(|tool| {
-                    tool.get_config_json().and_then(|config_json| {
-                        serde_json::from_value::<AnthropicFileSearchConfig>(config_json).ok()
-                    })
-                })
-        }) {
-            json!([
-                base_message,
-                {
-                    "role": "user",
-                    "content": [
-                        // Use the file search tool config to get the content to be sent to the model
-                        file_search_tool_config.content(),
-                        {
-                            "type": "text",
-                            "text": user_instructions
-                        }
-                    ]
-                }
-            ])
-        } else {
-            json!([base_message, {
+        let messages = json!([
+            base_message,
+            {
                 "role": "user",
-                "content": user_instructions
-            }])
-        };
+                "content": self.messages_input_content(&user_instructions, tools),
+            }
+        ]);
 
         let mut message_body = json!({
             "model": self.as_str(),
@@ -252,13 +220,8 @@ impl LLMModel for AnthropicModels {
         if let Some(tools_inner) = tools {
             let processed_tools: Vec<Value> = tools_inner
                 .iter()
-                // File search is handled separately
-                .filter(|tool| !matches!(tool, LLMTools::AnthropicFileSearch(_)))
-                .filter(|tool| {
-                    self.get_supported_tools().iter().any(|supported| {
-                        std::mem::discriminant(*tool) == std::mem::discriminant(supported)
-                    })
-                })
+                .filter(|tool| Self::is_messages_hosted_tool(tool))
+                .filter(|tool| self.is_supported_tool(tool))
                 .map(|tool| self.set_tool_type(tool))
                 .filter_map(|tool| LLMTools::get_config_json(&tool))
                 .collect::<Vec<Value>>();
@@ -424,6 +387,7 @@ impl AnthropicModels {
                     LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new()),
                     LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
                     LLMTools::AnthropicFileSearch(AnthropicFileSearchConfig::new("".to_string())),
+                    LLMTools::AnthropicImageAnalysis(AnthropicImageAnalysisConfig::new(vec![])),
                     LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
                 ]
             }
@@ -432,6 +396,7 @@ impl AnthropicModels {
                 vec![
                     LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new()),
                     LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
+                    LLMTools::AnthropicImageAnalysis(AnthropicImageAnalysisConfig::new(vec![])),
                     LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
                 ]
             }
@@ -439,6 +404,7 @@ impl AnthropicModels {
                 vec![
                     LLMTools::AnthropicComputerUse(AnthropicComputerUseConfig::new(1920, 1080)),
                     LLMTools::AnthropicFileSearch(AnthropicFileSearchConfig::new("".to_string())),
+                    LLMTools::AnthropicImageAnalysis(AnthropicImageAnalysisConfig::new(vec![])),
                 ]
             }
             _ => vec![],
@@ -478,19 +444,22 @@ impl AnthropicModels {
             (AnthropicModels::Claude3_5Sonnet, LLMTools::AnthropicComputerUse(_)) => {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
-            // File search per-model headers
+            // File search / image analysis per-model headers
             (
-                AnthropicModels::ClaudeSonnet4_6
+                AnthropicModels::ClaudeOpus4_8
+                | AnthropicModels::ClaudeOpus4_7
+                | AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6
                 | AnthropicModels::Claude4_5Opus
                 | AnthropicModels::Claude4_5Sonnet
+                | AnthropicModels::Claude4_5Haiku
                 | AnthropicModels::Claude4_1Opus
                 | AnthropicModels::Claude4Sonnet
                 | AnthropicModels::Claude4Opus
                 | AnthropicModels::Claude3_7Sonnet
                 | AnthropicModels::Claude3_5Sonnet
                 | AnthropicModels::Claude3_5Haiku,
-                LLMTools::AnthropicFileSearch(_),
+                LLMTools::AnthropicFileSearch(_) | LLMTools::AnthropicImageAnalysis(_),
             ) => Some((
                 "anthropic-beta",
                 AnthropicApiEndpoints::files_default().version_static(),
@@ -532,6 +501,43 @@ impl AnthropicModels {
                     .set_type(AnthropicCodeExecutionToolType::CodeExecution20260120),
             ),
             _ => tool.clone(),
+        }
+    }
+
+    fn is_supported_tool(&self, tool: &LLMTools) -> bool {
+        self.get_supported_tools()
+            .iter()
+            .any(|supported| std::mem::discriminant(tool) == std::mem::discriminant(supported))
+    }
+
+    // File search and image analysis are injected into message content, not `tools[]`.
+    fn is_messages_hosted_tool(tool: &LLMTools) -> bool {
+        !matches!(
+            tool,
+            LLMTools::AnthropicFileSearch(_) | LLMTools::AnthropicImageAnalysis(_)
+        )
+    }
+
+    fn messages_input_content(&self, user_instructions: &str, tools: Option<&[LLMTools]>) -> Value {
+        let mut content_parts: Vec<Value> = tools
+            .unwrap_or(&[])
+            .iter()
+            .filter(|tool| self.is_supported_tool(tool))
+            .flat_map(|tool| match tool {
+                LLMTools::AnthropicFileSearch(cfg) => vec![cfg.content()],
+                LLMTools::AnthropicImageAnalysis(cfg) => cfg.content(),
+                _ => vec![],
+            })
+            .collect();
+
+        if content_parts.is_empty() {
+            json!(user_instructions)
+        } else {
+            content_parts.push(json!({
+                "type": "text",
+                "text": user_instructions,
+            }));
+            json!(content_parts)
         }
     }
 

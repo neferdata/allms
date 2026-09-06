@@ -9,8 +9,8 @@ use allms::{
     files::{AnthropicFile, LLMFiles},
     llm::{
         tools::{
-            AnthropicCodeExecutionConfig, AnthropicFileSearchConfig, AnthropicWebSearchConfig,
-            LLMTools,
+            AnthropicCodeExecutionConfig, AnthropicFileSearchConfig, AnthropicImageAnalysisConfig,
+            AnthropicWebSearchConfig, LLMTools,
         },
         AnthropicModels,
     },
@@ -147,6 +147,50 @@ async fn main() -> Result<()> {
 
     // Cleanup
     anthropic_file.delete().await?;
+
+    // Example 4: Image analysis example
+
+    // Read the concert image and upload it to Anthropic
+    let path = Path::new("concert.png");
+    let bytes = std::fs::read(path)?;
+    let file_name = path
+        .file_name()
+        .and_then(OsStr::to_str)
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("Failed to extract file name"))?;
+
+    let anthropic_image = AnthropicFile::new(None, &anthropic_api_key)
+        .upload(&file_name, bytes)
+        .await?;
+
+    // Extract concert information using Anthropic API with image analysis tool
+    let image_analysis_tool =
+        LLMTools::AnthropicImageAnalysis(AnthropicImageAnalysisConfig::new(vec![anthropic_image
+            .id
+            .clone()
+            .unwrap_or_default()]));
+
+    let anthropic_responses = Completions::new(
+        AnthropicModels::ClaudeSonnet4_6,
+        &anthropic_api_key,
+        None,
+        None,
+    )
+    .set_context("bands_genres", &BANDS_GENRES)?
+    .add_tool(image_analysis_tool);
+
+    match anthropic_responses
+        .get_answer::<ConcertInfo>("Extract the information requested in the response type from the attached concert information.
+            The response should include the genre of the music the 'band' represents.
+            The mapping of bands to genres was provided in 'bands_genres' list.")
+        .await
+    {
+        Ok(response) => println!("Concert Info:\n{:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Cleanup
+    anthropic_image.delete().await?;
 
     Ok(())
 }
