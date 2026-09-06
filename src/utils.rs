@@ -234,6 +234,7 @@ pub(crate) fn get_mime_type(file_name: &str) -> Option<&str> {
         Some("js") => Some("text/javascript"),
         Some("gif") => Some("image/gif"),
         Some("png") => Some("image/png"),
+        Some("webp") => Some("image/webp"),
         Some("tar") => Some("application/x-tar"),
         Some("ts") => Some("application/typescript"),
         Some("xlsx") => Some("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),

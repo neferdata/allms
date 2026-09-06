@@ -6,7 +6,7 @@ mod openai;
 pub use llm_files::LLMFiles;
 
 /// OpenAI file implementation
-pub use openai::OpenAIFile;
+pub use openai::{OpenAIFile, OpenAIFilePurpose};
 
 /// Anthropic file implementation
 pub use anthropic::AnthropicFile;

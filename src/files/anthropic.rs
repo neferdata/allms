@@ -51,14 +51,15 @@ impl LLMFiles for AnthropicFile {
         let files_url = ANTHROPIC_FILES_API_URL.to_string();
 
         let mime_type = get_mime_type(file_name)
-            .and_then(|mime_type| {
-                if mime_type != "application/pdf" {
-                    None
-                } else {
-                    Some(mime_type)
-                }
+            .filter(|mime_type| {
+                matches!(
+                    *mime_type,
+                    "application/pdf" | "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+                )
             })
-            .ok_or_else(|| anyhow!("Only PDF files (application/pdf) are supported"))?;
+            .ok_or_else(|| {
+                anyhow!("Only PDF and image files (jpeg, png, gif, webp) are supported")
+            })?;
 
         let form = multipart::Form::new().part(
             "file",

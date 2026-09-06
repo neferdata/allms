@@ -18,7 +18,7 @@ This Rust library is specialized in providing type-safe interactions with APIs o
 Anthropic:
 - APIs: Messages, Text Completions
 - Models: Claude Opus 4.7, Claude Sonnet 4.6, Claude Opus 4.6, Claude Opus 4.5, Claude Sonnet 4.5, Claude Haiku 4.5, Claude Opus 4.1, Claude Sonnet 4, Claude Opus 4, Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku, Claude 3 Opus, Claude 3 Sonnet, Claude 3 Haiku, Claude 2.0, Claude Instant 1.2
-- Tools: file search, web search (including dynamic filtering), code interpreter, computer use
+- Tools: file search, image analysis, web search (including dynamic filtering), code interpreter, computer use
 
 AWS Bedrock:
 - APIs: Converse
@@ -56,7 +56,7 @@ OpenAI:
 - Models: 
     - Chat Completions & Responses: GPT-5.5, GPT-5.5 Pro, GPT-5.4, GPT-5.4 Pro, GPT-5.4-Mini, GPT-5.4-Nano, GPT-5.2, GPT-5.2 Pro, GPT-5.1, o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini
     - Chat Completions, Responses & Assistants: GPT-5, GPT-5-mini, GPT-5-nano, GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
-- Tools: file search, web search, code interpreter, computer use
+- Tools: file search, image analysis, web search, code interpreter, computer use
 
 Perplexity:
 - APIs: Chat Completions

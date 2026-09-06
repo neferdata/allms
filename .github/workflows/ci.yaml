@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@1.91
+      - uses: dtolnay/rust-toolchain@1.94
         with:
           components: clippy, rustfmt
-      - run: rustup component add --toolchain 1.91 clippy rustfmt
+      - run: rustup component add --toolchain 1.94 clippy rustfmt
       # This repository does not commit Cargo.lock, so create it in CI first.
       - run: cargo generate-lockfile
       - run: cargo clippy --locked -- --deny warnings

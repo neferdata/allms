@@ -9,6 +9,7 @@ use serde_json::{json, to_value, Value};
 pub enum LLMTools {
     /// OpenAI
     OpenAIFileSearch(OpenAIFileSearchConfig),
+    OpenAIImageAnalysis(OpenAIImageAnalysisConfig),
     OpenAIWebSearch(OpenAIWebSearchConfig),
     OpenAIComputerUse(OpenAIComputerUseConfig),
     OpenAIReasoning(OpenAIReasoningConfig),
@@ -17,6 +18,7 @@ pub enum LLMTools {
     AnthropicCodeExecution(AnthropicCodeExecutionConfig),
     AnthropicComputerUse(AnthropicComputerUseConfig),
     AnthropicFileSearch(AnthropicFileSearchConfig),
+    AnthropicImageAnalysis(AnthropicImageAnalysisConfig),
     AnthropicWebSearch(AnthropicWebSearchConfig),
     /// xAI
     XAIWebSearch(XAIWebSearchConfig),
@@ -33,6 +35,7 @@ impl LLMTools {
     pub fn get_config_json(&self) -> Option<Value> {
         match self {
             LLMTools::OpenAIFileSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::OpenAIImageAnalysis(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIComputerUse(cfg) => to_value(cfg).ok(),
             LLMTools::OpenAIReasoning(cfg) => to_value(cfg).ok(),
@@ -40,6 +43,7 @@ impl LLMTools {
             LLMTools::AnthropicCodeExecution(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicComputerUse(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicFileSearch(cfg) => to_value(cfg).ok(),
+            LLMTools::AnthropicImageAnalysis(cfg) => to_value(cfg).ok(),
             LLMTools::AnthropicWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIWebSearch(cfg) => to_value(cfg).ok(),
             LLMTools::XAIXSearch(cfg) => to_value(cfg).ok(),
@@ -77,6 +81,53 @@ impl OpenAIFileSearchConfig {
 pub enum OpenAIFileSearchToolType {
     #[serde(rename = "file_search")]
     FileSearch,
+}
+
+///
+/// OpenAI Image Analysis tool config
+///
+/// This is not a hosted OpenAI tool. When attached, image file IDs are
+/// injected into the Responses API `input` as `input_image` content parts.
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct OpenAIImageAnalysisConfig {
+    pub file_ids: Vec<String>,
+    pub detail: Option<OpenAIImageDetail>,
+}
+
+impl OpenAIImageAnalysisConfig {
+    pub fn new(file_ids: Vec<String>) -> Self {
+        Self {
+            file_ids,
+            detail: None,
+        }
+    }
+
+    pub fn content(&self) -> Vec<Value> {
+        let detail = self.detail.clone().unwrap_or(OpenAIImageDetail::Auto);
+        self.file_ids
+            .iter()
+            .map(|file_id| {
+                json!({
+                    "type": "input_image",
+                    "file_id": file_id,
+                    "detail": detail,
+                })
+            })
+            .collect()
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub enum OpenAIImageDetail {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "auto")]
+    Auto,
+    #[serde(rename = "original")]
+    Original,
 }
 
 ///
@@ -393,6 +444,38 @@ impl AnthropicFileSearchConfig {
                 "file_id": self.file_id,
             },
         })
+    }
+}
+
+///
+/// Anthropic Image Analysis tool config
+///
+/// This is not a hosted Anthropic tool. When attached, image file IDs are
+/// injected into the Messages API content as `image` blocks.
+///
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq, Default)]
+pub struct AnthropicImageAnalysisConfig {
+    pub file_ids: Vec<String>,
+}
+
+impl AnthropicImageAnalysisConfig {
+    pub fn new(file_ids: Vec<String>) -> Self {
+        Self { file_ids }
+    }
+
+    pub fn content(&self) -> Vec<Value> {
+        self.file_ids
+            .iter()
+            .map(|file_id| {
+                json!({
+                    "type": "image",
+                    "source": {
+                        "type": "file",
+                        "file_id": file_id,
+                    },
+                })
+            })
+            .collect()
     }
 }
 
