@@ -7,11 +7,11 @@ use std::path::Path;
 
 use allms::{
     assistants::OpenAIVectorStore,
-    files::OpenAIFile,
+    files::{OpenAIFile, OpenAIFilePurpose},
     llm::{
         tools::{
-            LLMTools, OpenAICodeInterpreterConfig, OpenAIFileSearchConfig, OpenAIReasoningConfig,
-            OpenAIWebSearchConfig,
+            LLMTools, OpenAICodeInterpreterConfig, OpenAIFileSearchConfig,
+            OpenAIImageAnalysisConfig, OpenAIReasoningConfig, OpenAIWebSearchConfig,
         },
         OpenAIModels,
     },
@@ -60,7 +60,7 @@ const BANDS_GENRES: &[(&str, &str)] = &[
     ("Johnny Cash", "Country"),
 ];
 
-// Example 4: Code interpreter example
+// Example 5: Code interpreter example
 #[derive(Deserialize, Serialize, Debug, Clone, JsonSchema)]
 pub struct CodeInterpreterResponse {
     pub problem: String,
@@ -94,7 +94,7 @@ async fn main() -> Result<()> {
 
     // Example 2: Web search example
     let web_search_tool = LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new());
-    let openai_responses = Completions::new(OpenAIModels::Gpt5_5Pro, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
         .version("openai_responses")
         .add_tool(web_search_tool);
 
@@ -150,7 +150,46 @@ async fn main() -> Result<()> {
     openai_file.delete().await?;
     openai_vector_store.delete().await?;
 
-    // Example 4: Code interpreter example
+    // Example 4: Image analysis example
+
+    // Read the concert image and upload it to OpenAI
+    let path = Path::new("concert.png");
+    let bytes = std::fs::read(path)?;
+    let file_name = path
+        .file_name()
+        .and_then(OsStr::to_str)
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("Failed to extract file name"))?;
+    let openai_image = OpenAIFile::new(None, &openai_api_key)
+        .purpose(OpenAIFilePurpose::Vision)
+        .upload(&file_name, bytes)
+        .await?;
+
+    // Extract concert information using Responses API with image analysis tool
+    let image_analysis_tool =
+        LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![openai_image
+            .id
+            .clone()
+            .unwrap_or_default()]));
+
+    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
+        .version("openai_responses")
+        .add_tool(image_analysis_tool);
+
+    match openai_responses
+        .get_answer::<ConcertInfo>("Extract the information requested in the response type from the attached concert information.
+            The response should include the genre of the music the 'band' represents.
+            The mapping of bands to genres was provided in 'bands_genres' list.")
+        .await
+    {
+        Ok(response) => println!("Concert Info (Image Analysis):\n{:#?}", response),
+        Err(e) => eprintln!("Error: {:?}", e),
+    }
+
+    // Cleanup
+    openai_image.delete().await?;
+
+    // Example 5: Code interpreter example
 
     let code_interpreter_tool = LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new());
     let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)

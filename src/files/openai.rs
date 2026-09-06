@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use log::{error, info};
 use reqwest::{header, multipart, Client};
 use serde::{Deserialize, Serialize};
+use serde_json::to_value;
 
 use crate::assistants::{OpenAIAssistantResource, OpenAIAssistantVersion};
 use crate::domain::AllmsError;
@@ -15,6 +16,19 @@ pub struct OpenAIFile {
     debug: bool,
     api_key: String,
     version: OpenAIAssistantVersion,
+    purpose: OpenAIFilePurpose,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, Eq, PartialEq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum OpenAIFilePurpose {
+    #[default]
+    Assistants,
+    Vision,
+    UserData,
+    Batch,
+    #[serde(rename = "fine-tune")]
+    FineTune,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -38,6 +52,7 @@ impl LLMFiles for OpenAIFile {
             debug: false,
             api_key: open_ai_key.to_string(),
             version: OpenAIAssistantVersion::V1, // Default to V1
+            purpose: OpenAIFilePurpose::default(),
         }
     }
 
@@ -67,7 +82,11 @@ impl LLMFiles for OpenAIFile {
         // Determine MIME type based on file extension
         let mime_type = get_mime_type(file_name).ok_or_else(|| anyhow!("Unsupported file type"))?;
 
-        let form = multipart::Form::new().text("purpose", "assistants").part(
+        let purpose = to_value(self.purpose)?
+            .as_str()
+            .context("Failed to serialize file purpose")?
+            .to_owned();
+        let form = multipart::Form::new().text("purpose", purpose).part(
             "file",
             multipart::Part::bytes(file_bytes)
                 .file_name(file_name.to_string())
@@ -198,6 +217,15 @@ impl OpenAIFile {
             _ => version,
         };
         self.version = version;
+        self
+    }
+
+    ///
+    /// Sets the Files API `purpose` used on upload.
+    /// Defaults to `Assistants`. Use `Vision` for image analysis.
+    ///
+    pub fn purpose(mut self, purpose: OpenAIFilePurpose) -> Self {
+        self.purpose = purpose;
         self
     }
 }

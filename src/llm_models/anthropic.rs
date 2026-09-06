@@ -20,6 +20,7 @@ use crate::llm_models::{
 // API Docs: https://docs.anthropic.com/en/docs/about-claude/models/all-models
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum AnthropicModels {
+    ClaudeOpus4_8,
     ClaudeOpus4_7,
     ClaudeSonnet4_6,
     ClaudeOpus4_6,
@@ -44,6 +45,7 @@ pub enum AnthropicModels {
 impl LLMModel for AnthropicModels {
     fn as_str(&self) -> &str {
         match self {
+            AnthropicModels::ClaudeOpus4_8 => "claude-opus-4-8",
             AnthropicModels::ClaudeOpus4_7 => "claude-opus-4-7",
             AnthropicModels::ClaudeSonnet4_6 => "claude-sonnet-4-6",
             AnthropicModels::ClaudeOpus4_6 => "claude-opus-4-6",
@@ -68,6 +70,7 @@ impl LLMModel for AnthropicModels {
     // Docs: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-aliases
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "claude-opus-4-8" => Some(AnthropicModels::ClaudeOpus4_8),
             "claude-opus-4-7" => Some(AnthropicModels::ClaudeOpus4_7),
             "claude-sonnet-4-6" => Some(AnthropicModels::ClaudeSonnet4_6),
             "claude-opus-4-6" => Some(AnthropicModels::ClaudeOpus4_6),
@@ -101,6 +104,7 @@ impl LLMModel for AnthropicModels {
     fn default_max_tokens(&self) -> usize {
         // This is the max tokens allowed for response and not context as per documentation: https://docs.anthropic.com/en/docs/about-claude/models/overview#model-comparison-table
         match self {
+            AnthropicModels::ClaudeOpus4_8 => 128_000,
             AnthropicModels::ClaudeOpus4_7 => 128_000,
             AnthropicModels::ClaudeSonnet4_6 => 64_000,
             AnthropicModels::ClaudeOpus4_6 => 128_000,
@@ -124,7 +128,8 @@ impl LLMModel for AnthropicModels {
 
     fn get_endpoint(&self) -> String {
         match self {
-            AnthropicModels::ClaudeOpus4_7
+            AnthropicModels::ClaudeOpus4_8
+            | AnthropicModels::ClaudeOpus4_7
             | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
@@ -265,7 +270,8 @@ impl LLMModel for AnthropicModels {
         }
 
         match self {
-            AnthropicModels::ClaudeOpus4_7
+            AnthropicModels::ClaudeOpus4_8
+            | AnthropicModels::ClaudeOpus4_7
             | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
@@ -356,7 +362,8 @@ impl LLMModel for AnthropicModels {
     fn get_data(&self, response_text: &str, _function_call: bool) -> Result<String> {
         //Convert API response to struct representing expected response format
         match self {
-            AnthropicModels::ClaudeOpus4_7
+            AnthropicModels::ClaudeOpus4_8
+            | AnthropicModels::ClaudeOpus4_7
             | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
@@ -403,7 +410,8 @@ impl AnthropicModels {
     // Docs: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview
     pub fn get_supported_tools(&self) -> Vec<LLMTools> {
         match self {
-            AnthropicModels::ClaudeSonnet4_6
+            AnthropicModels::ClaudeOpus4_8
+            | AnthropicModels::ClaudeSonnet4_6
             | AnthropicModels::ClaudeOpus4_6
             | AnthropicModels::Claude4_5Opus
             | AnthropicModels::Claude4_5Sonnet
@@ -419,7 +427,7 @@ impl AnthropicModels {
                     LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new()),
                 ]
             }
-            // As of 2026.04.17 Claude 4.5 Haiku and Claude Opus 4.7 do not seem to support code execution
+            // As of 2026.04.17 Claude 4.5 Haiku and Claude Opus 4.7 do not seem to support file search
             AnthropicModels::ClaudeOpus4_7 | AnthropicModels::Claude4_5Haiku => {
                 vec![
                     LLMTools::AnthropicCodeExecution(AnthropicCodeExecutionConfig::new()),
@@ -440,15 +448,19 @@ impl AnthropicModels {
     /// Returns a tuple of (header_name, header_value) for a specific tool, or None if no header is needed
     pub fn get_tool_header(&self, tool: &LLMTools) -> Option<(&'static str, &'static str)> {
         match (self, tool) {
+            // Web search per-model headers
             (
-                AnthropicModels::ClaudeOpus4_7
+                AnthropicModels::ClaudeOpus4_8
+                | AnthropicModels::ClaudeOpus4_7
                 | AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6,
                 LLMTools::AnthropicWebSearch(_),
             ) => Some(("anthropic-beta", "code-execution-web-tools-2026-02-09")),
+            // Computer use per-model headers
             // https://docs.claude.com/en/docs/agents-and-tools/tool-use/computer-use-tool
             (
-                AnthropicModels::ClaudeOpus4_7
+                AnthropicModels::ClaudeOpus4_8
+                | AnthropicModels::ClaudeOpus4_7
                 | AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6
                 | AnthropicModels::Claude4_5Opus,
@@ -466,6 +478,7 @@ impl AnthropicModels {
             (AnthropicModels::Claude3_5Sonnet, LLMTools::AnthropicComputerUse(_)) => {
                 Some(("anthropic-beta", "computer-use-2024-10-22"))
             }
+            // File search per-model headers
             (
                 AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6
@@ -482,6 +495,7 @@ impl AnthropicModels {
                 "anthropic-beta",
                 AnthropicApiEndpoints::files_default().version_static(),
             )),
+            // Code execution per-model headers
             _ => {
                 // Return None for tools that don't require a header
                 None
@@ -493,7 +507,8 @@ impl AnthropicModels {
         match (self, tool) {
             // For Sonnet 4.6 and Opus 4.6 we need to set the web search tool type to 20260209
             (
-                AnthropicModels::ClaudeOpus4_7
+                AnthropicModels::ClaudeOpus4_8
+                | AnthropicModels::ClaudeOpus4_7
                 | AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6,
                 LLMTools::AnthropicWebSearch(config),
@@ -504,7 +519,8 @@ impl AnthropicModels {
             ),
             // For Claude Opus 4.7, Sonnet 4.6 and Opus 4.6, 4.5 Opus and 4.5 Sonnet we need to set the code execution tool type to 20260120
             (
-                AnthropicModels::ClaudeOpus4_7
+                AnthropicModels::ClaudeOpus4_8
+                | AnthropicModels::ClaudeOpus4_7
                 | AnthropicModels::ClaudeSonnet4_6
                 | AnthropicModels::ClaudeOpus4_6
                 | AnthropicModels::Claude4_5Opus

@@ -18,7 +18,7 @@ use crate::{
     llm_models::{
         tools::{
             OpenAICodeInterpreterConfig, OpenAIComputerUseConfig, OpenAIFileSearchConfig,
-            OpenAIWebSearchConfig,
+            OpenAIImageAnalysisConfig, OpenAIWebSearchConfig,
         },
         LLMModel, LLMTools,
     },
@@ -667,19 +667,13 @@ impl LLMModel for OpenAIModels {
             ) => {
                 json!({
                     "model": self.as_str(),
-                    "input": user_message_str,
+                    "input": self.responses_input(&user_message_str, tools),
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     // GPT-5 models don't support `temperature`
                     "temperature": if self.is_gpt5_model() { json!(null) } else { json!(temperature) },
                     // If tools are provided we add them to the body
-                    "tools": tools.map(|tools_inner| tools_inner
-                        .iter()
-                        .filter(|tool| !matches!(tool, LLMTools::OpenAIReasoning(_)))
-                        .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
-                        .filter_map(LLMTools::get_config_json)
-                        .collect::<Vec<Value>>()
-                    ),
+                    "tools": self.responses_tools(tools),
                     // TODO: Other fields to be implemented in the future
                     // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
                     // "text": {
@@ -724,17 +718,12 @@ impl LLMModel for OpenAIModels {
                 });
                 json!({
                     "model": self.as_str(),
-                    "input": user_message_str,
+                    "input": self.responses_input(&user_message_str, tools),
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
                     "reasoning": reasoning_opt,
                     // Reasoning models can use certain tools
-                    "tools": tools.map(|tools_inner| tools_inner
-                        .iter()
-                        .filter(|tool| self.get_supported_tools().iter().any(|supported| std::mem::discriminant(*tool) == std::mem::discriminant(supported)))
-                        .filter_map(LLMTools::get_config_json)
-                        .collect::<Vec<Value>>()
-                    ),
+                    "tools": self.responses_tools(tools),
                     // TODO: Other fields to be implemented in the future
                     // Structured Outputs Docs: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#how-to-use
                     // "text": {
@@ -1241,7 +1230,7 @@ impl OpenAIModels {
     // This function returns a list of supported tools for all models
     pub fn get_supported_tools(&self) -> Vec<LLMTools> {
         match self {
-            // Reasoning models only support File Search and Code Interpreter
+            // Reasoning models only support File Search, Image Analysis, and Code Interpreter
             OpenAIModels::O1Preview
             | OpenAIModels::O1Mini
             | OpenAIModels::O1
@@ -1250,28 +1239,33 @@ impl OpenAIModels {
             | OpenAIModels::O3Mini
             | OpenAIModels::O4Mini => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![])),
                 LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
             ],
             // GPT-5.4 nano does not support Computer Use as of 2026-03-17
             OpenAIModels::Gpt5_4Nano => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![])),
                 LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
             ],
             // GPT-5.2 does not support Computer Use as of 2025-12-11
             OpenAIModels::Gpt5_2 => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![])),
                 LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
             ],
             // GPT-5.2 Pro does not support Computer Use and Code Interpreter as of 2025-12-11
             OpenAIModels::Gpt5_2Pro => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![])),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
             ],
             // GPT-5.4 Pro, GPT-5.5 Pro do not support Code Interpreter as of 2026-05-04
             OpenAIModels::Gpt5_4Pro | OpenAIModels::Gpt5_5Pro => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![])),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
                 LLMTools::OpenAIComputerUse(OpenAIComputerUseConfig::new(
                     1920,
@@ -1282,6 +1276,7 @@ impl OpenAIModels {
             // All other models support all tools
             _ => vec![
                 LLMTools::OpenAIFileSearch(OpenAIFileSearchConfig::new(vec![])),
+                LLMTools::OpenAIImageAnalysis(OpenAIImageAnalysisConfig::new(vec![])),
                 LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new()),
                 LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()),
                 LLMTools::OpenAIComputerUse(OpenAIComputerUseConfig::new(
@@ -1290,6 +1285,60 @@ impl OpenAIModels {
                     "default".to_string(),
                 )),
             ],
+        }
+    }
+
+    fn is_supported_tool(&self, tool: &LLMTools) -> bool {
+        self.get_supported_tools()
+            .iter()
+            .any(|supported| std::mem::discriminant(tool) == std::mem::discriminant(supported))
+    }
+
+    // Reasoning is a top-level `reasoning` field; image analysis is injected into `input`.
+    fn is_responses_hosted_tool(tool: &LLMTools) -> bool {
+        !matches!(
+            tool,
+            LLMTools::OpenAIReasoning(_) | LLMTools::OpenAIImageAnalysis(_)
+        )
+    }
+
+    fn responses_tools(&self, tools: Option<&[LLMTools]>) -> Option<Vec<Value>> {
+        tools.map(|tools_inner| {
+            tools_inner
+                .iter()
+                .filter(|tool| Self::is_responses_hosted_tool(tool))
+                .filter(|tool| self.is_supported_tool(tool))
+                .filter_map(LLMTools::get_config_json)
+                .collect()
+        })
+    }
+
+    // When Image Analysis is attached, Responses `input` becomes a content array
+    // with the user text plus one `input_image` part per file ID.
+    fn responses_input(&self, user_message_str: &str, tools: Option<&[LLMTools]>) -> Value {
+        let image_parts: Vec<Value> = tools
+            .unwrap_or(&[])
+            .iter()
+            .filter(|tool| self.is_supported_tool(tool))
+            .filter_map(|tool| match tool {
+                LLMTools::OpenAIImageAnalysis(cfg) => Some(cfg.content()),
+                _ => None,
+            })
+            .flatten()
+            .collect();
+
+        if image_parts.is_empty() {
+            json!(user_message_str)
+        } else {
+            let mut content = vec![json!({
+                "type": "input_text",
+                "text": user_message_str,
+            })];
+            content.extend(image_parts);
+            json!([{
+                "role": "user",
+                "content": content,
+            }])
         }
     }
 }
