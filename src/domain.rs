@@ -148,6 +148,43 @@ pub struct OpenAIRunResp {
     pub status: OpenAIRunStatus,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct OpenAIComputerCall {
+    pub call_id: String,
+    pub actions: Vec<OpenAIComputerAction>,
+    pub status: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum OpenAIComputerAction {
+    Click { x: u32, y: u32, button: Option<String> },
+    DoubleClick { x: u32, y: u32, button: Option<String> },
+    Type { text: String },
+    Keypress { keys: Vec<String> },
+    Scroll { x: u32, y: u32, scroll_x: Option<i32>, scroll_y: Option<i32> },
+    Drag { path: Vec<(u32, u32)> },
+    Move { x: u32, y: u32 },
+    Wait,
+    Screenshot,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct OpenAIComputerCallOutput {
+    #[serde(rename = "type")]
+    pub item_type: String,
+    pub call_id: String,
+    pub output: OpenAIComputerResult,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
+pub struct OpenAIComputerResult {
+    #[serde(rename = "type")]
+    pub result_type: String,
+    pub image_url: String,
+    pub detail: String,
+}
+
 //Anthropic API response type format for Text Completions API
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AnthropicAPICompletionsResponse {
