@@ -123,6 +123,47 @@ let xai_answer = Completions::new(XAIModels::Grok3Mini, &API_KEY, None, None)
     .await?
 ```
 
+Native web-search citations (and future side-channel metadata) via `get_answer_with_metadata`.
+`get_answer` is unchanged. Pass `None` for all metadata kinds, or `Some(&[...])` to select a subset:
+
+```
+use allms::{CompletionMetadataKind, Completions};
+use allms::llm::{
+    tools::{LLMTools, OpenAIWebSearchConfig},
+    OpenAIModels,
+};
+
+let result = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
+    .version("openai_responses")
+    .add_tool(LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()))
+    .get_answer_with_metadata::<T>(instructions, None)
+    .await?;
+
+let answer = result.answer;
+let sources = result
+    .metadata
+    .citations
+    .map(|c| c.urls)
+    .unwrap_or_default();
+
+// Or request only citations explicitly:
+let result = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
+    .version("openai_responses")
+    .add_tool(LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()))
+    .get_answer_with_metadata::<T>(
+        instructions,
+        Some(&[CompletionMetadataKind::Citations]),
+    )
+    .await?;
+```
+
+`CompletionMetadata` is the extension point for future non-answer fields; kinds not requested stay `None` (omitted when serialized). Requested kinds with no provider data are `Some` with empty lists.
+
+Example with web search + native citations via `get_answer_with_metadata`:
+```
+RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_completions_metadata
+```
+
 Example:
 ```
 RUST_LOG=info RUST_BACKTRACE=1 cargo run --example use_completions

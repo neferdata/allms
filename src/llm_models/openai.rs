@@ -9,7 +9,7 @@ use serde_json::{json, to_value, Value};
 
 use crate::{
     apis::OpenAiApiEndpoints,
-    completions::ThinkingLevel,
+    completions::{build_citations, CompletionCitations, ThinkingLevel},
     constants::{OPENAI_API_URL, OPENAI_BASE_INSTRUCTIONS, OPENAI_FUNCTION_INSTRUCTIONS},
     domain::{
         OpenAPIChatResponse, OpenAPICompletionsResponse, OpenAPIResponsesContentType,
@@ -958,6 +958,55 @@ impl LLMModel for OpenAIModels {
         }
     }
 
+    fn extract_citations(
+        &self,
+        response_text: &str,
+        version: Option<String>,
+    ) -> CompletionCitations {
+        let endpoint = version
+            .as_ref()
+            .map(|v| OpenAiApiEndpoints::from_str(v))
+            .unwrap_or_default();
+
+        let use_responses = matches!(
+            endpoint,
+            OpenAiApiEndpoints::OpenAIResponses | OpenAiApiEndpoints::AzureResponses { .. }
+        ) || matches!(
+            self,
+            OpenAIModels::O1Pro
+                | OpenAIModels::Gpt5_2Pro
+                | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_5Pro
+        );
+
+        if !use_responses {
+            return CompletionCitations::default();
+        }
+
+        let Ok(response) = serde_json::from_str::<OpenAPIResponsesResponse>(response_text) else {
+            return CompletionCitations::default();
+        };
+
+        let candidates = response
+            .output
+            .iter()
+            .filter(|output| {
+                matches!(output.role, Some(OpenAPIResponsesRole::Assistant))
+                    && matches!(output.r#type, Some(OpenAPIResponsesOutputType::Message))
+            })
+            .flat_map(|output| output.content.as_deref().unwrap_or(&[]))
+            .filter(|content| matches!(content.r#type, OpenAPIResponsesContentType::OutputText))
+            .flat_map(|content| content.annotations.as_deref().unwrap_or(&[]))
+            .filter_map(|annotation| {
+                annotation
+                    .url
+                    .as_ref()
+                    .map(|url| (url.clone(), annotation.title.clone()))
+            });
+
+        build_citations(candidates)
+    }
+
     /// This function allows to check the rate limits for different models
     /// Rate limit for `Custom` model is assumed based on `GPT-4o` limits
     fn get_rate_limit(&self) -> RateLimit {
@@ -1347,6 +1396,104 @@ impl OpenAIModels {
 mod tests {
     use crate::llm_models::llm_model::LLMModel;
     use crate::llm_models::OpenAIModels;
+
+    const RESPONSES_CITATION_FIXTURE: &str = r#"{
+        "model": "gpt-4.1-mini",
+        "output": [{
+            "type": "message",
+            "role": "assistant",
+            "status": "completed",
+            "content": [{
+                "type": "output_text",
+                "text": "{\"result\":\"ok\"}",
+                "annotations": [
+                    {
+                        "type": "url_citation",
+                        "start_index": 0,
+                        "end_index": 10,
+                        "url": "https://example.com/a",
+                        "title": "Example A"
+                    },
+                    {
+                        "type": "url_citation",
+                        "start_index": 11,
+                        "end_index": 20,
+                        "url": "https://example.com/b",
+                        "title": "Example B"
+                    }
+                ]
+            }]
+        }],
+        "usage": {
+            "input_tokens": 1,
+            "input_tokens_details": {"cached_tokens": 0},
+            "output_tokens": 1,
+            "output_tokens_details": {"reasoning_tokens": 0},
+            "total_tokens": 2
+        }
+    }"#;
+
+    const RESPONSES_NO_CITATION_FIXTURE: &str = r#"{
+        "model": "gpt-4.1-mini",
+        "output": [{
+            "type": "message",
+            "role": "assistant",
+            "status": "completed",
+            "content": [{
+                "type": "output_text",
+                "text": "{\"result\":\"ok\"}"
+            }]
+        }],
+        "usage": {
+            "input_tokens": 1,
+            "input_tokens_details": {"cached_tokens": 0},
+            "output_tokens": 1,
+            "output_tokens_details": {"reasoning_tokens": 0},
+            "total_tokens": 2
+        }
+    }"#;
+
+    #[test]
+    fn extract_citations_from_responses_annotations() {
+        let model = OpenAIModels::Gpt4_1Mini;
+        let citations = model.extract_citations(
+            RESPONSES_CITATION_FIXTURE,
+            Some("openai_responses".to_string()),
+        );
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://example.com/a".to_string(),
+                "https://example.com/b".to_string()
+            ]
+        );
+        assert_eq!(citations.items[0].title.as_deref(), Some("Example A"));
+        assert!(model
+            .get_version_data(
+                RESPONSES_CITATION_FIXTURE,
+                false,
+                Some("openai_responses".to_string())
+            )
+            .unwrap()
+            .contains("ok"));
+    }
+
+    #[test]
+    fn extract_citations_empty_for_chat_completions_version() {
+        let model = OpenAIModels::Gpt4_1Mini;
+        let citations = model.extract_citations(RESPONSES_CITATION_FIXTURE, None);
+        assert!(citations.urls.is_empty());
+    }
+
+    #[test]
+    fn extract_citations_empty_when_annotations_absent() {
+        let model = OpenAIModels::Gpt4_1Mini;
+        let citations = model.extract_citations(
+            RESPONSES_NO_CITATION_FIXTURE,
+            Some("openai_responses".to_string()),
+        );
+        assert!(citations.urls.is_empty());
+    }
 
     // Tests for calculating max requests per model
     #[test]

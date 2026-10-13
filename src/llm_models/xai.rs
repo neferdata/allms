@@ -5,7 +5,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::completions::ThinkingLevel;
+use crate::completions::{build_citations, CompletionCitations, ThinkingLevel};
 use crate::constants::XAI_API_URL;
 use crate::domain::{RateLimit, XAIChatMessage, XAIChatResponse, XAIResponseOutput, XAIRole};
 use crate::llm_models::{LLMModel, LLMTools};
@@ -238,6 +238,51 @@ impl LLMModel for XAIModels {
         Ok(assistant_response)
     }
 
+    fn extract_citations(
+        &self,
+        response_text: &str,
+        _version: Option<String>,
+    ) -> CompletionCitations {
+        let Ok(response) = serde_json::from_str::<XAIChatResponse>(response_text) else {
+            return CompletionCitations::default();
+        };
+
+        let mut candidates = Vec::new();
+        for output in &response.output {
+            match output {
+                XAIResponseOutput::Message(message) => {
+                    for content in &message.content {
+                        if let Some(annotations) = &content.annotations {
+                            for annotation in annotations {
+                                if let Some(url) = &annotation.url {
+                                    candidates.push((url.clone(), annotation.title.clone()));
+                                }
+                            }
+                        }
+                    }
+                }
+                XAIResponseOutput::WebSearchCall(call) => {
+                    if let Some(url) = &call.action.url {
+                        candidates.push((url.clone(), None));
+                    }
+                    if let Some(sources) = &call.action.sources {
+                        for source in sources {
+                            if let Some(url) = source.get("url").and_then(|v| v.as_str()) {
+                                let title = source
+                                    .get("title")
+                                    .and_then(|v| v.as_str())
+                                    .map(|s| s.to_string());
+                                candidates.push((url.to_string(), title));
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        build_citations(candidates)
+    }
+
     /// This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
         //xAI documentation: https://docs.x.ai/developers/models
@@ -284,5 +329,81 @@ impl LLMModel for XAIModels {
                 rpm: 480,
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::llm_models::LLMModel;
+
+    const CITATION_FIXTURE: &str = r#"{
+        "output": [
+            {
+                "type": "web_search_call",
+                "id": "ws_1",
+                "status": "completed",
+                "action": {
+                    "type": "search",
+                    "query": "shoes",
+                    "url": "https://search.example/q",
+                    "sources": [
+                        {"url": "https://shop.example/a", "title": "Shop A"},
+                        {"url": "https://shop.example/b"}
+                    ]
+                }
+            },
+            {
+                "type": "message",
+                "id": "msg_1",
+                "role": "assistant",
+                "status": "completed",
+                "content": [{
+                    "type": "output_text",
+                    "text": "{\"result\":\"ok\"}",
+                    "annotations": [
+                        {"type": "url_citation", "url": "https://shop.example/a", "title": "Shop A"},
+                        {"type": "url_citation", "url": "https://news.example/c", "title": "News"}
+                    ]
+                }]
+            }
+        ]
+    }"#;
+
+    const NO_CITATION_FIXTURE: &str = r#"{
+        "output": [{
+            "type": "message",
+            "id": "msg_1",
+            "role": "assistant",
+            "status": "completed",
+            "content": [{"type": "output_text", "text": "{\"result\":\"ok\"}"}]
+        }]
+    }"#;
+
+    #[test]
+    fn extract_citations_from_annotations_and_web_search() {
+        let model = XAIModels::Grok3Mini;
+        let citations = model.extract_citations(CITATION_FIXTURE, None);
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://search.example/q".to_string(),
+                "https://shop.example/a".to_string(),
+                "https://shop.example/b".to_string(),
+                "https://news.example/c".to_string(),
+            ]
+        );
+        assert_eq!(citations.items[1].title.as_deref(), Some("Shop A"));
+        assert!(model
+            .get_data(CITATION_FIXTURE, false)
+            .unwrap()
+            .contains("ok"));
+    }
+
+    #[test]
+    fn extract_citations_empty_when_absent() {
+        let model = XAIModels::Grok3Mini;
+        let citations = model.extract_citations(NO_CITATION_FIXTURE, None);
+        assert!(citations.urls.is_empty());
     }
 }
