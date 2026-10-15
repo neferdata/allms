@@ -5,7 +5,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::completions::ThinkingLevel;
+use crate::completions::{build_citations, CompletionCitations, ThinkingLevel};
 use crate::constants::{MISTRAL_API_URL, MISTRAL_CONVERSATIONS_API_URL};
 use crate::domain::{
     MistralAPICompletionsResponse, MistralAPIConversationsChunk,
@@ -252,6 +252,42 @@ impl LLMModel for MistralModels {
             rpm: 360, // 6 requests per second
         }
     }
+
+    fn extract_citations(
+        &self,
+        response_text: &str,
+        _version: Option<String>,
+    ) -> CompletionCitations {
+        let Ok(response) = serde_json::from_str::<MistralAPIConversationsResponse>(response_text)
+        else {
+            return CompletionCitations::default();
+        };
+
+        let mut candidates = Vec::new();
+        for output in &response.outputs {
+            let MistralAPIConversationsOutput::MistralAPIConversationsMessageOutput(message) =
+                output
+            else {
+                continue;
+            };
+            let Some(MistralAPIConversationsMessageOutputContent::MistralAPIConversationsMessageOutputContentChunks(chunks)) =
+                &message.content
+            else {
+                continue;
+            };
+            for chunk in chunks {
+                if let MistralAPIConversationsChunk::MistralAPIConversationsChunkToolReference(
+                    reference,
+                ) = chunk
+                {
+                    if let Some(url) = &reference.url {
+                        candidates.push((url.clone(), reference.title.clone()));
+                    }
+                }
+            }
+        }
+        build_citations(candidates)
+    }
 }
 
 impl MistralModels {
@@ -394,10 +430,13 @@ impl MistralModels {
                             MistralAPIConversationsMessageOutputContent::MistralAPIConversationsMessageOutputContentChunks(chunks) => {
                                 chunks
                                     .iter()
-                                    .map(|chunk| {
+                                    .filter_map(|chunk| {
                                         match chunk {
                                             MistralAPIConversationsChunk::MistralAPIConversationsChunkText(text_chunk) => {
-                                                text_chunk.text.clone()
+                                                Some(text_chunk.text.clone())
+                                            }
+                                            MistralAPIConversationsChunk::MistralAPIConversationsChunkToolReference(_) => {
+                                                None
                                             }
                                         }
                                     })
@@ -414,5 +453,70 @@ impl MistralModels {
 
         let sanitized = self.sanitize_json_response(&content_text);
         Ok(sanitized)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::llm_models::LLMModel;
+
+    const CITATION_FIXTURE: &str = r#"{
+        "conversation_id": "conv_1",
+        "object": "conversation",
+        "outputs": [{
+            "type": "message.output",
+            "role": "assistant",
+            "content": [
+                {"type": "text", "text": "{\"result\":\"ok\"}"},
+                {
+                    "type": "tool_reference",
+                    "tool": "web_search",
+                    "url": "https://example.com/a",
+                    "title": "Source A"
+                },
+                {
+                    "type": "tool_reference",
+                    "tool": "web_search",
+                    "url": "https://example.com/b",
+                    "title": "Source B"
+                }
+            ]
+        }]
+    }"#;
+
+    const NO_CITATION_FIXTURE: &str = r#"{
+        "conversation_id": "conv_1",
+        "object": "conversation",
+        "outputs": [{
+            "type": "message.output",
+            "role": "assistant",
+            "content": [{"type": "text", "text": "{\"result\":\"ok\"}"}]
+        }]
+    }"#;
+
+    #[test]
+    fn extract_citations_from_tool_reference_chunks() {
+        let model = MistralModels::MistralMedium3;
+        let citations = model.extract_citations(CITATION_FIXTURE, None);
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://example.com/a".to_string(),
+                "https://example.com/b".to_string()
+            ]
+        );
+        assert_eq!(citations.items[0].title.as_deref(), Some("Source A"));
+        assert!(model
+            .get_data(CITATION_FIXTURE, false)
+            .unwrap()
+            .contains("ok"));
+    }
+
+    #[test]
+    fn extract_citations_empty_when_absent() {
+        let model = MistralModels::MistralMedium3;
+        let citations = model.extract_citations(NO_CITATION_FIXTURE, None);
+        assert!(citations.urls.is_empty());
     }
 }

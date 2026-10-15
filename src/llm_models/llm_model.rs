@@ -2,7 +2,9 @@ use anyhow::Result;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::completions::ThinkingLevel;
+use crate::completions::{
+    CompletionCitations, CompletionMetadata, CompletionMetadataKind, ThinkingLevel,
+};
 use crate::constants::OPENAI_BASE_INSTRUCTIONS;
 use crate::domain::RateLimit;
 use crate::llm_models::LLMTools;
@@ -145,5 +147,31 @@ pub trait LLMModel {
         let min = 0u32;
         let max = 1u32;
         map_to_range(min, max, relative_temp)
+    }
+
+    /// Extract requested side-channel metadata from a raw provider response.
+    /// Only kinds present in `kinds` are populated (`Some(...)`); others stay `None`.
+    /// Extraction failures should not propagate — return empty values for the affected fields.
+    fn extract_metadata(
+        &self,
+        response_text: &str,
+        version: Option<String>,
+        kinds: &[CompletionMetadataKind],
+    ) -> CompletionMetadata {
+        let mut metadata = CompletionMetadata::default();
+        if kinds.contains(&CompletionMetadataKind::Citations) {
+            metadata.citations = Some(self.extract_citations(response_text, version));
+        }
+        metadata
+    }
+
+    /// Extract native citation/source URLs from a raw provider response.
+    /// Default is empty; providers that expose citations override this.
+    fn extract_citations(
+        &self,
+        _response_text: &str,
+        _version: Option<String>,
+    ) -> CompletionCitations {
+        CompletionCitations::default()
     }
 }

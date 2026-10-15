@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::apis::GoogleApiEndpoints;
-use crate::completions::ThinkingLevel;
+use crate::completions::{build_citations, CompletionCitations, ThinkingLevel};
 use crate::constants::{
     GOOGLE_GEMINI_API_URL, GOOGLE_GEMINI_BETA_API_URL, GOOGLE_VERTEX_API_URL,
     GOOGLE_VERTEX_ENDPOINT_API_URL,
@@ -535,6 +535,41 @@ impl LLMModel for GoogleModels {
         }
     }
 
+    fn extract_citations(
+        &self,
+        response_text: &str,
+        _version: Option<String>,
+    ) -> CompletionCitations {
+        let Ok(response) = serde_json::from_str::<GoogleGeminiProApiResp>(response_text) else {
+            return CompletionCitations::default();
+        };
+
+        let mut candidates = Vec::new();
+        for candidate in &response.candidates {
+            // Prefer modern grounding metadata URIs
+            if let Some(grounding) = &candidate.grounding_metadata {
+                if let Some(chunks) = &grounding.grounding_chunks {
+                    for chunk in chunks {
+                        if let Some(web) = &chunk.web {
+                            if let Some(uri) = &web.uri {
+                                candidates.push((uri.clone(), web.title.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+            // Also collect legacy citationMetadata URIs
+            if let Some(citation_metadata) = &candidate.citation_metadata {
+                for citation in &citation_metadata.citations {
+                    if let Some(uri) = &citation.uri {
+                        candidates.push((uri.clone(), citation.title.clone()));
+                    }
+                }
+            }
+        }
+        build_citations(candidates)
+    }
+
     //This function allows to check the rate limits for different models
     fn get_rate_limit(&self) -> RateLimit {
         //Docs: https://ai.google.dev/gemini-api/docs/rate-limits#tier-3
@@ -868,6 +903,62 @@ mod tests {
     use super::*;
     use crate::llm_models::llm_model::LLMModel;
     use serde_json::json;
+
+    const GROUNDING_FIXTURE: &str = r#"{
+        "candidates": [{
+            "content": {
+                "role": "model",
+                "parts": [{"text": "{\"result\":\"ok\"}"}]
+            },
+            "groundingMetadata": {
+                "groundingChunks": [
+                    {"web": {"uri": "https://example.com/a", "title": "A"}},
+                    {"web": {"uri": "https://example.com/b", "title": "B"}}
+                ]
+            },
+            "citationMetadata": {
+                "citations": [
+                    {"uri": "https://example.com/a", "title": "A legacy"},
+                    {"uri": "https://example.com/c", "title": "C"}
+                ]
+            }
+        }]
+    }"#;
+
+    const NO_CITATION_FIXTURE: &str = r#"{
+        "candidates": [{
+            "content": {
+                "role": "model",
+                "parts": [{"text": "{\"result\":\"ok\"}"}]
+            }
+        }]
+    }"#;
+
+    #[test]
+    fn extract_citations_from_grounding_and_citation_metadata() {
+        let model = GoogleModels::Gemini2_5Flash;
+        let citations = model.extract_citations(GROUNDING_FIXTURE, None);
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://example.com/a".to_string(),
+                "https://example.com/b".to_string(),
+                "https://example.com/c".to_string(),
+            ]
+        );
+        assert_eq!(citations.items[0].title.as_deref(), Some("A"));
+        assert!(model
+            .get_generate_content_data(GROUNDING_FIXTURE)
+            .unwrap()
+            .contains("ok"));
+    }
+
+    #[test]
+    fn extract_citations_empty_when_absent() {
+        let model = GoogleModels::Gemini2_5Flash;
+        let citations = model.extract_citations(NO_CITATION_FIXTURE, None);
+        assert!(citations.urls.is_empty());
+    }
 
     fn create_test_model() -> GoogleModels {
         GoogleModels::Gemini1_5Pro

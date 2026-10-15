@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::apis::AnthropicApiEndpoints;
-use crate::completions::ThinkingLevel;
+use crate::completions::{build_citations, CompletionCitations, ThinkingLevel};
 use crate::constants::{ANTHROPIC_API_URL, ANTHROPIC_MESSAGES_API_URL};
 use crate::domain::{AnthropicAPICompletionsResponse, AnthropicAPIMessagesResponse};
 use crate::llm_models::{
@@ -367,6 +367,42 @@ impl LLMModel for AnthropicModels {
             }
         }
     }
+
+    fn extract_citations(
+        &self,
+        response_text: &str,
+        _version: Option<String>,
+    ) -> CompletionCitations {
+        let Ok(response) = serde_json::from_str::<AnthropicAPIMessagesResponse>(response_text)
+        else {
+            return CompletionCitations::default();
+        };
+
+        let mut candidates = Vec::new();
+        // Prefer citations attached to text blocks
+        for block in &response.content {
+            if let Some(citations) = &block.citations {
+                for citation in citations {
+                    if let Some(url) = &citation.url {
+                        candidates.push((url.clone(), citation.title.clone()));
+                    }
+                }
+            }
+        }
+        // Also collect URLs from web_search_tool_result nested content
+        for block in &response.content {
+            if block.content_type == "web_search_tool_result" {
+                if let Some(nested) = &block.content {
+                    for item in nested {
+                        if let Some(url) = &item.url {
+                            candidates.push((url.clone(), item.title.clone()));
+                        }
+                    }
+                }
+            }
+        }
+        build_citations(candidates)
+    }
 }
 
 impl AnthropicModels {
@@ -545,5 +581,84 @@ impl AnthropicModels {
     // https://platform.claude.com/docs/en/about-claude/models/migration-guide
     fn temperature_supported(&self) -> bool {
         !matches!(self, AnthropicModels::ClaudeOpus4_7)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::llm_models::LLMModel;
+
+    const CITATION_FIXTURE: &str = r#"{
+        "id": "msg_1",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-sonnet-4-6",
+        "stop_reason": "end_turn",
+        "usage": {"input_tokens": 1, "output_tokens": 1},
+        "content": [
+            {
+                "type": "web_search_tool_result",
+                "content": [
+                    {
+                        "type": "web_search_result",
+                        "url": "https://example.com/from-tool",
+                        "title": "From Tool"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "text": "{\"result\":\"ok\"}",
+                "citations": [
+                    {
+                        "type": "web_search_result_location",
+                        "url": "https://example.com/cited",
+                        "title": "Cited"
+                    },
+                    {
+                        "type": "web_search_result_location",
+                        "url": "https://example.com/from-tool",
+                        "title": "From Tool"
+                    }
+                ]
+            }
+        ]
+    }"#;
+
+    const NO_CITATION_FIXTURE: &str = r#"{
+        "id": "msg_1",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-sonnet-4-6",
+        "stop_reason": "end_turn",
+        "usage": {"input_tokens": 1, "output_tokens": 1},
+        "content": [{"type": "text", "text": "{\"result\":\"ok\"}"}]
+    }"#;
+
+    #[test]
+    fn extract_citations_from_text_and_tool_result() {
+        let model = AnthropicModels::ClaudeSonnet4_6;
+        let citations = model.extract_citations(CITATION_FIXTURE, None);
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://example.com/cited".to_string(),
+                "https://example.com/from-tool".to_string(),
+            ]
+        );
+        // text citations are collected first, then tool-result URLs (deduped)
+        assert_eq!(citations.items[0].title.as_deref(), Some("Cited"));
+        assert!(model
+            .get_data(CITATION_FIXTURE, false)
+            .unwrap()
+            .contains("ok"));
+    }
+
+    #[test]
+    fn extract_citations_empty_when_absent() {
+        let model = AnthropicModels::ClaudeSonnet4_6;
+        let citations = model.extract_citations(NO_CITATION_FIXTURE, None);
+        assert!(citations.urls.is_empty());
     }
 }

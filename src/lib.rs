@@ -12,7 +12,10 @@ mod utils;
 #[allow(deprecated)]
 mod deprecated;
 
-pub use crate::completions::{Completions, ThinkingLevel};
+pub use crate::completions::{
+    CompletionAnswer, CompletionCitation, CompletionCitations, CompletionMetadata,
+    CompletionMetadataKind, Completions, ThinkingLevel,
+};
 #[allow(deprecated)]
 pub use crate::deprecated::{
     OpenAI, OpenAIAssistant, OpenAIAssistantVersion, OpenAIFile, OpenAIModels,

@@ -178,6 +178,26 @@ pub struct AnthropicAPIMessagesContent {
     #[serde(rename(deserialize = "type", serialize = "type"))]
     pub content_type: String,
     pub text: Option<String>,
+    /// Present on text blocks when web search citations are enabled.
+    pub citations: Option<Vec<AnthropicAPICitation>>,
+    /// Nested content for blocks like `web_search_tool_result`.
+    pub content: Option<Vec<AnthropicAPIMessagesNestedContent>>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnthropicAPICitation {
+    #[serde(rename = "type")]
+    pub citation_type: Option<String>,
+    pub url: Option<String>,
+    pub title: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AnthropicAPIMessagesNestedContent {
+    #[serde(rename = "type")]
+    pub content_type: Option<String>,
+    pub url: Option<String>,
+    pub title: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -273,6 +293,8 @@ pub enum MistralAPIConversationsMessageOutputContent {
 pub enum MistralAPIConversationsChunk {
     #[serde(rename = "text")]
     MistralAPIConversationsChunkText(MistralAPIConversationsChunkText),
+    #[serde(rename = "tool_reference")]
+    MistralAPIConversationsChunkToolReference(MistralAPIConversationsChunkToolReference),
     // TODO: Add other chunk types when needed
     // ImageURL(ImageURLChunk),
     // ToolFile(ToolFileChunk),
@@ -292,6 +314,16 @@ pub struct MistralAPIConversationsChunkText {
 
 fn default_text_chunk_type() -> String {
     "text".to_string()
+}
+
+/// ToolReferenceChunk for Mistral Conversations API (web search / RAG citations)
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct MistralAPIConversationsChunkToolReference {
+    pub url: Option<String>,
+    pub title: Option<String>,
+    pub tool: Option<String>,
+    pub source: Option<String>,
+    pub description: Option<String>,
 }
 
 /// ToolExecutionEntry for Mistral Conversations API
@@ -366,6 +398,8 @@ pub struct GoogleGeminiProCandidate {
     pub safety_ratings: Option<Vec<GoogleGeminiProSafetyRating>>,
     #[serde(rename = "citationMetadata")]
     pub citation_metadata: Option<GoogleGeminiProCitationMetadata>,
+    #[serde(rename = "groundingMetadata")]
+    pub grounding_metadata: Option<GoogleGeminiProGroundingMetadata>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -413,14 +447,34 @@ pub struct GoogleGeminiProCitationMetadata {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GoogleGeminiProCitation {
     #[serde(rename = "startIndex")]
-    pub start_index: i32,
+    pub start_index: Option<i32>,
     #[serde(rename = "endIndex")]
-    pub end_index: i32,
-    pub uri: String,
+    pub end_index: Option<i32>,
+    pub uri: Option<String>,
     pub title: Option<String>,
     pub license: Option<String>,
     #[serde(rename = "publicationDate")]
     pub publication_date: Option<GoogleGeminiProDate>,
+}
+
+/// Grounding metadata returned when Google Search grounding is used.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProGroundingMetadata {
+    #[serde(rename = "groundingChunks")]
+    pub grounding_chunks: Option<Vec<GoogleGeminiProGroundingChunk>>,
+    #[serde(rename = "webSearchQueries")]
+    pub web_search_queries: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProGroundingChunk {
+    pub web: Option<GoogleGeminiProGroundingWeb>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleGeminiProGroundingWeb {
+    pub uri: Option<String>,
+    pub title: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -625,6 +679,8 @@ pub struct OpenAPIResponsesAnnotation {
     pub text: Option<String>,
     pub start_index: Option<i32>,
     pub end_index: Option<i32>,
+    pub url: Option<String>,
+    pub title: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -927,6 +983,7 @@ pub struct XAIAnnotation {
     #[serde(rename = "type")]
     pub annotation_type: String,
     pub url: Option<String>,
+    pub title: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

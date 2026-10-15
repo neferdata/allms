@@ -7,7 +7,7 @@ use reqwest::{header, Client};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::completions::ThinkingLevel;
+use crate::completions::{build_citations, CompletionCitations, ThinkingLevel};
 use crate::constants::PERPLEXITY_API_URL;
 use crate::domain::{PerplexityAPICompletionsResponse, RateLimit};
 use crate::llm_models::{LLMModel, LLMTools};
@@ -224,5 +224,93 @@ impl LLMModel for PerplexityModels {
         let min = 0.0f32;
         let max = 1.99999f32;
         map_to_range_f32(min, max, relative_temp)
+    }
+
+    fn extract_citations(
+        &self,
+        response_text: &str,
+        _version: Option<String>,
+    ) -> CompletionCitations {
+        let Ok(response) = serde_json::from_str::<PerplexityAPICompletionsResponse>(response_text)
+        else {
+            return CompletionCitations::default();
+        };
+        let candidates = response
+            .citations
+            .unwrap_or_default()
+            .into_iter()
+            .map(|url| (url, None));
+        build_citations(candidates)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::completions::CompletionMetadataKind;
+    use crate::llm_models::LLMModel;
+
+    const CITATION_FIXTURE: &str = r#"{
+        "id": "test",
+        "model": "sonar",
+        "object": "chat.completion",
+        "created": 1,
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": "{\"result\":\"ok\"}"},
+            "finish_reason": "stop"
+        }],
+        "citations": [
+            "https://example.com/a",
+            "https://example.com/a",
+            "https://example.com/b"
+        ]
+    }"#;
+
+    const NO_CITATION_FIXTURE: &str = r#"{
+        "id": "test",
+        "model": "sonar",
+        "object": "chat.completion",
+        "created": 1,
+        "choices": [{
+            "index": 0,
+            "message": {"role": "assistant", "content": "{\"result\":\"ok\"}"},
+            "finish_reason": "stop"
+        }]
+    }"#;
+
+    #[test]
+    fn extract_citations_from_top_level_field() {
+        let model = PerplexityModels::Sonar;
+        let citations = model.extract_citations(CITATION_FIXTURE, None);
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://example.com/a".to_string(),
+                "https://example.com/b".to_string()
+            ]
+        );
+        assert!(model
+            .get_data(CITATION_FIXTURE, false)
+            .unwrap()
+            .contains("ok"));
+    }
+
+    #[test]
+    fn extract_citations_empty_when_absent() {
+        let model = PerplexityModels::Sonar;
+        let citations = model.extract_citations(NO_CITATION_FIXTURE, None);
+        assert!(citations.urls.is_empty());
+        assert!(citations.items.is_empty());
+    }
+
+    #[test]
+    fn extract_metadata_respects_empty_kinds() {
+        let model = PerplexityModels::Sonar;
+        let metadata = model.extract_metadata(CITATION_FIXTURE, None, &[]);
+        assert!(metadata.citations.is_none());
+        let metadata =
+            model.extract_metadata(CITATION_FIXTURE, None, &[CompletionMetadataKind::Citations]);
+        assert_eq!(metadata.citations.as_ref().map(|c| c.urls.len()), Some(2));
     }
 }

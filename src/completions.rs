@@ -2,6 +2,7 @@ use anyhow::{anyhow, Result};
 use log::{error, info, warn};
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::HashSet;
 
 use crate::domain::AllmsError;
 use crate::llm_models::{LLMModel, LLMTools};
@@ -197,6 +198,39 @@ impl<T: LLMModel> Completions<T> {
         self,
         instructions: &str,
     ) -> Result<U> {
+        let (response_string, _response_text) = self.complete_raw::<U>(instructions).await?;
+        Self::deserialize_answer(&response_string, self.model.as_str())
+    }
+
+    ///
+    /// Same prompt/schema path as [`get_answer`], but also returns requested side-channel metadata
+    /// (e.g. native web-search citation URLs) extracted from the provider response.
+    ///
+    /// `kinds`:
+    /// - `None` — extract all defined metadata kinds ([`CompletionMetadataKind::ALL`])
+    /// - `Some(&[])` — extract nothing (empty metadata)
+    /// - `Some(&[...])` — extract only the listed kinds
+    ///
+    pub async fn get_answer_with_metadata<U: JsonSchema + DeserializeOwned>(
+        self,
+        instructions: &str,
+        kinds: Option<&[CompletionMetadataKind]>,
+    ) -> Result<CompletionAnswer<U>> {
+        let resolved = kinds.unwrap_or(CompletionMetadataKind::ALL);
+        let (response_string, response_text) = self.complete_raw::<U>(instructions).await?;
+        let metadata = self
+            .model
+            .extract_metadata(&response_text, self.version.clone(), resolved);
+        let answer = Self::deserialize_answer(&response_string, self.model.as_str())?;
+        Ok(CompletionAnswer { answer, metadata })
+    }
+
+    /// Shared request path: build body → call API → extract answer JSON string.
+    /// Returns `(answer_json, raw_response_text)`.
+    async fn complete_raw<U: JsonSchema + DeserializeOwned>(
+        &self,
+        instructions: &str,
+    ) -> Result<(String, String)> {
         //Output schema is extracted from the type parameter
         let schema = get_type_schema::<U>()?;
         let json_schema = serde_json::from_str(&schema)?;
@@ -265,7 +299,7 @@ impl<T: LLMModel> Completions<T> {
         //Extract data from the returned response text based on the used model
         let response_string = self
             .model
-            .get_version_data(&response_text, self.function_call, self.version)
+            .get_version_data(&response_text, self.function_call, self.version.clone())
             .map_err(|error| {
                 let error = AllmsError {
                     crate_name: "allms".to_string(),
@@ -284,13 +318,19 @@ impl<T: LLMModel> Completions<T> {
             info!("[debug] Completions response data: {}", response_string);
         }
 
-        //Deserialize the string response into the expected output type
-        serde_json::from_str(&response_string).map_err(|error| {
+        Ok((response_string, response_text))
+    }
+
+    fn deserialize_answer<U: DeserializeOwned>(
+        response_string: &str,
+        model_name: &str,
+    ) -> Result<U> {
+        serde_json::from_str(response_string).map_err(|error| {
             let error = AllmsError {
                 crate_name: "allms".to_string(),
-                module: format!("assistants::completions::{}", self.model.as_str()),
+                module: format!("assistants::completions::{model_name}"),
                 error_message: format!("Completions API response serialization error: {}", error),
-                error_detail: response_string,
+                error_detail: response_string.to_string(),
             };
             error!("{:?}", error);
             anyhow!("{:?}", error)
@@ -320,5 +360,100 @@ impl ThinkingLevel {
             "high" => Some(ThinkingLevel::High),
             _ => None,
         }
+    }
+}
+
+/// Kinds of side-channel metadata that can be extracted from a provider response.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CompletionMetadataKind {
+    Citations,
+}
+
+impl CompletionMetadataKind {
+    /// All kinds currently defined (kept in sync when variants are added).
+    pub const ALL: &'static [CompletionMetadataKind] = &[CompletionMetadataKind::Citations];
+}
+
+/// A single citation/source URL from a provider response.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompletionCitation {
+    pub url: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+}
+
+/// Deduped citation/source URLs from the provider response.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompletionCitations {
+    /// Deduped citation/source URLs (order preserved).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub urls: Vec<String>,
+    /// Citation items with optional titles (first-seen title per URL).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub items: Vec<CompletionCitation>,
+}
+
+/// Typed bag of optional side-channel data from a provider response.
+/// Fields are `None` when not requested (or not extracted); skipped when serializing.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompletionMetadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub citations: Option<CompletionCitations>,
+}
+
+/// Structured answer plus requested metadata from a Completions call.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CompletionAnswer<T> {
+    pub answer: T,
+    pub metadata: CompletionMetadata,
+}
+
+/// Build [`CompletionCitations`] from candidate `(url, title)` pairs.
+/// Skips empty / non-http(s) URLs; deduplicates by full URL (case-sensitive), preserving order.
+pub(crate) fn build_citations(
+    candidates: impl IntoIterator<Item = (String, Option<String>)>,
+) -> CompletionCitations {
+    let mut seen = HashSet::new();
+    let mut urls = Vec::new();
+    let mut items = Vec::new();
+
+    for (url, title) in candidates {
+        let url = url.trim().to_string();
+        if url.is_empty() || !is_http_url(&url) || !seen.insert(url.clone()) {
+            continue;
+        }
+        urls.push(url.clone());
+        items.push(CompletionCitation { url, title });
+    }
+
+    CompletionCitations { urls, items }
+}
+
+fn is_http_url(url: &str) -> bool {
+    url.starts_with("http://") || url.starts_with("https://")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_citations_dedupes_and_skips_invalid() {
+        let citations = build_citations([
+            ("https://a.example".to_string(), Some("A".to_string())),
+            ("https://a.example".to_string(), Some("A2".to_string())),
+            ("".to_string(), None),
+            ("ftp://nope".to_string(), None),
+            ("  https://b.example  ".to_string(), None),
+        ]);
+        assert_eq!(
+            citations.urls,
+            vec![
+                "https://a.example".to_string(),
+                "https://b.example".to_string()
+            ]
+        );
+        assert_eq!(citations.items[0].title.as_deref(), Some("A"));
+        assert_eq!(citations.items[1].title, None);
     }
 }
