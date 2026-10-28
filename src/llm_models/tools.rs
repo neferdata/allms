@@ -223,19 +223,25 @@ impl OpenAIReasoningConfig {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIReasoningEffort {
+    #[serde(rename = "none")]
+    None,
     #[serde(rename = "low")]
     Low,
     #[serde(rename = "medium")]
     Medium,
     #[serde(rename = "high")]
     High,
+    #[serde(rename = "xhigh")]
+    XHigh,
+    #[serde(rename = "max")]
+    Max,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIReasoningSummary {
     #[serde(rename = "auto")]
     Auto,
-    #[serde(rename = "none")]
+    #[serde(rename = "concise")]
     Concise,
     #[serde(rename = "detailed")]
     Detailed,

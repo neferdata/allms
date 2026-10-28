@@ -44,7 +44,7 @@ async fn main() {
 
     // Get answer using OpenAI Completions API
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::try_from_str("gpt-5.4").unwrap_or(OpenAIModels::Gpt5_4); // Choose the model
+    let model = OpenAIModels::try_from_str("gpt-6.1-sol").unwrap_or(OpenAIModels::Gpt6_1Sol); // Choose the model
     println!("OpenAI model: {:#?}", model.as_str());
 
     let openai_completion = Completions::new(model, &openai_api_key, None, None);
@@ -59,8 +59,9 @@ async fn main() {
 
     // Get answer using OpenAI (on Azure)
     // Ensure `OPENAI_API_URL` is set to your Azure OpenAI resource endpoint
+    // Use the Custom variant if your Azure deployment name differs from the model ID
     let azure_openai_completion =
-        Completions::new(OpenAIModels::Gpt5_2, &openai_api_key, None, None)
+        Completions::new(OpenAIModels::Gpt6_1Sol, &openai_api_key, None, None)
             .version("azure:2024-08-01-preview");
     match azure_openai_completion
         .get_answer::<TranslationResponse>(instructions)
