@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use std::ffi::OsStr;
 use std::path::Path;
 

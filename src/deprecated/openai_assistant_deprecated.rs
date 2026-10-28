@@ -108,7 +108,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Assistant API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -117,7 +117,7 @@ impl OpenAIAssistant {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Assistant API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -296,7 +296,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Threads API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -305,7 +305,7 @@ impl OpenAIAssistant {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Thread API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -351,7 +351,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Messages API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -360,7 +360,7 @@ impl OpenAIAssistant {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Messages API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -402,7 +402,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Messages API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -411,7 +411,7 @@ impl OpenAIAssistant {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Messages API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -462,7 +462,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Messages API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -471,7 +471,7 @@ impl OpenAIAssistant {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Run API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -525,7 +525,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Run status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -534,7 +534,7 @@ impl OpenAIAssistant {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Run API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -735,7 +735,7 @@ impl OpenAIFile {
         if self.debug {
             info!(
                 "[debug] OpenAI Files status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -744,7 +744,7 @@ impl OpenAIFile {
             serde_json::from_str(&response_text).map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Files API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!("Error: {}", error)
             })?;
@@ -775,7 +775,7 @@ impl OpenAIFile {
         if self.debug {
             info!(
                 "[debug] OpenAI Files status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -784,7 +784,7 @@ impl OpenAIFile {
             .map_err(|error| {
                 error!(
                     "[OpenAIAssistant] Files Delete API response serialization error: {}",
-                    &error
+                    error
                 );
                 anyhow!(
                     "[OpenAIAssistant] Files Delete API response serialization error: {}",

@@ -167,7 +167,7 @@ impl LLMModel for PerplexityModels {
         if debug {
             info!(
                 "[debug] Perplexity API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

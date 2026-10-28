@@ -61,7 +61,7 @@ lazy_static! {
     /// Docs: https://docs.aws.amazon.com/general/latest/gr/bedrock.html
     pub(crate) static ref AWS_REGION: String = std::env::var("AWS_REGION").unwrap_or("us-east-1".to_string());
     pub(crate) static ref AWS_BEDROCK_API_URL: String = {
-        format!("https://bedrock.{}.amazonaws.com", &*AWS_REGION)
+        format!("https://bedrock.{}.amazonaws.com", *AWS_REGION)
     };
 }
 

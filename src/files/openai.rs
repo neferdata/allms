@@ -110,7 +110,7 @@ impl LLMFiles for OpenAIFile {
         if self.debug {
             info!(
                 "[debug] OpenAI Files status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -165,7 +165,7 @@ impl LLMFiles for OpenAIFile {
         if self.debug {
             info!(
                 "[debug] OpenAI Files status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

@@ -196,7 +196,7 @@ impl LLMModel for XAIModels {
         if debug {
             info!(
                 "[debug] xAI API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

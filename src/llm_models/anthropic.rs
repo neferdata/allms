@@ -182,9 +182,7 @@ impl LLMModel for AnthropicModels {
 
         let base_message = json!({
             "role": "user",
-            "content": format!(
-                "{base_instructions}"
-            )
+            "content": base_instructions.to_string()
         });
 
         let user_instructions = format!(
@@ -314,7 +312,7 @@ impl LLMModel for AnthropicModels {
         if debug {
             info!(
                 "[debug] Anthropic API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

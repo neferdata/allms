@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use allms::OpenAI;
 use allms::OpenAIModels;
 use schemars::JsonSchema;

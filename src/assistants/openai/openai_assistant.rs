@@ -163,7 +163,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Assistant API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -313,7 +313,7 @@ impl OpenAIAssistant {
                     crate_name: "allms".to_string(),
                     module: "assistants::openai_assistant".to_string(),
                     error_message: "No valid response from OpenAI Assistant found.".to_string(),
-                    error_detail: format!("{:?}", &messages),
+                    error_detail: format!("{:?}", messages),
                 };
                 error!("{:?}", error);
                 anyhow!("{:?}", error)
@@ -357,7 +357,7 @@ impl OpenAIAssistant {
                 crate_name: "alms".to_string(),
                 module: "assistants::openai_assistant".to_string(),
                 error_message: "Json Schema validation error".to_string(),
-                error_detail: format!("Data: {:?}\nSchema: {:?}", &data_value, &schema_value),
+                error_detail: format!("Data: {:?}\nSchema: {:?}", data_value, schema_value),
             };
             anyhow!("{:?}", error)
         })?;
@@ -445,7 +445,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Threads API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -501,7 +501,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Messages API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -553,7 +553,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Messages API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -616,7 +616,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Messages API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -673,7 +673,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Run status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -768,7 +768,7 @@ impl OpenAIAssistant {
         if self.debug {
             info!(
                 "[debug] OpenAI Vector Store Attach API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

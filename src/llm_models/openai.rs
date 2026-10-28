@@ -418,7 +418,7 @@ impl LLMModel for OpenAIModels {
             ) => {
                 format!(
                     "{}/openai/deployments/{}/chat/completions?api-version={}",
-                    &*OPENAI_API_URL,
+                    *OPENAI_API_URL,
                     self.as_str(),
                     version
                 )
@@ -471,7 +471,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Custom { .. },
             ) => format!(
                 "{}/openai/deployments/{}/responses?api-version={}",
-                &*OPENAI_API_URL,
+                *OPENAI_API_URL,
                 self.as_str(),
                 version
             ),
@@ -488,7 +488,7 @@ impl LLMModel for OpenAIModels {
                 warn!("[allms] The selected model is not supported in Completions API. Responses API will be used instead.");
                 format!(
                     "{}/openai/deployments/{}/responses?api-version={}",
-                    &*OPENAI_API_URL,
+                    *OPENAI_API_URL,
                     self.as_str(),
                     version
                 )
@@ -885,7 +885,7 @@ impl LLMModel for OpenAIModels {
         if debug {
             info!(
                 "[debug] OpenAI API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
