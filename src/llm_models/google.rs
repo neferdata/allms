@@ -198,7 +198,7 @@ impl LLMModel for GoogleModels {
                 GoogleApiEndpoints::GoogleStudio,
             ) => format!(
                 "{}/{}:generateContent",
-                &*GOOGLE_GEMINI_API_URL,
+                *GOOGLE_GEMINI_API_URL,
                 self.as_str()
             ),
             // 2.5 models are only available in the beta API
@@ -213,7 +213,7 @@ impl LLMModel for GoogleModels {
                 GoogleApiEndpoints::GoogleStudio,
             ) => format!(
                 "{}/{}:generateContent",
-                &*GOOGLE_GEMINI_BETA_API_URL,
+                *GOOGLE_GEMINI_BETA_API_URL,
                 self.as_str()
             ),
             // Fine-tuned models are only available in the Vertex API
@@ -222,7 +222,7 @@ impl LLMModel for GoogleModels {
                 // Construct Vertex URL when needed
                 format!(
                     "{}/{}:generateContent",
-                    &*GOOGLE_VERTEX_ENDPOINT_API_URL,
+                    *GOOGLE_VERTEX_ENDPOINT_API_URL,
                     self.as_str()
                 )
             }
@@ -248,7 +248,7 @@ impl LLMModel for GoogleModels {
             ) => {
                 format!(
                     "{}/{}:streamGenerateContent?alt=sse",
-                    &*GOOGLE_VERTEX_API_URL,
+                    *GOOGLE_VERTEX_API_URL,
                     self.as_str()
                 )
             }
@@ -257,7 +257,7 @@ impl LLMModel for GoogleModels {
                 // Construct Vertex URL when needed
                 format!(
                     "{}/{}:generateContent",
-                    &*GOOGLE_VERTEX_ENDPOINT_API_URL,
+                    *GOOGLE_VERTEX_ENDPOINT_API_URL,
                     self.as_str()
                 )
             }
@@ -276,7 +276,7 @@ impl LLMModel for GoogleModels {
                 // Construct Vertex URL when needed
                 format!(
                     "{}/{}:streamGenerateContent?alt=sse",
-                    &*GOOGLE_VERTEX_API_URL,
+                    *GOOGLE_VERTEX_API_URL,
                     self.as_str()
                 )
             }
@@ -700,7 +700,7 @@ impl GoogleModels {
         if debug {
             info!(
                 "[allms][Google AI Studio] API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -826,7 +826,7 @@ impl GoogleModels {
         if debug {
             info!(
                 "[allms][Google AI Vertex][Fine-tuned] API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

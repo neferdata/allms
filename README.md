@@ -54,7 +54,7 @@ Mistral:
 OpenAI:
 - APIs: Chat Completions, Responses, Function Calling, Assistants (v1 & v2), Files, Vector Stores
 - Models: 
-    - Chat Completions & Responses: GPT-5.5, GPT-5.5 Pro, GPT-5.4, GPT-5.4 Pro, GPT-5.4-Mini, GPT-5.4-Nano, GPT-5.2, GPT-5.2 Pro, GPT-5.1, o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini
+    - Chat Completions & Responses: GPT-6 Astra, GPT-6.1 Sol, GPT-6.1 Terra, GPT-6 Luna, GPT-6 Sol, GPT-5.6 Sol, GPT-5.6 Terra, GPT-5.6 Luna, GPT-5.6 Cyber, GPT-5.5, GPT-5.5 Pro, GPT-5.4, GPT-5.4 Pro, GPT-5.4-Mini, GPT-5.4-Nano, GPT-5.2, GPT-5.2 Pro, GPT-5.1, o1, o1 Preview, o1 Mini, o1 Pro, o3, o3 Mini, o4 Mini
     - Chat Completions, Responses & Assistants: GPT-5, GPT-5-mini, GPT-5-nano, GPT-4.5-Preview, GPT-4o, GPT-4, GPT-4 32k, GPT-4 Turbo, GPT-3.5 Turbo, GPT-3.5 Turbo 16k, fine-tuned models (via `Custom` variant)
 - Tools: file search, image analysis, web search, code interpreter, computer use
 
@@ -105,11 +105,11 @@ let mistral_answer = Completions::new(MistralModels::MistralMedium3, &API_KEY, N
     .get_answer::<T>(instructions)
     .await?
 
-let openai_answer = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
+let openai_answer = Completions::new(OpenAIModels::Gpt6_1Sol, &API_KEY, None, None)
     .get_answer::<T>(instructions)
     .await?
 
-let openai_responses_answer = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
+let openai_responses_answer = Completions::new(OpenAIModels::Gpt6_1Sol, &API_KEY, None, None)
     .version("openai_responses")
     .get_answer::<T>(instructions)
     .await?
@@ -133,7 +133,7 @@ use allms::llm::{
     OpenAIModels,
 };
 
-let result = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
+let result = Completions::new(OpenAIModels::Gpt6_1Sol, &API_KEY, None, None)
     .version("openai_responses")
     .add_tool(LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()))
     .get_answer_with_metadata::<T>(instructions, None)
@@ -147,7 +147,7 @@ let sources = result
     .unwrap_or_default();
 
 // Or request only citations explicitly:
-let result = Completions::new(OpenAIModels::Gpt4_1Mini, &API_KEY, None, None)
+let result = Completions::new(OpenAIModels::Gpt6_1Sol, &API_KEY, None, None)
     .version("openai_responses")
     .add_tool(LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new()))
     .get_answer_with_metadata::<T>(

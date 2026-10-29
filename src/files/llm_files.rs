@@ -6,6 +6,7 @@ use async_trait::async_trait;
 /// This trait provides a common interface for file operations such as
 /// creation, debugging, uploading, and deletion of files for use with
 /// LLM assistants and completions.
+#[allow(clippy::double_must_use)]
 #[async_trait(?Send)]
 pub trait LLMFiles: Send + Sync + Sized {
     /// Create a new file instance

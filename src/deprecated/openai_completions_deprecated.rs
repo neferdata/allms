@@ -236,7 +236,7 @@ impl OpenAIModels {
         if debug {
             info!(
                 "[debug] OpenAI API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -556,14 +556,14 @@ impl OpenAI {
         //Deserialize the string response into the expected output type
         let response_deser: anyhow::Result<T, anyhow::Error> =
             serde_json::from_str(&response_string).map_err(|error| {
-                error!("[OpenAI] Response serialization error: {}", &error);
+                error!("[OpenAI] Response serialization error: {}", error);
                 anyhow!("Error: {}", error)
             });
         // Sometimes openai responds with a json object that has a data property. If that's the case, we need to extract the data property and deserialize that.
         if let Err(_e) = response_deser {
             let response_deser: OpenAIDataResponse<T> = serde_json::from_str(&response_text)
                 .map_err(|error| {
-                    error!("[OpenAI] Response serialization error: {}", &error);
+                    error!("[OpenAI] Response serialization error: {}", error);
                     anyhow!("Error: {}", error)
                 })?;
             Ok(response_deser.data)

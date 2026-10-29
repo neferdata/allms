@@ -228,7 +228,7 @@ impl LLMModel for MistralModels {
         if debug {
             info!(
                 "[debug] Mistral API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

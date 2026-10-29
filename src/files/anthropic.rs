@@ -97,7 +97,7 @@ impl LLMFiles for AnthropicFile {
         if self.debug {
             info!(
                 "[debug] Anthropic Files status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -128,7 +128,7 @@ impl LLMFiles for AnthropicFile {
     /// * `Result<()>` - Success or error
     async fn delete(&self) -> Result<()> {
         let files_url = if let Some(id) = self.id.as_ref() {
-            format!("{}/{}", &*ANTHROPIC_FILES_API_URL, id)
+            format!("{}/{}", *ANTHROPIC_FILES_API_URL, id)
         } else {
             return Err(anyhow!("File ID is required to delete a file"));
         };
@@ -159,7 +159,7 @@ impl LLMFiles for AnthropicFile {
         if self.debug {
             info!(
                 "[debug] Anthropic Files status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

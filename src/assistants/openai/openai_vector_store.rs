@@ -96,7 +96,7 @@ impl OpenAIVectorStore {
         if self.debug {
             info!(
                 "[allms][OpenAI][VectorStore][debug] VectorStore Create API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -216,7 +216,7 @@ impl OpenAIVectorStore {
         if self.debug {
             info!(
                 "[allms][OpenAI][VectorStore][debug] VectorStore Batch Upload API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -271,7 +271,7 @@ impl OpenAIVectorStore {
         if self.debug {
             info!(
                 "[allms][OpenAI][VectorStore][debug] VectorStore Status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -326,7 +326,7 @@ impl OpenAIVectorStore {
         if self.debug {
             info!(
                 "[allms][OpenAI][VectorStore][debug] VectorStore Status API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -381,7 +381,7 @@ impl OpenAIVectorStore {
         if self.debug {
             info!(
                 "[allms][OpenAI][VectorStore][debug] VectorStore Delete API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

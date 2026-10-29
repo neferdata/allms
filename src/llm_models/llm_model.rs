@@ -11,6 +11,7 @@ use crate::llm_models::LLMTools;
 use crate::utils::{map_to_range, remove_json_wrapper};
 
 ///This trait defines functions that need to be implemented for an enum that represents an LLM Model from any of the API providers
+#[allow(clippy::double_must_use)]
 #[async_trait(?Send)]
 pub trait LLMModel {
     ///Converts each item in the model enum into its string representation

@@ -29,6 +29,15 @@ use crate::{
 #[derive(Deserialize, Serialize, Debug, Clone, Eq, PartialEq)]
 pub enum OpenAIModels {
     // GPT models
+    Gpt6Astra,
+    Gpt6_1Sol,
+    Gpt6_1Terra,
+    Gpt6Luna,
+    Gpt6Sol,
+    Gpt5_6Sol,
+    Gpt5_6Terra,
+    Gpt5_6Luna,
+    Gpt5_6Cyber,
     Gpt5_5,
     Gpt5_5Pro,
     Gpt5_4,
@@ -73,6 +82,15 @@ pub enum OpenAIModels {
 impl LLMModel for OpenAIModels {
     fn as_str(&self) -> &str {
         match self {
+            OpenAIModels::Gpt6Astra => "gpt-6-astra",
+            OpenAIModels::Gpt6_1Sol => "gpt-6.1-sol",
+            OpenAIModels::Gpt6_1Terra => "gpt-6.1-terra",
+            OpenAIModels::Gpt6Luna => "gpt-6-luna",
+            OpenAIModels::Gpt6Sol => "gpt-6-sol",
+            OpenAIModels::Gpt5_6Sol => "gpt-5.6-sol",
+            OpenAIModels::Gpt5_6Terra => "gpt-5.6-terra",
+            OpenAIModels::Gpt5_6Luna => "gpt-5.6-luna",
+            OpenAIModels::Gpt5_6Cyber => "gpt-5.6-cyber",
             OpenAIModels::Gpt5_5 => "gpt-5.5",
             OpenAIModels::Gpt5_5Pro => "gpt-5.5-pro",
             OpenAIModels::Gpt5_4 => "gpt-5.4",
@@ -113,6 +131,15 @@ impl LLMModel for OpenAIModels {
 
     fn try_from_str(name: &str) -> Option<Self> {
         match name.to_lowercase().as_str() {
+            "gpt-6-astra" => Some(OpenAIModels::Gpt6Astra),
+            "gpt-6.1-sol" => Some(OpenAIModels::Gpt6_1Sol),
+            "gpt-6.1-terra" => Some(OpenAIModels::Gpt6_1Terra),
+            "gpt-6-luna" => Some(OpenAIModels::Gpt6Luna),
+            "gpt-6-sol" => Some(OpenAIModels::Gpt6Sol),
+            "gpt-5.6" | "gpt-5.6-sol" => Some(OpenAIModels::Gpt5_6Sol),
+            "gpt-5.6-terra" => Some(OpenAIModels::Gpt5_6Terra),
+            "gpt-5.6-luna" => Some(OpenAIModels::Gpt5_6Luna),
+            "gpt-5.6-cyber" => Some(OpenAIModels::Gpt5_6Cyber),
             "gpt-5.5" => Some(OpenAIModels::Gpt5_5),
             "gpt-5.5-2026-04-23" => Some(OpenAIModels::Gpt5_5),
             "gpt-5.5-pro" => Some(OpenAIModels::Gpt5_5Pro),
@@ -169,6 +196,15 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/docs/models/gpt-3-5
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt6Astra => 1_050_000,
+            OpenAIModels::Gpt6_1Sol => 1_050_000,
+            OpenAIModels::Gpt6_1Terra => 1_050_000,
+            OpenAIModels::Gpt6Luna => 1_050_000,
+            OpenAIModels::Gpt6Sol => 1_050_000,
+            OpenAIModels::Gpt5_6Sol => 1_050_000,
+            OpenAIModels::Gpt5_6Terra => 1_050_000,
+            OpenAIModels::Gpt5_6Luna => 1_050_000,
+            OpenAIModels::Gpt5_6Cyber => 400_000,
             OpenAIModels::Gpt5_5 => 1_050_000,
             OpenAIModels::Gpt5_5Pro => 1_050_000,
             OpenAIModels::Gpt5_4 => 1_050_000,
@@ -247,6 +283,14 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::Custom { .. },
             ) => {
                 format!(
@@ -282,6 +326,15 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
                 | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -294,13 +347,14 @@ impl LLMModel for OpenAIModels {
                 "{OPENAI_API_URL}/v1/responses",
                 OPENAI_API_URL = *OPENAI_API_URL
             ),
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we redirect to Responses API
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro, GPT-5.6 Cyber are not supported in Completions API, we redirect to Responses API
             (
                 OpenAiApiEndpoints::OpenAI | OpenAiApiEndpoints::OpenAICompletions,
                 OpenAIModels::O1Pro
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4Pro
-                | OpenAIModels::Gpt5_5Pro,
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Cyber,
             ) => {
                 warn!("[allms] The selected model is not supported in Completions API. Responses API will be used instead.");
                 format!(
@@ -346,6 +400,14 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -356,7 +418,7 @@ impl LLMModel for OpenAIModels {
             ) => {
                 format!(
                     "{}/openai/deployments/{}/chat/completions?api-version={}",
-                    &*OPENAI_API_URL,
+                    *OPENAI_API_URL,
                     self.as_str(),
                     version
                 )
@@ -390,6 +452,15 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
                 | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -400,23 +471,24 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Custom { .. },
             ) => format!(
                 "{}/openai/deployments/{}/responses?api-version={}",
-                &*OPENAI_API_URL,
+                *OPENAI_API_URL,
                 self.as_str(),
                 version
             ),
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we redirect to Responses API
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro, GPT-5.6 Cyber are not supported in Completions API, we redirect to Responses API
             (
                 OpenAiApiEndpoints::Azure { version }
                 | OpenAiApiEndpoints::AzureCompletions { version },
                 OpenAIModels::O1Pro
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4Pro
-                | OpenAIModels::Gpt5_5Pro,
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Cyber,
             ) => {
                 warn!("[allms] The selected model is not supported in Completions API. Responses API will be used instead.");
                 format!(
                     "{}/openai/deployments/{}/responses?api-version={}",
-                    &*OPENAI_API_URL,
+                    *OPENAI_API_URL,
                     self.as_str(),
                     version
                 )
@@ -469,6 +541,15 @@ impl LLMModel for OpenAIModels {
             | OpenAIModels::Gpt5_4Nano
             | OpenAIModels::Gpt5_5
             | OpenAIModels::Gpt5_5Pro
+            | OpenAIModels::Gpt5_6Sol
+            | OpenAIModels::Gpt5_6Terra
+            | OpenAIModels::Gpt5_6Luna
+            | OpenAIModels::Gpt5_6Cyber
+            | OpenAIModels::Gpt6Astra
+            | OpenAIModels::Gpt6_1Sol
+            | OpenAIModels::Gpt6_1Terra
+            | OpenAIModels::Gpt6Luna
+            | OpenAIModels::Gpt6Sol
             | OpenAIModels::Custom { .. } => true,
         }
     }
@@ -536,6 +617,14 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::Custom { .. },
             ) => {
                 let system_message = json!({
@@ -663,14 +752,23 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
                 | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::Custom { .. },
             ) => {
-                json!({
+                let mut body = json!({
                     "model": self.as_str(),
                     "input": self.responses_input(&user_message_str, tools),
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
-                    // GPT-5 models don't support `temperature`
+                    // GPT-5+ models don't support `temperature`
                     "temperature": if self.is_gpt5_model() { json!(null) } else { json!(temperature) },
                     // If tools are provided we add them to the body
                     "tools": self.responses_tools(tools),
@@ -685,7 +783,12 @@ impl LLMModel for OpenAIModels {
                     //     }
                     // } - Structured Outputs is rejecting the json schema auto-generated from T
                     // "previous_response_id" - to implement chained conversations
-                })
+                });
+                // GPT-5+ / GPT-5.6 / GPT-6 support `reasoning.effort` in Responses API
+                if self.is_gpt5_model() {
+                    body["reasoning"] = self.responses_reasoning(tools);
+                }
+                body
             }
             // Reasoning models cannot use tools or set temperature in Responses API as well
             (
@@ -698,30 +801,24 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O3Mini
                 | OpenAIModels::O4Mini,
             )
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we redirect to Responses API
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro, GPT-5.6 Cyber are not supported in Completions API, we redirect to Responses API
             | (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
                 | OpenAiApiEndpoints::Azure { .. }
                 | OpenAiApiEndpoints::AzureCompletions { .. },
-                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro | OpenAIModels::Gpt5_5Pro,
+                OpenAIModels::O1Pro
+                | OpenAIModels::Gpt5_2Pro
+                | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Cyber,
             ) => {
-                // Check if reasoning configuration is provided as a tool
-                let reasoning_opt = tools.and_then(|tools_inner| {
-                    tools_inner.iter().find_map(|tool| {
-                        if let LLMTools::OpenAIReasoning(cfg) = tool {
-                            to_value(cfg).ok()
-                        } else {
-                            None
-                        }
-                    })
-                });
                 json!({
                     "model": self.as_str(),
                     "input": self.responses_input(&user_message_str, tools),
                     "instructions": base_instructions,
                     "max_output_tokens": max_tokens,
-                    "reasoning": reasoning_opt,
+                    "reasoning": self.responses_reasoning(tools),
                     // Reasoning models can use certain tools
                     "tools": self.responses_tools(tools),
                     // TODO: Other fields to be implemented in the future
@@ -788,7 +885,7 @@ impl LLMModel for OpenAIModels {
         if debug {
             info!(
                 "[debug] OpenAI API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 
@@ -839,6 +936,14 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::O1
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1Preview
@@ -903,6 +1008,15 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5
                 | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::O1Preview
                 | OpenAIModels::O1Mini
                 | OpenAIModels::O1
@@ -912,13 +1026,17 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::O4Mini
                 | OpenAIModels::Custom { .. },
             )
-            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro are not supported in Completions API, we use the Responses API data schema
+            // o1 Pro, GPT-5.2 Pro, GPT-5.4 Pro, GPT-5.5 Pro, GPT-5.6 Cyber are not supported in Completions API, we use the Responses API data schema
             | (
                 OpenAiApiEndpoints::OpenAI
                 | OpenAiApiEndpoints::OpenAICompletions
                 | OpenAiApiEndpoints::Azure { .. }
                 | OpenAiApiEndpoints::AzureCompletions { .. },
-                OpenAIModels::O1Pro | OpenAIModels::Gpt5_2Pro | OpenAIModels::Gpt5_4Pro | OpenAIModels::Gpt5_5Pro,
+                OpenAIModels::O1Pro
+                | OpenAIModels::Gpt5_2Pro
+                | OpenAIModels::Gpt5_4Pro
+                | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Cyber,
             ) => {
                 //Convert API response to struct representing expected response format
                 let responses_response: OpenAPIResponsesResponse =
@@ -977,6 +1095,7 @@ impl LLMModel for OpenAIModels {
                 | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_5Pro
+                | OpenAIModels::Gpt5_6Cyber
         );
 
         if !use_responses {
@@ -1013,6 +1132,23 @@ impl LLMModel for OpenAIModels {
         //OpenAI documentation: https://platform.openai.com/account/rate-limits
         //This is the max tokens allowed between prompt & response
         match self {
+            OpenAIModels::Gpt6Astra
+            | OpenAIModels::Gpt6_1Sol
+            | OpenAIModels::Gpt6_1Terra
+            | OpenAIModels::Gpt6Sol
+            | OpenAIModels::Gpt5_6Sol
+            | OpenAIModels::Gpt5_6Terra => RateLimit {
+                tpm: 40_000_000,
+                rpm: 15_000,
+            },
+            OpenAIModels::Gpt6Luna | OpenAIModels::Gpt5_6Luna => RateLimit {
+                tpm: 180_000_000,
+                rpm: 30_000,
+            },
+            OpenAIModels::Gpt5_6Cyber => RateLimit {
+                tpm: 30_000_000,
+                rpm: 10_000,
+            },
             OpenAIModels::Gpt5_5 => RateLimit {
                 tpm: 40_000_000,
                 rpm: 15_000,
@@ -1196,12 +1332,24 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5
                 | OpenAIModels::Gpt5Mini
                 | OpenAIModels::Gpt5Nano
+                | OpenAIModels::Gpt5_1
+                | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
                 | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1223,11 +1371,22 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5Nano
                 | OpenAIModels::Gpt5_1
                 | OpenAIModels::Gpt5_2
+                | OpenAIModels::Gpt5_2Pro
                 | OpenAIModels::Gpt5_4
+                | OpenAIModels::Gpt5_4Pro
                 | OpenAIModels::Gpt5_4Mini
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
                 | OpenAIModels::Custom { .. }
         )
     }
@@ -1254,10 +1413,20 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
         )
     }
 
-    // This function checks if a model is a GPT-5 model
+    // This function checks if a model is a GPT-5+ model (including GPT-5.6 / GPT-6)
+    // that does not support the `temperature` parameter.
     pub fn is_gpt5_model(&self) -> bool {
         matches!(
             self,
@@ -1273,6 +1442,15 @@ impl OpenAIModels {
                 | OpenAIModels::Gpt5_4Nano
                 | OpenAIModels::Gpt5_5Pro
                 | OpenAIModels::Gpt5_5
+                | OpenAIModels::Gpt5_6Sol
+                | OpenAIModels::Gpt5_6Terra
+                | OpenAIModels::Gpt5_6Luna
+                | OpenAIModels::Gpt5_6Cyber
+                | OpenAIModels::Gpt6Astra
+                | OpenAIModels::Gpt6_1Sol
+                | OpenAIModels::Gpt6_1Terra
+                | OpenAIModels::Gpt6Luna
+                | OpenAIModels::Gpt6Sol
         )
     }
 
@@ -1362,6 +1540,21 @@ impl OpenAIModels {
         })
     }
 
+    // Reasoning is a top-level Responses field, not a hosted tool entry.
+    fn responses_reasoning(&self, tools: Option<&[LLMTools]>) -> Value {
+        tools
+            .and_then(|tools_inner| {
+                tools_inner.iter().find_map(|tool| {
+                    if let LLMTools::OpenAIReasoning(cfg) = tool {
+                        to_value(cfg).ok()
+                    } else {
+                        None
+                    }
+                })
+            })
+            .unwrap_or(Value::Null)
+    }
+
     // When Image Analysis is attached, Responses `input` becomes a content array
     // with the user text plus one `input_image` part per file ID.
     fn responses_input(&self, user_message_str: &str, tools: Option<&[LLMTools]>) -> Value {
@@ -1395,7 +1588,9 @@ impl OpenAIModels {
 #[cfg(test)]
 mod tests {
     use crate::llm_models::llm_model::LLMModel;
-    use crate::llm_models::OpenAIModels;
+    use crate::llm_models::tools::{OpenAIReasoningConfig, OpenAIReasoningEffort};
+    use crate::llm_models::{LLMTools, OpenAIModels};
+    use serde_json::json;
 
     const RESPONSES_CITATION_FIXTURE: &str = r#"{
         "model": "gpt-4.1-mini",
@@ -1452,6 +1647,27 @@ mod tests {
             "total_tokens": 2
         }
     }"#;
+
+    #[test]
+    fn gpt6_responses_body_includes_reasoning_effort() {
+        let model = OpenAIModels::Gpt6Astra;
+        let tools = [LLMTools::OpenAIReasoning(OpenAIReasoningConfig::new(
+            Some(OpenAIReasoningEffort::XHigh),
+            None,
+        ))];
+        let body = model.get_version_body(
+            "do the thing",
+            &json!({"type": "object"}),
+            false,
+            &128_000,
+            &1.0,
+            Some("openai_responses".to_string()),
+            Some(&tools),
+            None,
+        );
+        assert_eq!(body["reasoning"]["effort"], json!("xhigh"));
+        assert!(body["temperature"].is_null());
+    }
 
     #[test]
     fn extract_citations_from_responses_annotations() {
@@ -1586,6 +1802,46 @@ mod tests {
         assert_eq!(
             OpenAIModels::try_from_str("gpt-5.4-nano"),
             Some(OpenAIModels::Gpt5_4Nano)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-6-astra"),
+            Some(OpenAIModels::Gpt6Astra)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-6.1-sol"),
+            Some(OpenAIModels::Gpt6_1Sol)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-6.1-terra"),
+            Some(OpenAIModels::Gpt6_1Terra)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-6-luna"),
+            Some(OpenAIModels::Gpt6Luna)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-6-sol"),
+            Some(OpenAIModels::Gpt6Sol)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.6"),
+            Some(OpenAIModels::Gpt5_6Sol)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.6-sol"),
+            Some(OpenAIModels::Gpt5_6Sol)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.6-terra"),
+            Some(OpenAIModels::Gpt5_6Terra)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.6-luna"),
+            Some(OpenAIModels::Gpt5_6Luna)
+        );
+        assert_eq!(
+            OpenAIModels::try_from_str("gpt-5.6-cyber"),
+            Some(OpenAIModels::Gpt5_6Cyber)
         );
     }
 

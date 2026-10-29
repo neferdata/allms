@@ -11,7 +11,8 @@ use allms::{
     llm::{
         tools::{
             LLMTools, OpenAICodeInterpreterConfig, OpenAIFileSearchConfig,
-            OpenAIImageAnalysisConfig, OpenAIReasoningConfig, OpenAIWebSearchConfig,
+            OpenAIImageAnalysisConfig, OpenAIReasoningConfig, OpenAIReasoningEffort,
+            OpenAIWebSearchConfig,
         },
         OpenAIModels,
     },
@@ -78,9 +79,12 @@ async fn main() -> Result<()> {
 
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
 
-    let reasoning_tool = LLMTools::OpenAIReasoning(OpenAIReasoningConfig::default());
+    let reasoning_tool = LLMTools::OpenAIReasoning(OpenAIReasoningConfig::new(
+        Some(OpenAIReasoningEffort::High),
+        None,
+    ));
 
-    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt6Astra, &openai_api_key, None, None)
         .version("openai_responses")
         .add_tool(reasoning_tool);
 
@@ -94,7 +98,7 @@ async fn main() -> Result<()> {
 
     // Example 2: Web search example
     let web_search_tool = LLMTools::OpenAIWebSearch(OpenAIWebSearchConfig::new());
-    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt6_1Sol, &openai_api_key, None, None)
         .version("openai_responses")
         .add_tool(web_search_tool);
 
@@ -131,7 +135,7 @@ async fn main() -> Result<()> {
             .clone()
             .unwrap_or_default()]));
 
-    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt6_1Sol, &openai_api_key, None, None)
         .version("openai_responses")
         .set_context("bands_genres", &BANDS_GENRES)?
         .add_tool(file_search_tool);
@@ -172,7 +176,7 @@ async fn main() -> Result<()> {
             .clone()
             .unwrap_or_default()]));
 
-    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt6_1Terra, &openai_api_key, None, None)
         .version("openai_responses")
         .add_tool(image_analysis_tool);
 
@@ -192,7 +196,7 @@ async fn main() -> Result<()> {
     // Example 5: Code interpreter example
 
     let code_interpreter_tool = LLMTools::OpenAICodeInterpreter(OpenAICodeInterpreterConfig::new());
-    let openai_responses = Completions::new(OpenAIModels::Gpt5_5, &openai_api_key, None, None)
+    let openai_responses = Completions::new(OpenAIModels::Gpt6_1Sol, &openai_api_key, None, None)
         .version("openai_responses")
         .set_context("Code Interpreter", &"You are a personal math tutor. When asked a math question, write and run code to answer the question.".to_string())?
         .add_tool(code_interpreter_tool);

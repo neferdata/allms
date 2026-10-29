@@ -31,7 +31,7 @@ async fn main() {
 
     // Get answer + citations using OpenAI Responses API with web search
     let openai_api_key: String = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set");
-    let model = OpenAIModels::try_from_str("gpt-4.1-mini").unwrap_or(OpenAIModels::Gpt4_1Mini);
+    let model = OpenAIModels::try_from_str("gpt-6.1-sol").unwrap_or(OpenAIModels::Gpt6_1Sol);
     println!("OpenAI model: {:#?}", model.as_str());
 
     let openai_completion = Completions::new(model, &openai_api_key, None, None)

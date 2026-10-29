@@ -161,7 +161,7 @@ impl<T: LLMModel> Completions<T> {
         let context_text = self
             .input_json
             .as_ref()
-            .map(|context| format!("\n\n{}", &context))
+            .map(|context| format!("\n\n{}", context))
             .unwrap_or_default();
 
         let prompt = format!(
@@ -238,7 +238,7 @@ impl<T: LLMModel> Completions<T> {
         let context_text = self
             .input_json
             .as_ref()
-            .map(|context| format!("\n\n{}", &context))
+            .map(|context| format!("\n\n{}", context))
             .unwrap_or_default();
 
         let prompt = format!("{instructions}{context_text}");

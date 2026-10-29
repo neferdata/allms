@@ -122,7 +122,7 @@ impl LLMModel for DeepSeekModels {
         if debug {
             info!(
                 "[debug] DeepSeek API response: [{}] {:#?}",
-                &response_status, &response_text
+                response_status, response_text
             );
         }
 

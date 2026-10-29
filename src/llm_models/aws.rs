@@ -58,7 +58,7 @@ impl LLMModel for AwsBedrockModels {
     }
 
     fn get_endpoint(&self) -> String {
-        format!("{}/model/{}/converse", &*AWS_BEDROCK_API_URL, self.as_str())
+        format!("{}/model/{}/converse", *AWS_BEDROCK_API_URL, self.as_str())
     }
 
     /// AWS Bedrock implementation leverages AWS Bedrock SKD, therefore data is only passed by this method to `call_api` method where the actual logic is implemented
@@ -167,10 +167,7 @@ impl LLMModel for AwsBedrockModels {
         let converse_response = converse_builder.send().await?;
 
         if debug {
-            info!(
-                "[debug] AWS Bedrock API response: {:#?}",
-                &converse_response
-            );
+            info!("[debug] AWS Bedrock API response: {:#?}", converse_response);
         }
 
         //Parse the response and return the assistant content
