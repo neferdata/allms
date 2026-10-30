@@ -49,8 +49,8 @@ async fn main() {
     // Get answer + citations using Anthropic with web search
     let anthropic_api_key: String =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY not set");
-    let model = AnthropicModels::try_from_str("claude-sonnet-4-6")
-        .unwrap_or(AnthropicModels::ClaudeSonnet4_6);
+    let model = AnthropicModels::try_from_str("claude-sonnet-5-5")
+        .unwrap_or(AnthropicModels::ClaudeSonnet5_5);
     println!("Anthropic model: {:#?}", model.as_str());
 
     let anthropic_completion = Completions::new(model, &anthropic_api_key, None, None)
