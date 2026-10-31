@@ -772,6 +772,48 @@ mod tests {
         "content": [{"type": "text", "text": "{\"result\":\"ok\"}"}]
     }"#;
 
+    // web_search_tool_result.content can be an error object instead of a result array.
+    const WEB_SEARCH_ERROR_CONTENT_FIXTURE: &str = r#"{
+        "id": "msg_1",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-5-5",
+        "stop_reason": "end_turn",
+        "usage": {"input_tokens": 1, "output_tokens": 1},
+        "content": [
+            {
+                "type": "web_search_tool_result",
+                "tool_use_id": "srvtoolu_1",
+                "content": {
+                    "type": "web_search_tool_result_error",
+                    "error_code": "invalid_tool_input"
+                }
+            },
+            {
+                "type": "web_search_tool_result",
+                "tool_use_id": "srvtoolu_2",
+                "content": [
+                    {
+                        "type": "web_search_result",
+                        "url": "https://example.com/ok",
+                        "title": "Ok"
+                    }
+                ]
+            },
+            {
+                "type": "code_execution_tool_result",
+                "tool_use_id": "srvtoolu_3",
+                "content": {
+                    "type": "encrypted_code_execution_result",
+                    "encrypted_stdout": "abc",
+                    "stderr": "",
+                    "return_code": 0
+                }
+            },
+            {"type": "text", "text": "{\"articles\":[]}"}
+        ]
+    }"#;
+
     #[test]
     fn extract_citations_from_text_and_tool_result() {
         let model = AnthropicModels::ClaudeSonnet4_6;
@@ -796,5 +838,16 @@ mod tests {
         let model = AnthropicModels::ClaudeSonnet4_6;
         let citations = model.extract_citations(NO_CITATION_FIXTURE, None);
         assert!(citations.urls.is_empty());
+    }
+
+    #[test]
+    fn deserializes_web_search_error_and_encrypted_content_objects() {
+        let model = AnthropicModels::ClaudeHaiku5_5;
+        assert!(model
+            .get_data(WEB_SEARCH_ERROR_CONTENT_FIXTURE, false)
+            .unwrap()
+            .contains("articles"));
+        let citations = model.extract_citations(WEB_SEARCH_ERROR_CONTENT_FIXTURE, None);
+        assert_eq!(citations.urls, vec!["https://example.com/ok".to_string()]);
     }
 }

@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
     // Example 1: Web search example
     let web_search_tool = LLMTools::AnthropicWebSearch(AnthropicWebSearchConfig::new());
     let anthropic_responses = Completions::new(
-        AnthropicModels::ClaudeOpus5_5,
+        AnthropicModels::ClaudeHaiku5_5,
         &anthropic_api_key,
         None,
         None,
