@@ -181,7 +181,36 @@ pub struct AnthropicAPIMessagesContent {
     /// Present on text blocks when web search citations are enabled.
     pub citations: Option<Vec<AnthropicAPICitation>>,
     /// Nested content for blocks like `web_search_tool_result`.
+    /// Anthropic returns an array of results on success, or a single object
+    /// (e.g. `web_search_tool_result_error`, encrypted code-execution payloads).
+    #[serde(default, deserialize_with = "deserialize_anthropic_nested_content")]
     pub content: Option<Vec<AnthropicAPIMessagesNestedContent>>,
+}
+
+/// Accepts either a JSON array of nested content items or a single object.
+fn deserialize_anthropic_nested_content<'de, D>(
+    deserializer: D,
+) -> Result<Option<Vec<AnthropicAPIMessagesNestedContent>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = Option::<Value>::deserialize(deserializer)?;
+    match value {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::Array(arr)) => {
+            let items =
+                serde_json::from_value(Value::Array(arr)).map_err(serde::de::Error::custom)?;
+            Ok(Some(items))
+        }
+        Some(obj @ Value::Object(_)) => {
+            // Error / encrypted single-object payloads — keep parseable shape, skip if opaque.
+            match serde_json::from_value::<AnthropicAPIMessagesNestedContent>(obj) {
+                Ok(item) => Ok(Some(vec![item])),
+                Err(_) => Ok(Some(Vec::new())),
+            }
+        }
+        Some(_) => Ok(Some(Vec::new())),
+    }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
